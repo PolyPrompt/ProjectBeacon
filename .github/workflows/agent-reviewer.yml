@@ -30,7 +30,7 @@ jobs:
         uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          prompt-file: docs/agents/reviewer.md
+          prompt-file: ProjectBeacon/docs/agents/reviewer.md
           safety-strategy: drop-sudo
           sandbox: workspace-write
 
@@ -40,7 +40,9 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          if [[ -f REVIEW_COMMENT.md ]]; then
+          if [[ -f ProjectBeacon/REVIEW_COMMENT.md ]]; then
+            gh pr comment "$PR_NUMBER" --body-file ProjectBeacon/REVIEW_COMMENT.md
+          elif [[ -f REVIEW_COMMENT.md ]]; then
             gh pr comment "$PR_NUMBER" --body-file REVIEW_COMMENT.md
           else
             gh pr comment "$PR_NUMBER" --body "Automated review completed by reviewer agent."

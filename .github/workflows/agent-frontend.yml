@@ -1,4 +1,4 @@
-name: Agent Builder Agent3
+name: Agent Builder Agent1
 
 on:
   schedule:
@@ -16,12 +16,12 @@ permissions:
   issues: write
 
 concurrency:
-  group: agent-builder-agent3
+  group: agent-builder-agent1
   cancel-in-progress: false
 
 jobs:
   build:
-    runs-on: ${{ vars.USE_SELF_HOSTED_RUNNERS == 'true' && fromJSON('["self-hosted","agent-agent3"]') || 'ubuntu-latest' }}
+    runs-on: ${{ vars.USE_SELF_HOSTED_RUNNERS == 'true' && fromJSON('["self-hosted","agent-agent1"]') || 'ubuntu-latest' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,17 +30,17 @@ jobs:
         id: pick
         env:
           GH_TOKEN: ${{ github.token }}
-          AGENT_LABEL: agent:agent3
+          AGENT_LABEL: agent:agent1
           SKIP_IN_PROGRESS_CHECK: ${{ inputs.test_mode == 'true' && 'true' || 'false' }}
         run: |
           set -euo pipefail
-          bash .github/scripts/pick_issue.sh
+          bash ProjectBeacon/.github/scripts/pick_issue.sh
 
       - name: Exit if no eligible issue
         if: steps.pick.outputs.ISSUE_NUMBER == ''
         run: |
           set -euo pipefail
-          echo "No eligible issue found for agent:agent3."
+          echo "No eligible issue found for agent:agent1."
 
       - name: Build prompt from issue + task profile
         if: steps.pick.outputs.ISSUE_NUMBER != ''
@@ -52,7 +52,7 @@ jobs:
           ISSUE_TITLE="$(gh issue view "$ISSUE_NUMBER" --json title --jq '.title')"
           ISSUE_BODY="$(gh issue view "$ISSUE_NUMBER" --json body --jq '.body // ""')"
           {
-            echo "You are builder agent: agent3."
+            echo "You are builder agent: agent1."
             echo
             echo "Implement GitHub issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}"
             echo
@@ -60,26 +60,26 @@ jobs:
             echo "${ISSUE_BODY}"
             echo
             echo "Execution requirements:"
-            echo "- Follow AGENTS.md repository rules."
-            echo "- Follow TASK-agent3.md ownership/boundaries/handoff requirements."
+            echo "- Follow AGENTS.md repository rules from ProjectBeacon/AGENTS.md."
+            echo "- Follow TASK-agent1.md ownership/boundaries/handoff requirements."
             echo "- Produce code changes for this issue only."
             echo "- Run relevant verification commands from AGENTS.md."
-            echo "- Create/update PR_BODY.md in repo root with sections: Summary, Issue link, Tests run, Risk/rollback, Checklist."
+            echo "- Create/update ProjectBeacon/PR_BODY.md with sections: Summary, Issue link, Tests run, Risk/rollback, Checklist."
             echo "- Include 'Fixes #${ISSUE_NUMBER}' in the title and PR_BODY.md."
             echo
             echo "Repository policy:"
-            cat AGENTS.md
+            cat ProjectBeacon/AGENTS.md
             echo
             echo "Task agent profile:"
-            cat TASK-agent3.md
-          } > PROMPT.md
+            cat ProjectBeacon/TASK-agent1.md
+          } > ProjectBeacon/PROMPT.md
 
       - name: Run Codex
         if: steps.pick.outputs.ISSUE_NUMBER != ''
         uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          prompt-file: PROMPT.md
+          prompt-file: ProjectBeacon/PROMPT.md
           safety-strategy: drop-sudo
           sandbox: workspace-write
 
@@ -88,7 +88,7 @@ jobs:
         id: changes
         run: |
           set -euo pipefail
-          if [[ -n "$(git status --porcelain -- . ':(exclude)PR_BODY.md' ':(exclude)PROMPT.md')" ]]; then
+          if [[ -n "$(git status --porcelain -- ProjectBeacon ':(exclude)ProjectBeacon/PR_BODY.md' ':(exclude)ProjectBeacon/PROMPT.md')" ]]; then
             echo "HAS_CHANGES=true" >> "$GITHUB_OUTPUT"
           else
             echo "HAS_CHANGES=false" >> "$GITHUB_OUTPUT"
@@ -102,7 +102,7 @@ jobs:
           MESSAGE: "Automation run completed but no changes were produced."
         run: |
           set -euo pipefail
-          bash .github/scripts/comment_issue.sh
+          bash ProjectBeacon/.github/scripts/comment_issue.sh
 
       - name: Ensure PR body exists
         if: steps.pick.outputs.ISSUE_NUMBER != '' && steps.changes.outputs.HAS_CHANGES == 'true'
@@ -110,7 +110,7 @@ jobs:
           ISSUE_NUMBER: ${{ steps.pick.outputs.ISSUE_NUMBER }}
         run: |
           set -euo pipefail
-          if [[ ! -f PR_BODY.md ]]; then
+          if [[ ! -f ProjectBeacon/PR_BODY.md ]]; then
             printf '%s\n' \
               'Summary' \
               "- Implemented automated changes for issue #${ISSUE_NUMBER}." \
@@ -126,9 +126,9 @@ jobs:
               '' \
               'Checklist' \
               '- [x] Changes align with issue requirements.' \
-              '- [ ] Add or update tests if needed.' > PR_BODY.md
+              '- [ ] Add or update tests if needed.' > ProjectBeacon/PR_BODY.md
           fi
-          grep -q "Fixes #${ISSUE_NUMBER}" PR_BODY.md || echo "\nFixes #${ISSUE_NUMBER}" >> PR_BODY.md
+          grep -q "Fixes #${ISSUE_NUMBER}" ProjectBeacon/PR_BODY.md || echo "\nFixes #${ISSUE_NUMBER}" >> ProjectBeacon/PR_BODY.md
 
       - name: Commit and push branch
         if: steps.pick.outputs.ISSUE_NUMBER != '' && steps.changes.outputs.HAS_CHANGES == 'true'
@@ -137,13 +137,14 @@ jobs:
         run: |
           set -euo pipefail
           timestamp="$(date +%Y%m%d%H%M%S)"
-          branch="codex/agent3/issue-${ISSUE_NUMBER}-${timestamp}"
+          branch="codex/agent1/issue-${ISSUE_NUMBER}-${timestamp}"
           echo "BRANCH_NAME=${branch}" >> "$GITHUB_ENV"
           git config user.name "codex-bot"
           git config user.email "codex-bot@users.noreply.github.com"
           git checkout -b "${branch}"
-          git add -A ':!PR_BODY.md' ':!PROMPT.md'
-          git commit -m "feat(agent3): resolve issue #${ISSUE_NUMBER}"
+          git add -A
+          git restore --staged ProjectBeacon/PR_BODY.md ProjectBeacon/PROMPT.md || true
+          git commit -m "feat(agent1): resolve issue #${ISSUE_NUMBER}"
           git push -u origin "${branch}"
 
       - name: Create PR
@@ -155,10 +156,10 @@ jobs:
         run: |
           set -euo pipefail
           issue_title="$(gh issue view "$ISSUE_NUMBER" --json title --jq '.title')"
-          pr_title="[agent:agent3] Fixes #${ISSUE_NUMBER} - ${issue_title}"
+          pr_title="[agent:agent1] Fixes #${ISSUE_NUMBER} - ${issue_title}"
           gh pr create \
             --base main \
             --head "${BRANCH_NAME}" \
             --title "${pr_title}" \
-            --body-file PR_BODY.md \
-            --label "agent:agent3"
+            --body-file ProjectBeacon/PR_BODY.md \
+            --label "agent:agent1"

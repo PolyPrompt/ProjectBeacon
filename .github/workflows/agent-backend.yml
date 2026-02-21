@@ -34,7 +34,7 @@ jobs:
           SKIP_IN_PROGRESS_CHECK: ${{ inputs.test_mode == 'true' && 'true' || 'false' }}
         run: |
           set -euo pipefail
-          bash .github/scripts/pick_issue.sh
+          bash ProjectBeacon/.github/scripts/pick_issue.sh
 
       - name: Exit if no eligible issue
         if: steps.pick.outputs.ISSUE_NUMBER == ''
@@ -60,26 +60,26 @@ jobs:
             echo "${ISSUE_BODY}"
             echo
             echo "Execution requirements:"
-            echo "- Follow AGENTS.md repository rules."
+            echo "- Follow AGENTS.md repository rules from ProjectBeacon/AGENTS.md."
             echo "- Follow TASK-agent2.md ownership/boundaries/handoff requirements."
             echo "- Produce code changes for this issue only."
             echo "- Run relevant verification commands from AGENTS.md."
-            echo "- Create/update PR_BODY.md in repo root with sections: Summary, Issue link, Tests run, Risk/rollback, Checklist."
+            echo "- Create/update ProjectBeacon/PR_BODY.md with sections: Summary, Issue link, Tests run, Risk/rollback, Checklist."
             echo "- Include 'Fixes #${ISSUE_NUMBER}' in the title and PR_BODY.md."
             echo
             echo "Repository policy:"
-            cat AGENTS.md
+            cat ProjectBeacon/AGENTS.md
             echo
             echo "Task agent profile:"
-            cat TASK-agent2.md
-          } > PROMPT.md
+            cat ProjectBeacon/TASK-agent2.md
+          } > ProjectBeacon/PROMPT.md
 
       - name: Run Codex
         if: steps.pick.outputs.ISSUE_NUMBER != ''
         uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          prompt-file: PROMPT.md
+          prompt-file: ProjectBeacon/PROMPT.md
           safety-strategy: drop-sudo
           sandbox: workspace-write
 
@@ -88,7 +88,7 @@ jobs:
         id: changes
         run: |
           set -euo pipefail
-          if [[ -n "$(git status --porcelain -- . ':(exclude)PR_BODY.md' ':(exclude)PROMPT.md')" ]]; then
+          if [[ -n "$(git status --porcelain -- ProjectBeacon ':(exclude)ProjectBeacon/PR_BODY.md' ':(exclude)ProjectBeacon/PROMPT.md')" ]]; then
             echo "HAS_CHANGES=true" >> "$GITHUB_OUTPUT"
           else
             echo "HAS_CHANGES=false" >> "$GITHUB_OUTPUT"
@@ -102,7 +102,7 @@ jobs:
           MESSAGE: "Automation run completed but no changes were produced."
         run: |
           set -euo pipefail
-          bash .github/scripts/comment_issue.sh
+          bash ProjectBeacon/.github/scripts/comment_issue.sh
 
       - name: Ensure PR body exists
         if: steps.pick.outputs.ISSUE_NUMBER != '' && steps.changes.outputs.HAS_CHANGES == 'true'
@@ -110,7 +110,7 @@ jobs:
           ISSUE_NUMBER: ${{ steps.pick.outputs.ISSUE_NUMBER }}
         run: |
           set -euo pipefail
-          if [[ ! -f PR_BODY.md ]]; then
+          if [[ ! -f ProjectBeacon/PR_BODY.md ]]; then
             printf '%s\n' \
               'Summary' \
               "- Implemented automated changes for issue #${ISSUE_NUMBER}." \
@@ -126,9 +126,9 @@ jobs:
               '' \
               'Checklist' \
               '- [x] Changes align with issue requirements.' \
-              '- [ ] Add or update tests if needed.' > PR_BODY.md
+              '- [ ] Add or update tests if needed.' > ProjectBeacon/PR_BODY.md
           fi
-          grep -q "Fixes #${ISSUE_NUMBER}" PR_BODY.md || echo "\nFixes #${ISSUE_NUMBER}" >> PR_BODY.md
+          grep -q "Fixes #${ISSUE_NUMBER}" ProjectBeacon/PR_BODY.md || echo "\nFixes #${ISSUE_NUMBER}" >> ProjectBeacon/PR_BODY.md
 
       - name: Commit and push branch
         if: steps.pick.outputs.ISSUE_NUMBER != '' && steps.changes.outputs.HAS_CHANGES == 'true'
@@ -142,7 +142,8 @@ jobs:
           git config user.name "codex-bot"
           git config user.email "codex-bot@users.noreply.github.com"
           git checkout -b "${branch}"
-          git add -A ':!PR_BODY.md' ':!PROMPT.md'
+          git add -A
+          git restore --staged ProjectBeacon/PR_BODY.md ProjectBeacon/PROMPT.md || true
           git commit -m "feat(agent2): resolve issue #${ISSUE_NUMBER}"
           git push -u origin "${branch}"
 
@@ -160,5 +161,5 @@ jobs:
             --base main \
             --head "${BRANCH_NAME}" \
             --title "${pr_title}" \
-            --body-file PR_BODY.md \
+            --body-file ProjectBeacon/PR_BODY.md \
             --label "agent:agent2"
