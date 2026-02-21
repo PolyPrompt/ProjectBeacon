@@ -115,6 +115,21 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+### Auth Environment
+
+Copy `.env.example` to `.env.local` and set Clerk keys:
+
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`
+- `NEXT_PUBLIC_CLERK_SIGN_IN_URL` (default `/sign-in`)
+- `NEXT_PUBLIC_CLERK_SIGN_UP_URL` (default `/sign-up`)
+
+### Route Protection
+
+- `/projects/**` requires an authenticated Clerk session and redirects unauthenticated users to sign-in.
+- `/api/**` requires authentication by default.
+- Public API exceptions are limited to `/api/public/**` and `/api/health/**`.
+
 ## Planning Pipeline APIs (Agent 2)
 
 The backend now includes MVP planning endpoints for the AI workflow:
@@ -135,13 +150,9 @@ Status transitions are deterministic and enforced server-side:
 
 Dependency edges are cycle-validated on generation and replan.
 
-## Local Auth Convention (Interim)
+## Local Auth Convention
 
-Until Clerk bootstrap wiring is fully integrated, authenticated API calls should include one of these headers:
-
-- `x-user-id`
-- `x-projectbeacon-user-id`
-- `x-clerk-user-id`
+Server components and route handlers should read auth from Clerk helpers (`@clerk/nextjs/server`) or shared wrappers in `lib/auth/clerk-auth.ts`. Avoid ad-hoc header-based auth.
 
 ## Multi-Agent GitHub Automation
 
