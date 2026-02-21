@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   review:
-    if: contains(github.event.pull_request.labels.*.name, 'agent:agent1') || contains(github.event.pull_request.labels.*.name, 'agent:agent2') || contains(github.event.pull_request.labels.*.name, 'agent:agent3')
+    if: contains(github.event.pull_request.labels.*.name, 'agent1') || contains(github.event.pull_request.labels.*.name, 'agent2') || contains(github.event.pull_request.labels.*.name, 'agent3')
     runs-on: ${{ vars.USE_SELF_HOSTED_RUNNERS == 'true' && fromJSON('["self-hosted","agent-reviewer"]') || 'ubuntu-latest' }}
     steps:
       - name: Checkout PR branch

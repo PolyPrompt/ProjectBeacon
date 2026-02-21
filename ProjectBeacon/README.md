@@ -134,9 +134,9 @@ This repo includes scheduled Codex builder agents and a PR reviewer agent:
 Create these labels exactly:
 
 - `status:ready`
-- `agent:agent1`
-- `agent:agent2`
-- `agent:agent3`
+- `agent1`
+- `agent2`
+- `agent3`
 
 ### Issue Dependency Format
 

@@ -30,7 +30,7 @@ jobs:
         id: pick
         env:
           GH_TOKEN: ${{ github.token }}
-          AGENT_LABEL: agent:agent3
+          AGENT_LABEL: agent3
           SKIP_IN_PROGRESS_CHECK: ${{ inputs.test_mode == 'true' && 'true' || 'false' }}
         run: |
           set -euo pipefail
@@ -40,7 +40,7 @@ jobs:
         if: steps.pick.outputs.ISSUE_NUMBER == ''
         run: |
           set -euo pipefail
-          echo "No eligible issue found for agent:agent3."
+          echo "No eligible issue found for agent3."
 
       - name: Build prompt from issue + task profile
         if: steps.pick.outputs.ISSUE_NUMBER != ''
@@ -156,10 +156,10 @@ jobs:
         run: |
           set -euo pipefail
           issue_title="$(gh issue view "$ISSUE_NUMBER" --json title --jq '.title')"
-          pr_title="[agent:agent3] Fixes #${ISSUE_NUMBER} - ${issue_title}"
+          pr_title="[agent3] Fixes #${ISSUE_NUMBER} - ${issue_title}"
           gh pr create \
             --base main \
             --head "${BRANCH_NAME}" \
             --title "${pr_title}" \
             --body-file ProjectBeacon/PR_BODY.md \
-            --label "agent:agent3"
+            --label "agent3"
