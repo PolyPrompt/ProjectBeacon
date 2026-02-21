@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { ShareEmailForm } from "@/components/projects/share-email-form";
+
 type ProjectResponse = {
   id: string;
   name: string;
@@ -166,6 +168,10 @@ export function ProjectForm() {
                 >
                   Copy link
                 </button>
+                <ShareEmailForm
+                  projectId={project.id}
+                  joinUrl={joinLink.joinUrl}
+                />
               </div>
             )}
           </div>
