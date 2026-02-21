@@ -3,6 +3,7 @@
 This document is the shared API contract across agents. Freeze request/response shapes here before heavy implementation.
 
 ## Contract Rules
+
 - Use UTC ISO timestamps in responses.
 - Use snake_case in DB, camelCase in API DTOs.
 - Validate all payloads with Zod at API boundary.
@@ -22,11 +23,13 @@ This document is the shared API contract across agents. Freeze request/response 
 - Permission failures must return `403`.
 
 ## Ownership Map
+
 - Agent 1: foundation + CRUD endpoints
 - Agent 2: AI/planning/assignment/replan/reassignment endpoints
 - Agent 3: UI integration against frozen contracts
 
 ## Status Model
+
 - Project planning status: `draft -> locked -> assigned`
 - Task status: `todo | in_progress | blocked | done`
 
@@ -35,6 +38,13 @@ This document is the shared API contract across agents. Freeze request/response 
 ```ts
 export type ProjectPlanningStatus = "draft" | "locked" | "assigned";
 export type TaskStatus = "todo" | "in_progress" | "blocked" | "done";
+export type ProjectRole = "admin" | "user";
+export type ProjectSettingsCapabilities = {
+  canShare: boolean;
+  canLeave: boolean;
+  canEditProject: boolean;
+  canDeleteProject: boolean;
+};
 
 export type ApiError = {
   error: {
@@ -45,17 +55,25 @@ export type ApiError = {
 };
 ```
 
+Role compatibility note:
+
+- API DTOs must use `admin | user`.
+- DB adapters may still map legacy values (`owner | member`) to API role names.
+
 ## Agent 1 Contracts
 
 ## `POST /api/users/bootstrap`
+
 Purpose: ensure local `users` row exists/updated from Clerk identity.
 
 Request:
+
 ```json
 {}
 ```
 
 Response `200`:
+
 ```json
 {
   "userId": "uuid",
@@ -66,7 +84,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects`
+
 Request:
+
 ```json
 {
   "name": "CS Capstone",
@@ -76,6 +96,7 @@ Request:
 ```
 
 Response `201`:
+
 ```json
 {
   "id": "p_123",
@@ -88,7 +109,9 @@ Response `201`:
 ```
 
 ## `GET /api/projects/:projectId`
+
 Response `200`:
+
 ```json
 {
   "id": "p_123",
@@ -101,7 +124,9 @@ Response `200`:
 ```
 
 ## `PATCH /api/projects/:projectId`
+
 Request:
+
 ```json
 {
   "name": "Updated Name",
@@ -113,7 +138,9 @@ Request:
 Response `200`: same shape as `GET /api/projects/:projectId`.
 
 ## `GET /api/projects/:projectId/members`
+
 Response `200`:
+
 ```json
 {
   "members": [
@@ -121,32 +148,126 @@ Response `200`:
       "userId": "uuid",
       "name": "Ada Lovelace",
       "email": "ada@school.edu",
-      "role": "owner"
+      "role": "admin"
     }
   ]
 }
 ```
 
 ## `POST /api/projects/:projectId/members`
+
 Request:
+
 ```json
 {
   "userId": "uuid",
-  "role": "member"
+  "role": "user"
 }
 ```
 
 Response `201`:
+
 ```json
 {
   "projectId": "p_123",
   "userId": "uuid",
-  "role": "member"
+  "role": "user"
+}
+```
+
+## `GET /api/projects/:projectId/settings`
+
+Response `200`:
+
+```json
+{
+  "projectId": "p_123",
+  "role": "admin",
+  "capabilities": {
+    "canShare": true,
+    "canLeave": true,
+    "canEditProject": true,
+    "canDeleteProject": true
+  }
+}
+```
+
+## `PATCH /api/projects/:projectId/settings`
+
+Request:
+
+```json
+{
+  "name": "Updated Name",
+  "deadline": "2026-03-25T00:00:00.000Z"
+}
+```
+
+Response `200`:
+
+```json
+{
+  "id": "p_123",
+  "name": "Updated Name",
+  "description": "Team project details",
+  "deadline": "2026-03-25T00:00:00.000Z",
+  "ownerUserId": "uuid",
+  "planningStatus": "draft"
+}
+```
+
+## `DELETE /api/projects/:projectId/settings`
+
+Response `200`:
+
+```json
+{
+  "deleted": true,
+  "projectId": "p_123"
+}
+```
+
+## `POST /api/projects/:projectId/leave`
+
+Response `200`:
+
+```json
+{
+  "left": true,
+  "projectId": "p_123",
+  "userId": "uuid"
+}
+```
+
+Failure `409` when last admin attempts to leave:
+
+```json
+{
+  "error": {
+    "code": "LAST_ADMIN_LEAVE_FORBIDDEN",
+    "message": "The last project admin cannot leave before assigning another admin.",
+    "details": null
+  }
+}
+```
+
+## `POST /api/projects/:projectId/share-link`
+
+Response `200`:
+
+```json
+{
+  "projectId": "p_123",
+  "token": "<signed-token>",
+  "expiresAt": "2026-03-01T00:00:00.000Z",
+  "joinUrl": "https://app.example.com/join/<signed-token>"
 }
 ```
 
 ## `GET /api/me/skills`
+
 Response `200`:
+
 ```json
 {
   "skills": [
@@ -161,7 +282,9 @@ Response `200`:
 ```
 
 ## `POST /api/me/skills`
+
 Request:
+
 ```json
 {
   "skillName": "React",
@@ -170,6 +293,7 @@ Request:
 ```
 
 Response `200`:
+
 ```json
 {
   "id": "us_001",
@@ -180,7 +304,9 @@ Response `200`:
 ```
 
 ## `GET /api/projects/:projectId/skills`
+
 Response `200`:
+
 ```json
 {
   "skills": [
@@ -196,7 +322,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/skills/import-profile`
+
 Request:
+
 ```json
 {
   "userId": "uuid"
@@ -204,6 +332,7 @@ Request:
 ```
 
 Response `200`:
+
 ```json
 {
   "imported": 4,
@@ -212,9 +341,11 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/documents`
+
 Request: multipart upload flow or presigned upload finalize payload.
 
 Response `201`:
+
 ```json
 {
   "document": {
@@ -223,17 +354,132 @@ Response `201`:
     "fileName": "requirements.pdf",
     "mimeType": "application/pdf",
     "sizeBytes": 482193,
-    "storageKey": "projects/p_123/docs/doc_123-requirements.pdf",
     "uploadedByUserId": "uuid",
+    "isPublic": false,
+    "usedForPlanning": true,
     "createdAt": "2026-02-21T00:00:00.000Z"
   }
+}
+```
+
+## `GET /api/projects/:projectId/documents`
+
+Response `200`:
+
+```json
+{
+  "documents": [
+    {
+      "id": "doc_123",
+      "projectId": "p_123",
+      "fileName": "requirements.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 482193,
+      "uploadedByUserId": "uuid",
+      "isPublic": false,
+      "usedForPlanning": true,
+      "createdAt": "2026-02-21T00:00:00.000Z"
+    }
+  ],
+  "role": "user"
+}
+```
+
+## `DELETE /api/projects/:projectId/documents`
+
+Request:
+
+```json
+{
+  "documentId": "doc_123"
+}
+```
+
+Response `200`:
+
+```json
+{
+  "deleted": true,
+  "documentId": "doc_123"
+}
+```
+
+## `GET /api/projects/:projectId/documents/:documentId/access`
+
+Response `200`:
+
+```json
+{
+  "documentId": "doc_123",
+  "isPublic": false,
+  "assignedUserIds": ["uuid"],
+  "canManage": true
+}
+```
+
+## `PATCH /api/projects/:projectId/documents/:documentId/access`
+
+Request:
+
+```json
+{
+  "isPublic": false,
+  "assignedUserIds": ["uuid"]
+}
+```
+
+Response `200`:
+
+```json
+{
+  "updated": true,
+  "documentId": "doc_123",
+  "isPublic": false,
+  "assignedUserIds": ["uuid"]
+}
+```
+
+## `GET /api/projects/:projectId/documents/:documentId/view`
+
+Response `200`:
+
+```json
+{
+  "documentId": "doc_123",
+  "fileName": "requirements.pdf",
+  "mimeType": "application/pdf",
+  "signedUrl": "https://<supabase-signed-url>",
+  "expiresInSeconds": 120
+}
+```
+
+Cache policy: `Cache-Control: no-store, max-age=0`
+
+## `GET /api/projects/:projectId/documents/used-in-planning`
+
+Response `200`:
+
+```json
+{
+  "documents": [
+    {
+      "id": "doc_123",
+      "projectId": "p_123",
+      "fileName": "requirements.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 482193,
+      "createdAt": "2026-02-21T00:00:00.000Z"
+    }
+  ]
 }
 ```
 
 ## Agent 2 Contracts
 
 ## `POST /api/projects/:projectId/context/confidence`
+
 Response `200`:
+
 ```json
 {
   "confidence": 72,
@@ -245,7 +491,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/context/clarify`
+
 Response `200`:
+
 ```json
 {
   "questions": [
@@ -256,7 +504,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/context/clarify-response`
+
 Request:
+
 ```json
 {
   "question": "What are the required deliverables?",
@@ -265,6 +515,7 @@ Request:
 ```
 
 Response `200`:
+
 ```json
 {
   "confidence": 84,
@@ -276,9 +527,11 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/ai/generate-tasks`
+
 Behavior: generates draft task graph only; leaves assignees null.
 
 Response `200`:
+
 ```json
 {
   "tasks": [
@@ -315,7 +568,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/planning/lock`
+
 Response `200`:
+
 ```json
 {
   "projectId": "p_123",
@@ -324,7 +579,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/assignments/run`
+
 Response `200`:
+
 ```json
 {
   "projectId": "p_123",
@@ -334,7 +591,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/replan`
+
 Response `200`:
+
 ```json
 {
   "projectId": "p_123",
@@ -345,7 +604,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/task-reassignment-requests`
+
 Request:
+
 ```json
 {
   "requestType": "swap",
@@ -357,6 +618,7 @@ Request:
 ```
 
 Response `201`:
+
 ```json
 {
   "id": "rr_001",
@@ -365,7 +627,9 @@ Response `201`:
 ```
 
 ## `POST /api/task-reassignment-requests/:requestId/respond`
+
 Request:
+
 ```json
 {
   "action": "accept"
@@ -373,6 +637,7 @@ Request:
 ```
 
 Response `200`:
+
 ```json
 {
   "id": "rr_001",
@@ -380,13 +645,204 @@ Response `200`:
 }
 ```
 
+## `GET /api/projects/:projectId/tasks/my`
+
+Response `200`:
+
+```json
+{
+  "myTasks": [
+    {
+      "id": "t_123",
+      "title": "Build Auth Middleware",
+      "description": "Implement protected route checks",
+      "status": "todo",
+      "softDeadline": "2026-03-01T00:00:00.000Z",
+      "difficultyPoints": 3
+    }
+  ]
+}
+```
+
+Notes:
+
+- Returns only tasks assigned to the authenticated user in this project.
+- Sorted by `softDeadline` ascending with `null` deadlines last.
+
+## `GET /api/projects/:projectId/dashboard`
+
+Response `200`:
+
+```json
+{
+  "myTasks": [
+    {
+      "id": "t_123",
+      "title": "Build Auth Middleware",
+      "description": "Implement protected route checks",
+      "status": "todo",
+      "softDeadline": "2026-03-01T00:00:00.000Z",
+      "difficultyPoints": 3
+    }
+  ],
+  "finalDeadlineCountdownHours": 480,
+  "nextMilestoneCountdownHours": 36,
+  "teamStatus": {
+    "todo": 5,
+    "inProgress": 2,
+    "blocked": 1,
+    "done": 3
+  }
+}
+```
+
+Notes:
+
+- `nextMilestoneCountdownHours` is computed from the earliest non-`done` task with non-null due date.
+- `finalDeadlineCountdownHours` and `nextMilestoneCountdownHours` are clamped to `0` when overdue.
+- Non-members must receive `403`.
+
+## `GET /api/projects/:projectId/tasks/:taskId/detail`
+
+Response `200`:
+
+```json
+{
+  "id": "t_123",
+  "title": "Build Auth Middleware",
+  "description": "Implement protected route checks",
+  "softDeadline": "2026-03-01T00:00:00.000Z",
+  "assignmentReasoning": "Ada Lovelace was assigned due to strongest skill coverage in React (4/5), Auth (5/5).",
+  "dependencyTaskIds": ["t_001", "t_004"],
+  "timelineTaskUrl": "/projects/p_123/timeline?taskId=t_123",
+  "timelinePlacement": {
+    "phase": "middle",
+    "sequenceIndex": 4,
+    "totalTasks": 10
+  }
+}
+```
+
+Notes:
+
+- `dependencyTaskIds` are direct prerequisites (`task_dependencies.depends_on_task_id`) for the selected task.
+- `timelinePlacement` uses dependency-aware deterministic ordering (tie-break by due date, then created time, then id).
+
+## `GET /api/projects/:projectId/workflow/timeline/:taskId`
+
+Response `200`:
+
+```json
+{
+  "taskId": "t_123",
+  "timelinePlacement": {
+    "phase": "middle",
+    "sequenceIndex": 4,
+    "totalTasks": 10
+  },
+  "dependencyTiming": {
+    "dependencyTaskIds": ["t_001", "t_004"],
+    "dependentTaskIds": ["t_125"],
+    "earliestDependencyDeadline": "2026-02-25T00:00:00.000Z",
+    "latestDependencyDeadline": "2026-02-27T00:00:00.000Z",
+    "dueDatePlacement": "mid"
+  }
+}
+```
+
+Notes:
+
+- `dueDatePlacement` values: `early | mid | late | unscheduled`.
+- Non-members must receive `403`.
+
+## `GET /api/projects/:projectId/workflow/board`
+
+Response `200`:
+
+```json
+{
+  "capability": {
+    "role": "admin",
+    "canManageProject": true,
+    "canEditWorkflow": true
+  },
+  "columns": [
+    {
+      "userId": "u_1",
+      "name": "Ada Lovelace",
+      "email": "ada@school.edu",
+      "role": "admin",
+      "tasks": [
+        {
+          "id": "t_123",
+          "title": "Build Auth Middleware",
+          "status": "todo",
+          "softDeadline": "2026-03-01T00:00:00.000Z",
+          "difficultyPoints": 3,
+          "phase": "middle"
+        }
+      ]
+    }
+  ],
+  "unassigned": []
+}
+```
+
+Notes:
+
+- `columns` contains one column per project member.
+- `phase` values: `beginning | middle | end`.
+- Non-members must receive `403`.
+
+## `GET /api/projects/:projectId/workflow/timeline`
+
+Response `200`:
+
+```json
+{
+  "capability": {
+    "role": "user",
+    "canManageProject": false,
+    "canEditWorkflow": false
+  },
+  "tasks": [
+    {
+      "id": "t_123",
+      "title": "Build Auth Middleware",
+      "status": "todo",
+      "softDeadline": "2026-03-01T00:00:00.000Z",
+      "difficultyPoints": 3,
+      "assigneeUserId": "u_1",
+      "sequenceIndex": 4,
+      "totalTasks": 10,
+      "phase": "middle",
+      "dueDatePlacement": "mid"
+    }
+  ],
+  "edges": [
+    {
+      "taskId": "t_123",
+      "dependsOnTaskId": "t_001"
+    }
+  ]
+}
+```
+
+Notes:
+
+- Timeline order is dependency-aware and deterministic.
+- `dueDatePlacement` values: `early | mid | late | unscheduled`.
+- Non-members must receive `403`.
+
 ## Agent 3 Integration Notes
+
 - Build UI to these contracts; do not assume unstated fields.
 - Gate generation on clarification readiness.
 - Show planning state badges: `draft`, `locked`, `assigned`.
 - Keep assignment controls disabled unless status allows action.
 
 ## Change Control
+
 - Any contract change requires:
   1. Update this file first.
   2. Add entry to `DECISIONS.md` with rationale.
