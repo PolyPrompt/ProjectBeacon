@@ -60,7 +60,11 @@ export function getServiceSupabaseClient() {
 export function getAnonSupabaseClient() {
   const settings = readSupabaseSettings();
 
-  return createClient(settings.url, settings.anonKey || settings.serviceRoleKey, {
-    auth: authOptions,
-  });
+  return createClient(
+    settings.url,
+    settings.anonKey || settings.serviceRoleKey,
+    {
+      auth: authOptions,
+    },
+  );
 }

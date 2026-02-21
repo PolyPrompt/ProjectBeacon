@@ -17,7 +17,9 @@ type ProjectMembershipRecord = {
   role: string;
 };
 
-function toProjectMembership(record: ProjectMembershipRecord): ProjectMembership {
+function toProjectMembership(
+  record: ProjectMembershipRecord,
+): ProjectMembership {
   return {
     projectId: record.project_id,
     userId: record.user_id,
