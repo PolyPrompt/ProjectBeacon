@@ -506,3 +506,25 @@
   - `npm run format:check` => fails due pre-existing repository-wide docs/task formatting drift outside API scope
 - Stop reason:
   - No actionable `agent2` issues remain in `status:ready`.
+
+## 2026-02-21T23:05:32Z - PB-015 Milestone (Agent3)
+- Issue: `#17` `[PB-015] Project Dashboard Shell`.
+- Completed:
+  - Added server-rendered dashboard view model for project summary, members, tasks, and dependency edges.
+  - Added dashboard shell components:
+    - `project-summary-card`
+    - `project-members-list`
+    - `project-task-list`
+    - `dependency-preview`
+  - Updated `/` redirect behavior for signed-in users to send them to their most recent project dashboard when available, else `/projects/new`.
+- Files changed:
+  - `app/page.tsx`
+  - `app/projects/[projectId]/page.tsx`
+  - `components/dashboard/project-summary-card.tsx`
+  - `components/dashboard/project-members-list.tsx`
+  - `components/dashboard/project-task-list.tsx`
+  - `components/dashboard/dependency-preview.tsx`
+- Commands and results:
+  - `npx prettier --check app/page.tsx app/projects/[projectId]/page.tsx components/dashboard/project-summary-card.tsx components/dashboard/project-members-list.tsx components/dashboard/project-task-list.tsx components/dashboard/dependency-preview.tsx` -> pass
+  - `npx eslint app/page.tsx app/projects/[projectId]/page.tsx components/dashboard/project-summary-card.tsx components/dashboard/project-members-list.tsx components/dashboard/project-task-list.tsx components/dashboard/dependency-preview.tsx` -> pass
+  - `npm run build` -> pass
