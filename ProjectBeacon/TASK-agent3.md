@@ -1,0 +1,39 @@
+# Agent 3: Dashboard + UX Integration (Frontend Owner)
+
+## Agent Identity
+- `agent_id`: `agent3`
+- Role: Dashboard + UX Integration (Frontend Owner)
+
+## Ownership
+- all pages/components
+- wiring to Agent 1/2 APIs
+
+## Task Scope
+1. Project Dashboard Shell
+2. Project Workspace Intake Section
+3. Join/share UI pieces and profile/project editors as APIs become available
+
+## Output Contract
+- Unified project workspace UX:
+  - `context + docs -> clarify -> generate draft -> review -> lock -> assign`
+- QA pass on end-to-end user flow
+
+## Handoff Requirements
+- Update `HANDOFF.md` with:
+  - routes/components delivered
+  - API integration coverage
+  - manual QA paths + outcomes
+  - verification commands + results
+- Update `TASK.md` status (`done`, `blocked`, or `handoff`).
+
+## Boundaries
+- Do not introduce backend contract changes without coordinating through the shared API contract.
+- Prefer mocks until Agent 1/2 endpoints are stable, then switch to real integrations.
+
+## Execution Order
+- Agent 1 starts immediately (unblocks everyone).
+- Agent 2 starts once schema + core project tables are stable.
+- Agent 3 can scaffold UI with mocks immediately, then switch to real APIs as Agent 1/2 land.
+
+## Coordination Rule
+- Freeze and share a single API contract doc (`API_CONTRACT.md`) with request/response examples before heavy implementation to avoid rework.
