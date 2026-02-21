@@ -115,6 +115,28 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+## Dashboard and Workspace (Agent 3 MVP)
+
+- `/` now redirects to `/projects/demo-project`.
+- `/projects/[projectId]` renders the MVP dashboard shell:
+  - project summary
+  - members list
+  - task list
+  - dependency preview
+- The same page includes a guided planning workspace flow:
+  1. add/update context text
+  2. upload docs
+  3. run clarification checks/questions
+  4. generate draft tasks
+  5. review/edit draft tasks
+  6. lock and assign
+
+Implementation note:
+
+- UI is wired to frozen API contract endpoints where available.
+- Fallback scaffold behavior only activates when endpoints are unavailable/network-failing, so normal API validation errors stay visible.
+- Clarification includes a local mock Q&A progression in fallback mode so `clarify -> generate` remains testable before backend readiness.
+
 ## Multi-Agent GitHub Automation
 
 This repo includes scheduled Codex builder agents and a PR reviewer agent:
