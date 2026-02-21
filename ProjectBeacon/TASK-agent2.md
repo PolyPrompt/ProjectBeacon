@@ -29,7 +29,7 @@
   - status transition rules
   - dependency/replan validation behavior
   - verification commands + results
-- Update `TASK.md` status (`done`, `blocked`, or `handoff`).
+- Update the linked GitHub Issue status (`done`, `blocked`, or `handoff`) and mirror key notes in `HANDOFF.md`.
 
 ## Boundaries
 - Depend on Agent 1 schema/contracts; do not rewrite stable DB primitives without coordination.

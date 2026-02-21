@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Upload Project Specs - Project Planner AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#622faf",
+                        "background-light": "#f7f6f8",
+                        "background-dark": "#0a0a0a",
+                        "surface-dark": "#1a1a1a",
+                        "border-dark": "#2d2638",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex flex-col min-h-screen">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between border-b border-border-dark px-6 py-4 bg-surface-dark/50 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-primary">
+<span class="material-symbols-outlined text-3xl">deployed_code</span>
+<h2 class="text-slate-100 text-lg font-bold leading-tight tracking-tight">Project Planner AI</h2>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-400 hover:text-primary transition-colors text-sm font-medium" href="#">Dashboard</a>
+<a class="text-slate-100 text-sm font-medium border-b-2 border-primary pb-1" href="#">Upload</a>
+<a class="text-slate-400 hover:text-primary transition-colors text-sm font-medium" href="#">Projects</a>
+<a class="text-slate-400 hover:text-primary transition-colors text-sm font-medium" href="#">Team</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+<input class="bg-surface-dark border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-1 focus:ring-primary w-64 text-slate-100 placeholder:text-slate-500" placeholder="Search projects..."/>
+</div>
+<button class="flex items-center justify-center size-10 rounded-full bg-primary/20 text-primary hover:bg-primary/30 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="size-10 rounded-full bg-primary flex items-center justify-center text-white font-bold border-2 border-border-dark" data-alt="User profile placeholder">
+                    JD
+                </div>
+</div>
+</header>
+<main class="flex-1 max-w-7xl mx-auto w-full p-6 md:p-10">
+<!-- Hero Header -->
+<div class="mb-10">
+<h1 class="text-4xl md:text-5xl font-extrabold text-slate-100 mb-4 tracking-tight">Upload Project Specs</h1>
+<p class="text-slate-400 text-lg max-w-2xl leading-relaxed">Provide the project requirements so the AI can start breaking down tasks, estimating timelines, and assigning roles.</p>
+</div>
+<!-- Bento Box Grid -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[minmax(180px,auto)]">
+<!-- Main Upload Card -->
+<div class="md:col-span-8 md:row-span-2 bg-surface-dark border border-border-dark rounded-xl p-8 flex flex-col justify-center items-center group hover:border-primary/50 transition-all duration-300 relative overflow-hidden">
+<div class="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+<div class="flex flex-col items-center text-center gap-6 relative z-10">
+<div class="size-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-5xl">upload_file</span>
+</div>
+<div>
+<h3 class="text-2xl font-bold text-slate-100 mb-2">Drag and drop files</h3>
+<p class="text-slate-400">PDF, DOCX, or TXT formats supported (Max 50MB)</p>
+</div>
+<div class="flex gap-4">
+<button class="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg font-bold transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
+<span class="material-symbols-outlined">add</span>
+                                Browse Files
+                            </button>
+</div>
+</div>
+<!-- Decorative dash border inside -->
+<div class="absolute inset-4 border-2 border-dashed border-slate-800 rounded-lg pointer-events-none group-hover:border-primary/30 transition-colors"></div>
+</div>
+<!-- Secondary Text Area Card -->
+<div class="md:col-span-4 md:row-span-3 bg-surface-dark border border-border-dark rounded-xl p-6 flex flex-col gap-4">
+<div class="flex items-center gap-3 text-primary">
+<span class="material-symbols-outlined">edit_note</span>
+<h3 class="font-bold text-slate-100">Paste Specifications</h3>
+</div>
+<textarea class="flex-1 bg-background-dark/50 border border-border-dark rounded-lg p-4 text-slate-300 focus:ring-1 focus:ring-primary focus:border-primary resize-none placeholder:text-slate-600 text-sm leading-relaxed" placeholder="Or paste your project specifications directly here... If you have a raw list of requirements or a brief, the AI can parse it from here."></textarea>
+
+</div>
+<!-- Recent Files Sidebar -->
+<div class="md:col-span-4 md:row-span-2 bg-surface-dark border border-border-dark rounded-xl p-6 overflow-hidden flex flex-col">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-3 text-primary">
+<span class="material-symbols-outlined">history</span>
+<h3 class="font-bold text-slate-100">Recent Uploads</h3>
+</div>
+<button class="text-xs text-primary hover:underline">View All</button>
+</div>
+<div class="space-y-4 overflow-y-auto pr-2">
+<div class="flex items-center gap-3 p-3 rounded-lg bg-background-dark/30 border border-border-dark/50 hover:bg-background-dark/50 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-slate-400">description</span>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-slate-200 truncate">Mobile_App_v2_Draft.pdf</p>
+<p class="text-xs text-slate-500 italic">Analyzed 2h ago</p>
+</div>
+<span class="material-symbols-outlined text-green-500 text-sm">check_circle</span>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-lg bg-background-dark/30 border border-border-dark/50 hover:bg-background-dark/50 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-slate-400">description</span>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-slate-200 truncate">E-commerce_Requirements.docx</p>
+<p class="text-xs text-slate-500 italic">Analyzed Yesterday</p>
+</div>
+<span class="material-symbols-outlined text-green-500 text-sm">check_circle</span>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-lg bg-background-dark/30 border border-border-dark/50 hover:bg-background-dark/50 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-slate-400 text-primary">sync</span>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-slate-200 truncate">Backend_Architecture.txt</p>
+<p class="text-xs text-primary italic">Processing...</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Stats / AI Tip Card -->
+<div class="md:col-span-4 md:row-span-1 bg-primary/10 border border-primary/20 rounded-xl p-6 flex flex-col justify-between relative overflow-hidden group">
+<div class="absolute -right-4 -bottom-4 size-24 bg-primary/20 rounded-full blur-2xl group-hover:bg-primary/40 transition-colors"></div>
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-2"><span class="material-symbols-outlined text-primary text-2xl">lightbulb</span><span class="text-xs font-bold text-primary uppercase tracking-widest">AI Pro Tip</span></div>
+<p class="text-sm text-slate-300 leading-snug">The more detailed your technical specs, the more accurate the generated timeline and task breakdown will be.</p>
+</div>
+</div>
+<!-- Bottom Action Card -->
+<div class="md:col-span-8 md:row-span-1 bg-surface-dark border border-border-dark rounded-xl p-6 flex items-center justify-between gap-6">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
+<span class="material-symbols-outlined">auto_fix_high</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-100">Ready to proceed?</h4>
+<p class="text-xs text-slate-500">Once your files are uploaded, click to begin the AI breakdown.</p>
+</div>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white px-10 py-4 rounded-xl font-bold transition-all shadow-xl shadow-primary/30 flex items-center gap-3 group">Start AI Delegation
+                        <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span></button>
+</div>
+</div>
+</main>
+<!-- Footer Info -->
+<footer class="px-10 py-6 border-t border-border-dark flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 text-xs">
+<div class="flex items-center gap-6">
+<span>© 2024 Project Planner AI</span>
+<a class="hover:text-primary" href="#">Privacy Policy</a>
+<a class="hover:text-primary" href="#">Terms of Service</a>
+</div>
+<div class="flex items-center gap-2">
+<span class="size-2 rounded-full bg-green-500 animate-pulse"></span>
+                AI Processing Engines Online
+            </div>
+</footer>
+</div>
+</body></html>
