@@ -122,18 +122,23 @@
 ### Commands Run + Results
 
 1. `set -a && source .env.local && set +a && npm test`
+
 - Result: initial run failed due Vitest mock hoisting in `tests/app/api/projects/route.test.ts`; fixed with `vi.hoisted`.
 
 2. `set -a && source .env.local && set +a && npm test`
+
 - Result: success, `4` test files passed, `10` tests passed.
 
 3. `set -a && source .env.local && set +a && npm run format:check`
+
 - Result: fails due pre-existing formatting drift in repo docs/spec files (`AGENTS.md`, `API_CONTRACT.md`, `DATAMODEL.md`, `docs/ui/*`, `TASK-agent*.md`); no new formatting failures in added test files.
 
 4. `set -a && source .env.local && set +a && npm run lint`
+
 - Result: success.
 
 5. `set -a && source .env.local && set +a && npm run build`
+
 - Result: success (Turbopack build compiled and generated all app routes).
 
 ### Blockers
@@ -147,3 +152,52 @@
 1. Open PR for `PB-017` test harness + unit tests and close issue `#28` on merge.
 2. Continue with `PB-018` (`#29`) route-level tests for members and skills.
 3. Continue with `PB-019` (`#30`) route-level tests for documents endpoint contract/error paths.
+
+---
+
+## Milestone Update (UTC: 2026-02-21T13:23:05Z)
+
+### Task IDs Completed
+
+- `PB-018` Agent1 unit tests for members + profile/project skills routes
+
+### Files Changed
+
+- `tests/app/api/projects-members-route.test.ts`
+- `tests/app/api/me-skills-route.test.ts`
+- `tests/app/api/project-skills-route.test.ts`
+- `tests/app/api/project-skills-import-profile-route.test.ts`
+- `HANDOFF.md`
+
+### Commands Run + Results
+
+1. `set -a && source .env.local && set +a && npm test`
+- Result: initial run failed (`7` failing tests) due invalid UUID fixtures; fixed test fixture IDs to RFC4122-valid values.
+
+2. `set -a && source .env.local && set +a && npm test`
+- Result: success, `8` files passed, `20` tests passed.
+
+3. `set -a && source .env.local && set +a && npm run format:check`
+- Result: fails on existing docs/spec formatting drift outside scope.
+
+4. `npx prettier tests/app/api/me-skills-route.test.ts tests/app/api/projects-members-route.test.ts HANDOFF.md --write`
+- Result: success (formatted touched files).
+
+5. `set -a && source .env.local && set +a && npm run format:check`
+- Result: still fails only on pre-existing docs/spec files.
+
+6. `set -a && source .env.local && set +a && npm run lint`
+- Result: success.
+
+7. `set -a && source .env.local && set +a && npm run build`
+- Result: success.
+
+### Blockers
+
+- No hard blocker for PB-018.
+- Repository-wide formatting drift outside this task keeps `npm run format:check` red.
+
+### Next Steps
+
+1. Open PB-018 PR and close issue `#29`.
+2. Execute PB-019 (`#30`) document route tests on the next stacked branch.
