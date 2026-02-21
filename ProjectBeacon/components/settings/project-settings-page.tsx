@@ -124,22 +124,20 @@ export function ProjectSettingsPage({
       }
 
       const payload = (await response.json()) as {
-        shareLink?: string;
-        url?: string;
+        joinUrl?: string;
       };
-      const nextShareLink =
-        payload.shareLink ??
-        payload.url ??
-        `${window.location.origin}/projects/${projectId}?invite=stub`;
-      setShareLink(nextShareLink);
+      if (!payload.joinUrl) {
+        throw new Error("Share-link response missing joinUrl.");
+      }
+
+      setShareLink(payload.joinUrl);
       setStatus("Share link generated.");
     } catch (shareError) {
-      const fallbackLink = `${window.location.origin}/projects/${projectId}?invite=scaffold`;
-      setShareLink(fallbackLink);
+      setShareLink(null);
       setStatus(
         shareError instanceof Error
-          ? `${shareError.message}. Showing fallback share link.`
-          : "Could not generate share link from API. Showing fallback share link.",
+          ? shareError.message
+          : "Could not generate share link from API.",
       );
     }
   }
