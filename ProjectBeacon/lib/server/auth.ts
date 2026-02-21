@@ -1,4 +1,4 @@
-import { jsonError } from "@/lib/server/errors";
+import { HttpError, jsonError } from "@/lib/server/errors";
 
 export type AuthUser = {
   userId: string;
@@ -8,7 +8,7 @@ const USER_HEADER_CANDIDATES = [
   "x-user-id",
   "x-projectbeacon-user-id",
   "x-clerk-user-id",
-];
+] as const;
 
 export function getAuthUserFromRequest(request: Request): AuthUser | null {
   for (const header of USER_HEADER_CANDIDATES) {
@@ -27,6 +27,15 @@ export function getAuthUserFromRequest(request: Request): AuthUser | null {
   }
 
   return null;
+}
+
+export function requireAuthenticatedUserId(request: Request): string {
+  const user = getAuthUserFromRequest(request);
+  if (!user) {
+    throw new HttpError(401, "UNAUTHENTICATED", "Authentication is required.");
+  }
+
+  return user.userId;
 }
 
 export function requireAuthUser(

@@ -405,3 +405,104 @@
   - `npm run build` -> pass
 - Blockers:
   - None.
+
+
+## 2026-02-21T20:58:29Z - Agent3 Runner Intake Result
+- Runner executed: `TASK2-agent3-runner.md`.
+- Role guard: `AGENT_ID=agent3` (pass, loaded from `.env.local`).
+- GitHub intake command:
+  - `gh issue list --state open --label agent3 --label status:ready --limit 200 --json number,title,labels,assignees,createdAt,url`
+  - Result: `[]` (no ready issues for `agent3`).
+- Outcome:
+  - No actionable Phase 2 `agent3` tasks could be started from issue intake.
+  - Stopped per runner loop rule (`no ready issues -> write final summary and stop`).
+- Files changed in this run:
+  - `HANDOFF.md`
+  - `HANDOFF.local.md`
+
+## 2026-02-21T21:08:31Z - PB-021 Milestone (Agent2)
+- Issue: `#43` `[PB-021] Dashboard Summary + My Tasks APIs (Soft Deadline Sorted)` (claimed, in progress to done path).
+- Completed:
+  - Added `GET /api/projects/:projectId/dashboard`.
+  - Added `GET /api/projects/:projectId/tasks/my`.
+  - Implemented dashboard read-model logic for:
+    - my-task sorting by soft deadline (`due_at` asc, nulls last),
+    - next milestone countdown (earliest non-`done` task with non-null `due_at`),
+    - final deadline countdown,
+    - team status aggregation (`todo/in_progress/blocked/done`).
+  - Added auth+membership guard utilities with stable API error format and role normalization (`owner/admin -> admin`, else `user`).
+  - Updated `API_CONTRACT.md` with new endpoint response shapes.
+- Verification:
+  - `npm run format:check` => fail due pre-existing repository-wide formatting drift in docs/task files and `HANDOFF.md` (non-PB-021 scope).
+  - `npm run lint` => pass.
+  - `npm run build` => pass.
+- Files changed:
+  - `app/api/projects/[projectId]/dashboard/route.ts`
+  - `app/api/projects/[projectId]/tasks/my/route.ts`
+  - `lib/dashboard/read-model.ts`
+  - `lib/server/auth.ts`
+  - `lib/server/env.ts`
+  - `lib/server/errors.ts`
+  - `lib/server/project-access.ts`
+  - `lib/server/supabase-rest.ts`
+  - `API_CONTRACT.md`
+  - `DECISIONS.md`
+
+## 2026-02-21T21:13:03Z - PB-022 Milestone (Agent2)
+- Issue: `#44` `[PB-022] Task Detail Modal and Task-Specific Timeline APIs` (claimed, in progress to done path).
+- Completed:
+  - Added `GET /api/projects/:projectId/tasks/:taskId/detail`.
+  - Added `GET /api/projects/:projectId/workflow/timeline/:taskId`.
+  - Implemented deterministic dependency-aware timeline placement helper with stable ordering.
+  - Implemented assignment reasoning helper using required skills and effective assignee skill levels (project override fallback to global profile).
+  - Updated `API_CONTRACT.md` and `DATAMODEL.md` with detail/timeline endpoint contracts and table mappings.
+- Verification:
+  - `npm run format:check` => fail due pre-existing repository-wide formatting drift in docs/task files and `HANDOFF.md`/`DECISIONS.md`.
+  - `npm run lint` => pass.
+  - `npm run build` => pass.
+- Files changed:
+  - `app/api/projects/[projectId]/tasks/[taskId]/detail/route.ts`
+  - `app/api/projects/[projectId]/workflow/timeline/[taskId]/route.ts`
+  - `lib/tasks/assignment-reasoning.ts`
+  - `lib/workflow/task-timeline-position.ts`
+  - `API_CONTRACT.md`
+  - `DATAMODEL.md`
+  - `DECISIONS.md`
+
+## 2026-02-21T21:16:19Z - PB-023 Milestone (Agent2)
+- Issue: `#45` `[PB-023] Workflow Board and Timeline Aggregate APIs` (claimed, in progress to done path).
+- Completed:
+  - Added `GET /api/projects/:projectId/workflow/board`.
+  - Added `GET /api/projects/:projectId/workflow/timeline`.
+  - Implemented workflow board read model with member-based columns, unassigned bucket, and dependency-aware phase tags.
+  - Implemented workflow timeline read model with ordered task flow, dependency edges, and due-date placement (`early|mid|late|unscheduled`).
+  - Added role-based capability flags in aggregate responses (`role`, `canManageProject`, `canEditWorkflow`).
+  - Updated `API_CONTRACT.md` and `DATAMODEL.md` mappings for aggregate workflow endpoints.
+- Verification:
+  - `npm run format:check` => fail due pre-existing repository-wide formatting drift in docs/task files and `HANDOFF.md`/`DECISIONS.md`.
+  - `npm run lint` => pass.
+  - `npm run build` => pass.
+- Files changed:
+  - `app/api/projects/[projectId]/workflow/board/route.ts`
+  - `app/api/projects/[projectId]/workflow/timeline/route.ts`
+  - `lib/workflow/board-view.ts`
+  - `lib/workflow/timeline-view.ts`
+  - `lib/server/project-access.ts`
+  - `API_CONTRACT.md`
+  - `DATAMODEL.md`
+  - `DECISIONS.md`
+
+## 2026-02-21T21:17:29Z - Agent2 Runner Final Summary
+- Runner executed: `TASK2-agent2-runner.md`.
+- Completed and handed off:
+  - `PB-021` -> PR `#55` (`status:handoff`)
+  - `PB-022` -> PR `#57` (`status:handoff`)
+  - `PB-023` -> PR `#58` (`status:handoff`)
+- Final queue check:
+  - `gh issue list --state open --label agent2 --label status:ready --limit 200 --json ...` => `[]`
+- Verification pattern across milestones:
+  - `npm run lint` => pass
+  - `npm run build` => pass
+  - `npm run format:check` => fails due pre-existing repository-wide docs/task formatting drift outside API scope
+- Stop reason:
+  - No actionable `agent2` issues remain in `status:ready`.

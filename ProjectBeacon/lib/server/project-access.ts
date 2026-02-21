@@ -1,4 +1,7 @@
+import { HttpError } from "@/lib/server/errors";
 import { selectSingle } from "@/lib/server/supabase-rest";
+
+export type ProjectRole = "admin" | "user";
 
 export type ProjectMemberRow = {
   id: string;
@@ -18,6 +21,28 @@ export type ProjectRow = {
   updated_at: string;
 };
 
+export function normalizeProjectRole(role: string): ProjectRole {
+  if (role === "owner" || role === "admin") {
+    return "admin";
+  }
+
+  return "user";
+}
+
+export function roleCapabilities(role: ProjectRole): {
+  role: ProjectRole;
+  canManageProject: boolean;
+  canEditWorkflow: boolean;
+} {
+  const isAdmin = role === "admin";
+
+  return {
+    role,
+    canManageProject: isAdmin,
+    canEditWorkflow: isAdmin,
+  };
+}
+
 export async function getProjectById(
   projectId: string,
 ): Promise<ProjectRow | null> {
@@ -36,4 +61,20 @@ export async function getProjectMembership(
     project_id: `eq.${projectId}`,
     user_id: `eq.${userId}`,
   });
+}
+
+export async function requireProjectMembership(
+  projectId: string,
+  userId: string,
+): Promise<{ role: ProjectRole; membership: ProjectMemberRow }> {
+  const membership = await getProjectMembership(projectId, userId);
+
+  if (!membership) {
+    throw new HttpError(403, "FORBIDDEN", "Project membership is required.");
+  }
+
+  return {
+    role: normalizeProjectRole(membership.role),
+    membership,
+  };
 }

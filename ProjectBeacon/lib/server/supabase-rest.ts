@@ -1,4 +1,5 @@
-import { getServerEnv } from "@/lib/server/env";
+import { getServerEnv, getSupabaseConfig } from "@/lib/server/env";
+import { HttpError } from "@/lib/server/errors";
 
 export class SupabaseRequestError extends Error {
   status: number;
@@ -20,6 +21,55 @@ type RequestOptions = {
   body?: unknown;
   prefer?: string;
 };
+
+function buildRestUrl(path: string): string {
+  const { url } = getSupabaseConfig();
+  const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
+  return `${url}/rest/v1/${normalizedPath}`;
+}
+
+function tryParseJson(text: string): unknown {
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
+}
+
+export async function supabaseRestGet<T>(path: string): Promise<T> {
+  const { apiKey } = getSupabaseConfig();
+
+  const response = await fetch(buildRestUrl(path), {
+    method: "GET",
+    headers: {
+      apikey: apiKey,
+      Authorization: `Bearer ${apiKey}`,
+      Accept: "application/json",
+    },
+    cache: "no-store",
+  });
+
+  const text = await response.text();
+  const payload = tryParseJson(text);
+
+  if (!response.ok) {
+    throw new HttpError(
+      502,
+      "UPSTREAM_DB_ERROR",
+      "Failed to read from project datastore.",
+      {
+        status: response.status,
+        body: payload,
+      },
+    );
+  }
+
+  return payload as T;
+}
 
 async function requestSupabase<T>(
   path: string,
@@ -54,7 +104,7 @@ async function requestSupabase<T>(
   });
 
   const text = await response.text();
-  const payload = text ? (JSON.parse(text) as unknown) : null;
+  const payload = tryParseJson(text);
 
   if (!response.ok) {
     throw new SupabaseRequestError(
@@ -120,7 +170,7 @@ export async function upsertRows<T, TInsert extends Record<string, unknown>>(
 ): Promise<T[]> {
   return requestSupabase<T[]>(table, {
     method: "POST",
-    prefer: `resolution=merge-duplicates,return=representation`,
+    prefer: "resolution=merge-duplicates,return=representation",
     query: {
       on_conflict: onConflict,
     },
