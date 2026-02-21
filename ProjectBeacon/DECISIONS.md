@@ -8,3 +8,16 @@
   - `lib/dashboard/read-model.ts`
   - `lib/server/project-access.ts`
   - `API_CONTRACT.md`
+
+## 2026-02-21T21:13:03Z
+- Decision: Use deterministic dependency-aware task ordering (Kahn topological sort with due-date/created-at/id tie-breakers) for task detail timeline placement.
+- Rationale: Task detail modal and timeline deep-link APIs need stable phase positioning across repeated reads, even when due dates collide or DAG edges are sparse.
+- Alternatives considered:
+  - Pure due-date sort without dependency graph awareness.
+  - Randomized tie-breaking on equal due dates.
+- Impact:
+  - `lib/workflow/task-timeline-position.ts`
+  - `app/api/projects/[projectId]/tasks/[taskId]/detail/route.ts`
+  - `app/api/projects/[projectId]/workflow/timeline/[taskId]/route.ts`
+  - `API_CONTRACT.md`
+  - `DATAMODEL.md`

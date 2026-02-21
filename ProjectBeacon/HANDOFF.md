@@ -38,3 +38,24 @@
   - `lib/server/supabase-rest.ts`
   - `API_CONTRACT.md`
   - `DECISIONS.md`
+
+## 2026-02-21T21:13:03Z - PB-022 Milestone (Agent2)
+- Issue: `#44` `[PB-022] Task Detail Modal and Task-Specific Timeline APIs` (claimed, in progress to done path).
+- Completed:
+  - Added `GET /api/projects/:projectId/tasks/:taskId/detail`.
+  - Added `GET /api/projects/:projectId/workflow/timeline/:taskId`.
+  - Implemented deterministic dependency-aware timeline placement helper with stable ordering.
+  - Implemented assignment reasoning helper using required skills and effective assignee skill levels (project override fallback to global profile).
+  - Updated `API_CONTRACT.md` and `DATAMODEL.md` with detail/timeline endpoint contracts and table mappings.
+- Verification:
+  - `npm run format:check` => fail due pre-existing repository-wide formatting drift in docs/task files and `HANDOFF.md`/`DECISIONS.md`.
+  - `npm run lint` => pass.
+  - `npm run build` => pass.
+- Files changed:
+  - `app/api/projects/[projectId]/tasks/[taskId]/detail/route.ts`
+  - `app/api/projects/[projectId]/workflow/timeline/[taskId]/route.ts`
+  - `lib/tasks/assignment-reasoning.ts`
+  - `lib/workflow/task-timeline-position.ts`
+  - `API_CONTRACT.md`
+  - `DATAMODEL.md`
+  - `DECISIONS.md`

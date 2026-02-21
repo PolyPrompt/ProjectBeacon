@@ -488,6 +488,59 @@ Notes:
 - `finalDeadlineCountdownHours` and `nextMilestoneCountdownHours` are clamped to `0` when overdue.
 - Non-members must receive `403`.
 
+## `GET /api/projects/:projectId/tasks/:taskId/detail`
+
+Response `200`:
+
+```json
+{
+  "id": "t_123",
+  "title": "Build Auth Middleware",
+  "description": "Implement protected route checks",
+  "softDeadline": "2026-03-01T00:00:00.000Z",
+  "assignmentReasoning": "Ada Lovelace was assigned due to strongest skill coverage in React (4/5), Auth (5/5).",
+  "dependencyTaskIds": ["t_001", "t_004"],
+  "timelineTaskUrl": "/projects/p_123/timeline?taskId=t_123",
+  "timelinePlacement": {
+    "phase": "middle",
+    "sequenceIndex": 4,
+    "totalTasks": 10
+  }
+}
+```
+
+Notes:
+
+- `dependencyTaskIds` are direct prerequisites (`task_dependencies.depends_on_task_id`) for the selected task.
+- `timelinePlacement` uses dependency-aware deterministic ordering (tie-break by due date, then created time, then id).
+
+## `GET /api/projects/:projectId/workflow/timeline/:taskId`
+
+Response `200`:
+
+```json
+{
+  "taskId": "t_123",
+  "timelinePlacement": {
+    "phase": "middle",
+    "sequenceIndex": 4,
+    "totalTasks": 10
+  },
+  "dependencyTiming": {
+    "dependencyTaskIds": ["t_001", "t_004"],
+    "dependentTaskIds": ["t_125"],
+    "earliestDependencyDeadline": "2026-02-25T00:00:00.000Z",
+    "latestDependencyDeadline": "2026-02-27T00:00:00.000Z",
+    "dueDatePlacement": "mid"
+  }
+}
+```
+
+Notes:
+
+- `dueDatePlacement` values: `early | mid | late | unscheduled`.
+- Non-members must receive `403`.
+
 ## Agent 3 Integration Notes
 
 - Build UI to these contracts; do not assume unstated fields.
