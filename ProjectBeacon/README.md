@@ -143,6 +143,26 @@ Until Clerk bootstrap wiring is fully integrated, authenticated API calls should
 - `x-projectbeacon-user-id`
 - `x-clerk-user-id`
 
+For post-onboarding UI route protection in the app shell, local session cookies are used:
+
+- `pb_user_id`
+- `pb_role` (`admin` or `user`)
+- `pb_last_project_id`
+
+Use `/sign-in` in local development to set these values and enter the protected project routes.
+
+## Post-Onboarding App Shell (PB-024)
+
+Routes under `/projects/[projectId]` now share a common shell with exactly five navigation buttons:
+
+- `Dashboard`
+- `Documents`
+- `Board`
+- `Timeline`
+- `Settings`
+
+The shell includes role badge display, sign-out control, desktop top-nav, and mobile bottom-nav.
+
 ## Multi-Agent GitHub Automation
 
 This repo includes scheduled Codex builder agents and a PR reviewer agent:

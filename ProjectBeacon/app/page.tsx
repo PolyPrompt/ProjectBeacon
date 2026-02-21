@@ -1,7 +1,13 @@
-export default function Home() {
-  return (
-    <main className="flex min-h-screen items-center justify-center">
-      <h1 className="text-4xl font-bold">Project Beacon</h1>
-    </main>
-  );
+import { redirect } from "next/navigation";
+import { getLastProjectId, getSessionUser } from "@/lib/auth/session";
+
+export default async function Home() {
+  const sessionUser = await getSessionUser();
+
+  if (!sessionUser) {
+    redirect("/sign-in");
+  }
+
+  const lastProjectId = await getLastProjectId();
+  redirect(`/projects/${lastProjectId ?? "demo-project"}`);
 }

@@ -1,0 +1,19 @@
+## 2026-02-21T21:20:14Z - PB-024 complete (agent3)
+- issue: #46 (`PB-024`)
+- status: implemented and validated on branch `agent3/pb-024-post-onboarding-shell`
+- delivered:
+  - protected post-onboarding shell for `/projects/[projectId]` routes
+  - exact 5-button navbar: `Dashboard`, `Documents`, `Board`, `Timeline`, `Settings`
+  - role badge + sign-out control in shared nav shell
+  - desktop top-nav + mobile bottom-nav support
+  - unauthenticated redirect to `/sign-in`
+  - local sign-in scaffold with role/user/project selection
+  - placeholder route pages wired for Dashboard/Documents/Board/Timeline/Settings + workspace route
+- verification:
+  - `npm run format:check` -> fails on pre-existing repo files outside task scope
+  - `npx prettier --check` on touched files -> pass
+  - `npm run lint` -> pass
+  - `npm run build` -> pass
+- blockers/notes:
+  - upstream auth foundation issues (`PB-017`, `PB-018`) remain open; current auth is explicit local scaffold
+  - upstream dashboard/documents/settings/workflow APIs are not yet available; follow-up tasks use scaffold + error states
