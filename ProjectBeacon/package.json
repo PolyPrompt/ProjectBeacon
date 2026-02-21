@@ -12,9 +12,11 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.24.0",
+    "@supabase/supabase-js": "^2.57.4",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
