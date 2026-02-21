@@ -3,6 +3,7 @@
 This document is the shared API contract across agents. Freeze request/response shapes here before heavy implementation.
 
 ## Contract Rules
+
 - Use UTC ISO timestamps in responses.
 - Use snake_case in DB, camelCase in API DTOs.
 - Validate all payloads with Zod at API boundary.
@@ -22,11 +23,13 @@ This document is the shared API contract across agents. Freeze request/response 
 - Permission failures must return `403`.
 
 ## Ownership Map
+
 - Agent 1: foundation + CRUD endpoints
 - Agent 2: AI/planning/assignment/replan/reassignment endpoints
 - Agent 3: UI integration against frozen contracts
 
 ## Status Model
+
 - Project planning status: `draft -> locked -> assigned`
 - Task status: `todo | in_progress | blocked | done`
 
@@ -48,14 +51,17 @@ export type ApiError = {
 ## Agent 1 Contracts
 
 ## `POST /api/users/bootstrap`
+
 Purpose: ensure local `users` row exists/updated from Clerk identity.
 
 Request:
+
 ```json
 {}
 ```
 
 Response `200`:
+
 ```json
 {
   "userId": "uuid",
@@ -66,7 +72,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects`
+
 Request:
+
 ```json
 {
   "name": "CS Capstone",
@@ -76,6 +84,7 @@ Request:
 ```
 
 Response `201`:
+
 ```json
 {
   "id": "p_123",
@@ -88,7 +97,9 @@ Response `201`:
 ```
 
 ## `GET /api/projects/:projectId`
+
 Response `200`:
+
 ```json
 {
   "id": "p_123",
@@ -101,7 +112,9 @@ Response `200`:
 ```
 
 ## `PATCH /api/projects/:projectId`
+
 Request:
+
 ```json
 {
   "name": "Updated Name",
@@ -113,7 +126,9 @@ Request:
 Response `200`: same shape as `GET /api/projects/:projectId`.
 
 ## `GET /api/projects/:projectId/members`
+
 Response `200`:
+
 ```json
 {
   "members": [
@@ -128,7 +143,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/members`
+
 Request:
+
 ```json
 {
   "userId": "uuid",
@@ -137,6 +154,7 @@ Request:
 ```
 
 Response `201`:
+
 ```json
 {
   "projectId": "p_123",
@@ -146,7 +164,9 @@ Response `201`:
 ```
 
 ## `GET /api/me/skills`
+
 Response `200`:
+
 ```json
 {
   "skills": [
@@ -161,7 +181,9 @@ Response `200`:
 ```
 
 ## `POST /api/me/skills`
+
 Request:
+
 ```json
 {
   "skillName": "React",
@@ -170,6 +192,7 @@ Request:
 ```
 
 Response `200`:
+
 ```json
 {
   "id": "us_001",
@@ -180,7 +203,9 @@ Response `200`:
 ```
 
 ## `GET /api/projects/:projectId/skills`
+
 Response `200`:
+
 ```json
 {
   "skills": [
@@ -196,7 +221,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/skills/import-profile`
+
 Request:
+
 ```json
 {
   "userId": "uuid"
@@ -204,6 +231,7 @@ Request:
 ```
 
 Response `200`:
+
 ```json
 {
   "imported": 4,
@@ -212,9 +240,11 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/documents`
+
 Request: multipart upload flow or presigned upload finalize payload.
 
 Response `201`:
+
 ```json
 {
   "document": {
@@ -233,7 +263,9 @@ Response `201`:
 ## Agent 2 Contracts
 
 ## `POST /api/projects/:projectId/context/confidence`
+
 Response `200`:
+
 ```json
 {
   "confidence": 72,
@@ -245,7 +277,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/context/clarify`
+
 Response `200`:
+
 ```json
 {
   "questions": [
@@ -256,7 +290,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/context/clarify-response`
+
 Request:
+
 ```json
 {
   "question": "What are the required deliverables?",
@@ -265,6 +301,7 @@ Request:
 ```
 
 Response `200`:
+
 ```json
 {
   "confidence": 84,
@@ -276,9 +313,11 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/ai/generate-tasks`
+
 Behavior: generates draft task graph only; leaves assignees null.
 
 Response `200`:
+
 ```json
 {
   "tasks": [
@@ -315,7 +354,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/planning/lock`
+
 Response `200`:
+
 ```json
 {
   "projectId": "p_123",
@@ -324,7 +365,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/assignments/run`
+
 Response `200`:
+
 ```json
 {
   "projectId": "p_123",
@@ -334,7 +377,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/replan`
+
 Response `200`:
+
 ```json
 {
   "projectId": "p_123",
@@ -345,7 +390,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/task-reassignment-requests`
+
 Request:
+
 ```json
 {
   "requestType": "swap",
@@ -357,6 +404,7 @@ Request:
 ```
 
 Response `201`:
+
 ```json
 {
   "id": "rr_001",
@@ -365,7 +413,9 @@ Response `201`:
 ```
 
 ## `POST /api/task-reassignment-requests/:requestId/respond`
+
 Request:
+
 ```json
 {
   "action": "accept"
@@ -373,6 +423,7 @@ Request:
 ```
 
 Response `200`:
+
 ```json
 {
   "id": "rr_001",
@@ -380,13 +431,72 @@ Response `200`:
 }
 ```
 
+## `GET /api/projects/:projectId/tasks/my`
+
+Response `200`:
+
+```json
+{
+  "myTasks": [
+    {
+      "id": "t_123",
+      "title": "Build Auth Middleware",
+      "description": "Implement protected route checks",
+      "status": "todo",
+      "softDeadline": "2026-03-01T00:00:00.000Z",
+      "difficultyPoints": 3
+    }
+  ]
+}
+```
+
+Notes:
+
+- Returns only tasks assigned to the authenticated user in this project.
+- Sorted by `softDeadline` ascending with `null` deadlines last.
+
+## `GET /api/projects/:projectId/dashboard`
+
+Response `200`:
+
+```json
+{
+  "myTasks": [
+    {
+      "id": "t_123",
+      "title": "Build Auth Middleware",
+      "description": "Implement protected route checks",
+      "status": "todo",
+      "softDeadline": "2026-03-01T00:00:00.000Z",
+      "difficultyPoints": 3
+    }
+  ],
+  "finalDeadlineCountdownHours": 480,
+  "nextMilestoneCountdownHours": 36,
+  "teamStatus": {
+    "todo": 5,
+    "inProgress": 2,
+    "blocked": 1,
+    "done": 3
+  }
+}
+```
+
+Notes:
+
+- `nextMilestoneCountdownHours` is computed from the earliest non-`done` task with non-null due date.
+- `finalDeadlineCountdownHours` and `nextMilestoneCountdownHours` are clamped to `0` when overdue.
+- Non-members must receive `403`.
+
 ## Agent 3 Integration Notes
+
 - Build UI to these contracts; do not assume unstated fields.
 - Gate generation on clarification readiness.
 - Show planning state badges: `draft`, `locked`, `assigned`.
 - Keep assignment controls disabled unless status allows action.
 
 ## Change Control
+
 - Any contract change requires:
   1. Update this file first.
   2. Add entry to `DECISIONS.md` with rationale.

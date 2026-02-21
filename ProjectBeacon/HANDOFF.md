@@ -1,0 +1,40 @@
+## 2026-02-21T20:58:29Z - Agent3 Runner Intake Result
+- Runner executed: `TASK2-agent3-runner.md`.
+- Role guard: `AGENT_ID=agent3` (pass, loaded from `.env.local`).
+- GitHub intake command:
+  - `gh issue list --state open --label agent3 --label status:ready --limit 200 --json number,title,labels,assignees,createdAt,url`
+  - Result: `[]` (no ready issues for `agent3`).
+- Outcome:
+  - No actionable Phase 2 `agent3` tasks could be started from issue intake.
+  - Stopped per runner loop rule (`no ready issues -> write final summary and stop`).
+- Files changed in this run:
+  - `HANDOFF.md`
+  - `HANDOFF.local.md`
+
+## 2026-02-21T21:08:31Z - PB-021 Milestone (Agent2)
+- Issue: `#43` `[PB-021] Dashboard Summary + My Tasks APIs (Soft Deadline Sorted)` (claimed, in progress to done path).
+- Completed:
+  - Added `GET /api/projects/:projectId/dashboard`.
+  - Added `GET /api/projects/:projectId/tasks/my`.
+  - Implemented dashboard read-model logic for:
+    - my-task sorting by soft deadline (`due_at` asc, nulls last),
+    - next milestone countdown (earliest non-`done` task with non-null `due_at`),
+    - final deadline countdown,
+    - team status aggregation (`todo/in_progress/blocked/done`).
+  - Added auth+membership guard utilities with stable API error format and role normalization (`owner/admin -> admin`, else `user`).
+  - Updated `API_CONTRACT.md` with new endpoint response shapes.
+- Verification:
+  - `npm run format:check` => fail due pre-existing repository-wide formatting drift in docs/task files and `HANDOFF.md` (non-PB-021 scope).
+  - `npm run lint` => pass.
+  - `npm run build` => pass.
+- Files changed:
+  - `app/api/projects/[projectId]/dashboard/route.ts`
+  - `app/api/projects/[projectId]/tasks/my/route.ts`
+  - `lib/dashboard/read-model.ts`
+  - `lib/server/auth.ts`
+  - `lib/server/env.ts`
+  - `lib/server/errors.ts`
+  - `lib/server/project-access.ts`
+  - `lib/server/supabase-rest.ts`
+  - `API_CONTRACT.md`
+  - `DECISIONS.md`
