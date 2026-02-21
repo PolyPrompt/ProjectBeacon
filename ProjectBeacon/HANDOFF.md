@@ -17,3 +17,21 @@
 - blockers/notes:
   - upstream auth foundation issues (`PB-017`, `PB-018`) remain open; current auth is explicit local scaffold
   - upstream dashboard/documents/settings/workflow APIs are not yet available; follow-up tasks use scaffold + error states
+## 2026-02-21T21:27:02Z - PB-025 complete (agent3)
+- issue: #47 (`PB-025`)
+- status: implemented and validated on branch `agent3/pb-025-dashboard-page`
+- delivered:
+  - dashboard countdown cards for next milestone + final submission
+  - my-tasks table sorted by soft deadline
+  - task-detail modal with deadline, description, assignment reasoning, dependency summary, and timeline deep-link
+  - team status overview + mini-board snapshot
+  - loading/empty/error/scaffold states for dashboard and modal flows
+  - contract-aligned dashboard data loader (`lib/workspace/page-data.ts`)
+- verification:
+  - `npm run format:check` -> fails on pre-existing repo files outside task scope
+  - `npx prettier --check` on touched files -> pass
+  - `npm run lint` -> pass
+  - `npm run build` -> pass
+- blockers/notes:
+  - upstream API tasks (`PB-021`, `PB-022`) are not fully closed; dashboard currently supports explicit scaffold mode
+
