@@ -1,5 +1,13 @@
+import { redirect } from "next/navigation";
+
 import { ProjectSettingsPage } from "@/components/settings/project-settings-page";
-import { requireSessionUser } from "@/lib/auth/session";
+import { normalizeProjectRole } from "@/lib/auth/project-role";
+import { requireSessionUser } from "@/lib/auth/clerk-auth";
+import {
+  getProjectMembership,
+  resolveActorUserId,
+} from "@/lib/projects/membership";
+import { getServiceSupabaseClient } from "@/lib/supabase/server";
 
 type ProjectSettingsRouteProps = {
   params: Promise<{ projectId: string }>;
@@ -9,9 +17,24 @@ export default async function ProjectSettingsRoute({
   params,
 }: ProjectSettingsRouteProps) {
   const { projectId } = await params;
-  const sessionUser = await requireSessionUser(
-    `/projects/${projectId}/settings`,
-  );
+  const sessionUser = await requireSessionUser({ redirectToSignIn: true });
+  const supabase = getServiceSupabaseClient();
 
-  return <ProjectSettingsPage projectId={projectId} role={sessionUser.role} />;
+  const actorUserId = await resolveActorUserId(supabase, sessionUser);
+  if (!actorUserId) {
+    redirect("/sign-in");
+  }
+
+  const membership = await getProjectMembership(
+    supabase,
+    projectId,
+    actorUserId,
+  );
+  const role = normalizeProjectRole(membership?.role);
+
+  if (!role) {
+    redirect("/projects/new");
+  }
+
+  return <ProjectSettingsPage projectId={projectId} role={role} />;
 }

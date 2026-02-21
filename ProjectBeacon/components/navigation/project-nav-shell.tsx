@@ -1,14 +1,15 @@
 "use client";
 
+import { SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ProjectRole } from "@/lib/auth/session";
+
+import type { ProjectRole } from "@/types/roles";
 
 type ProjectNavShellProps = {
   userId: string;
   role: ProjectRole;
   projectId: string;
-  onSignOut: () => Promise<void>;
   children: React.ReactNode;
 };
 
@@ -28,7 +29,6 @@ export function ProjectNavShell({
   userId,
   role,
   projectId,
-  onSignOut,
   children,
 }: ProjectNavShellProps) {
   const pathname = usePathname();
@@ -94,14 +94,14 @@ export function ProjectNavShell({
               {role}
             </span>
             <p className="hidden text-xs text-slate-500 sm:block">{userId}</p>
-            <form action={onSignOut}>
+            <SignOutButton redirectUrl="/">
               <button
                 className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                type="submit"
+                type="button"
               >
                 Sign out
               </button>
-            </form>
+            </SignOutButton>
           </div>
         </div>
         {isDocumentsRoute && role === "user" ? (

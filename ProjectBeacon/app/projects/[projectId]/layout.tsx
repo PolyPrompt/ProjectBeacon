@@ -1,6 +1,13 @@
 import { redirect } from "next/navigation";
-import { clearLocalSession, requireSessionUser } from "@/lib/auth/session";
+
 import { ProjectNavShell } from "@/components/navigation/project-nav-shell";
+import { normalizeProjectRole } from "@/lib/auth/project-role";
+import { requireSessionUser } from "@/lib/auth/clerk-auth";
+import {
+  getProjectMembership,
+  resolveActorUserId,
+} from "@/lib/projects/membership";
+import { getServiceSupabaseClient } from "@/lib/supabase/server";
 
 type ProjectLayoutProps = {
   children: React.ReactNode;
@@ -12,22 +19,27 @@ export default async function ProjectLayout({
   params,
 }: ProjectLayoutProps) {
   const { projectId } = await params;
-  const sessionUser = await requireSessionUser(`/projects/${projectId}`);
+  const sessionUser = await requireSessionUser({ redirectToSignIn: true });
+  const supabase = getServiceSupabaseClient();
 
-  async function signOutAction() {
-    "use server";
-
-    await clearLocalSession();
+  const actorUserId = await resolveActorUserId(supabase, sessionUser);
+  if (!actorUserId) {
     redirect("/sign-in");
   }
 
+  const membership = await getProjectMembership(
+    supabase,
+    projectId,
+    actorUserId,
+  );
+  const role = normalizeProjectRole(membership?.role);
+
+  if (!role) {
+    redirect("/projects/new");
+  }
+
   return (
-    <ProjectNavShell
-      onSignOut={signOutAction}
-      projectId={projectId}
-      role={sessionUser.role}
-      userId={sessionUser.userId}
-    >
+    <ProjectNavShell projectId={projectId} role={role} userId={actorUserId}>
       {children}
     </ProjectNavShell>
   );
