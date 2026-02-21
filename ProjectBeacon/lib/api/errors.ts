@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
+type ApiErrorShape = {
+  error: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
+};
+
 export class ApiHttpError extends Error {
   code: string;
   status: number;
@@ -24,7 +32,7 @@ export function jsonError(
   code: string,
   message: string,
   details?: unknown,
-) {
+): NextResponse<ApiErrorShape> {
   return NextResponse.json(
     {
       error: {
@@ -37,7 +45,16 @@ export function jsonError(
   );
 }
 
-export function handleRouteError(error: unknown) {
+export function apiError(
+  code: string,
+  message: string,
+  status: number,
+  details?: unknown,
+): NextResponse<ApiErrorShape> {
+  return jsonError(status, code, message, details);
+}
+
+export function handleRouteError(error: unknown): NextResponse<ApiErrorShape> {
   if (error instanceof ApiHttpError) {
     return jsonError(error.status, error.code, error.message, error.details);
   }
