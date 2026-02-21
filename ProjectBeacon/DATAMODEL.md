@@ -204,14 +204,38 @@ Fields:
 - `mime_type`
 - `size_bytes`
 - `uploaded_by_user_id` (FK -> `users.id`)
+- `is_public` (boolean, default `false`)
+- `used_for_planning` (boolean, default `false`)
 - `created_at`
 
 Notes:
 
 - File bytes live in object storage, not SQL.
 - Enforce upload limits in API layer (for example max file count and max file size).
+- `storage_key` must never be returned to unauthorized users; document preview must use short-lived signed URLs.
 
-## 12) `task_reassignment_requests`
+## 12) `project_document_access`
+
+Purpose: per-user visibility assignments for non-public documents.
+
+Fields:
+
+- `id` (PK)
+- `document_id` (FK -> `project_documents.id`)
+- `user_id` (FK -> `users.id`)
+- `assigned_by_user_id` (FK -> `users.id`)
+- `created_at`
+
+Constraints:
+
+- UNIQUE (`document_id`, `user_id`)
+
+Notes:
+
+- If `project_documents.is_public=true`, all project members can view without explicit access rows.
+- If `is_public=false`, users must have a row in `project_document_access` (admins always retain full access).
+
+## 13) `task_reassignment_requests`
 
 Purpose: consent-based task swap/transfer workflow between teammates.
 
@@ -247,6 +271,7 @@ Notes:
 - One `project` has many `tasks`.
 - One `project` can have many `project_contexts`.
 - One `project` can have many `project_documents`.
+- One `project_document` can be assigned to many users through `project_document_access`.
 - One `project` can have many `task_reassignment_requests`.
 - `tasks` <-> `skills` is many-to-many through `task_required_skills`.
 - `tasks` can depend on other `tasks` through `task_dependencies`.
@@ -310,6 +335,7 @@ Writes:
 
 - Insert text context rows into `project_contexts`.
 - Insert file metadata rows into `project_documents` after successful object-storage upload.
+- Insert visibility assignment rows into `project_document_access` for user-scoped access when files are not public.
 
 Storage pattern:
 
@@ -320,6 +346,7 @@ Validation:
 
 - Enforce allowed MIME types.
 - Enforce max file size and max files per project.
+- Enforce document view policy: admin always allowed, users only for `is_public=true` or explicit `project_document_access` assignment.
 
 Output:
 
@@ -600,7 +627,10 @@ Output:
 - `POST /projects/:id/assignments/run` -> reads tasks/skills/members and writes `tasks.assignee_user_id`; updates `projects.planning_status` to `assigned`
 - `POST /projects/:id/replan` -> updates tasks/dependencies/required-skills with stability and fairness policies
 - `GET/POST/PATCH/DELETE /projects/:id/contexts...` -> `project_contexts`
-- `GET/POST/DELETE /projects/:id/documents...` -> `project_documents` (metadata only; files in object storage)
+- `GET/POST/DELETE /projects/:id/documents...` -> `project_documents` + `project_document_access` (metadata and visibility policy)
+- `GET/PATCH /projects/:id/documents/:documentId/access` -> `project_document_access` and `project_documents.is_public`
+- `GET /projects/:id/documents/:documentId/view` -> checks `project_document_access` policy and returns short-lived Supabase signed URL
+- `GET /projects/:id/documents/used-in-planning` -> `project_documents` filtered by `used_for_planning=true`
 - `POST /projects/:id/context/confidence` -> reads `project_contexts` (+ member skill context) and returns computed confidence
 - `POST /projects/:id/context/clarify` -> returns up to 5 follow-up questions based on current context
 - `POST /projects/:id/context/clarify-response` -> appends clarification Q/A into `project_contexts`, then recomputes confidence
