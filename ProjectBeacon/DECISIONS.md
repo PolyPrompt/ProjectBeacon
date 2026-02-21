@@ -49,6 +49,7 @@
 # Decision Log
 
 ## 2026-02-21T12:35:22Z
+
 - Decision summary: Continue agent2 implementation from local `tasks.md` and contracts despite GitHub issue-sync and branch-creation blockers.
 - Rationale: MCP GitHub issue search could not access the repository, and local git refs are not writable from this sandbox; stopping would leave the overnight agent2 scope unimplemented.
 - Alternatives considered:
@@ -58,6 +59,7 @@
   - Work tracking is mirrored in `HANDOFF.local.md` and `HANDOFF.md` instead of GitHub issue status updates.
 
 ## 2026-02-21T12:49:31Z
+
 - Decision summary: Implement the full agent2 planning pipeline with direct Supabase REST + fetch-based OpenAI calls, with strict Zod validation at route boundaries.
 - Rationale: Agent1 foundation dependencies are not landed in this workspace; using REST keeps agent2 APIs functional without taking ownership of agent1 SDK bootstrap tasks.
 - Alternatives considered:
@@ -69,6 +71,7 @@
   - Auth in these routes currently uses header-based identity (`x-user-id`/`x-projectbeacon-user-id`) as an interim contract.
 
 ## 2026-02-21T12:49:31Z
+
 - Decision summary: Enforce deterministic planning transitions and replan stability/fairness in backend policies.
 - Rationale: User requirements and API contract require deterministic `draft -> locked -> assigned` and controlled reassignment/replan behavior to minimize churn.
 - Alternatives considered:
@@ -80,6 +83,7 @@
   - Fairness-aware assignment + replan stability in `lib/assignment/assign-tasks.ts` and `lib/assignment/replan-policy.ts`.
 
 ## 2026-02-21T18:07:34Z
+
 - Decision summary: Harden reassignment error handling with explicit HTTP error types and validate replan dependency references/cycles before mutating data.
 - Rationale: Contract requires stable `401/403/4xx` behavior for auth/validation failures, and replan should reject invalid dependency payloads before partial writes.
 - Alternatives considered:
@@ -91,6 +95,7 @@
   - Replan route pre-validates dependency references/cycles before writes and fails fast on unresolved mapping in `app/api/projects/[projectId]/replan/route.ts`.
 
 ## 2026-02-21T18:51:33Z
+
 - Decision summary: Publish agent2 work as dependency-ordered stacked PRs (`PB-010 -> PB-011 -> PB-012 -> PB-013 -> PB-014`) and close each linked issue through PR completion flow.
 - Rationale: Existing local history already isolates each task into sequential commits, so stacked PRs preserve deterministic progression and simplify review of dependent planner behavior.
 - Alternatives considered:
