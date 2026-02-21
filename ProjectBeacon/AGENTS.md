@@ -32,7 +32,7 @@ Important: for this subtree, most product code changes should happen in this dir
 - Use `AGENT_ID` from environment to determine current role (`agent1`, `agent2`, or `agent3`).
 - At the start of every new task/issue, verify `AGENT_ID` matches the assigned owner role before making changes.
 - During long autonomous runs, re-check `AGENT_ID` at each task boundary (and at least once every hour) to prevent role drift.
-- If `AGENT_ID` is missing/invalid or mismatched with task ownership, stop and report the mismatch in `HANDOFF.md`.
+- If `AGENT_ID` is missing/invalid or mismatched with task ownership, stop and report the mismatch in `HANDOFF.local.md`.
 
 ## Stack Snapshot
 
@@ -133,9 +133,9 @@ where table_schema = 'public' and table_name = 'test_items';
 - Track current in-progress ownership and task scope in GitHub Issues/PRs:
   - each workstream must have an issue with assignee, status label, and dependency links
   - PRs must reference the issue (for example `Closes #123`)
-  - if working locally without network access, record temporary notes in `./HANDOFF.md` until issue sync is possible
+  - if working locally without network access, record temporary notes in `./HANDOFF.local.md` until issue sync is possible
 - Track active work and handoff notes in:
-  - `./HANDOFF.md` (create if missing when relevant to active work)
+  - `./HANDOFF.local.md` (create if missing when relevant to active work)
 - Keep a running major-decision log in:
   - `./DECISIONS.md` (create if missing)
 - Log only meaningful decisions (for example architecture, dependency, scope, tradeoff, or risk decisions), each with:
@@ -144,6 +144,18 @@ where table_schema = 'public' and table_name = 'test_items';
   - rationale
   - alternatives considered
   - impact on files or behavior
+
+## Context Handoff Policy
+
+- When context becomes large (or before starting a new task), write a concise checkpoint to `./HANDOFF.local.md`.
+- At minimum, include:
+  - current issue/task ID
+  - what is complete
+  - what is in progress
+  - blockers/assumptions
+  - next concrete command/action
+- During long autonomous runs, refresh `./HANDOFF.local.md` at least once per hour and at every task boundary.
+- `./HANDOFF.local.md` is local-only and must remain gitignored.
 
 ## UI Reference Usage
 
@@ -156,7 +168,7 @@ How to use `./docs/ui`:
 - Preserve page structure, key components/states, and primary user flows.
 - If reference includes out-of-scope features, omit or stub them.
 - If required tasks are missing in reference, implement required behavior using the same visual language.
-- Record intentional UI deviations in `./HANDOFF.md` with a brief reason.
+- Record intentional UI deviations in `./HANDOFF.local.md` with a brief reason.
 
 Priority order for decisions:
 1. `./tasks.md`

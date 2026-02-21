@@ -19,12 +19,12 @@
 - QA pass on end-to-end user flow
 
 ## Handoff Requirements
-- Update `HANDOFF.md` with:
+- Update `HANDOFF.local.md` with:
   - routes/components delivered
   - API integration coverage
   - manual QA paths + outcomes
   - verification commands + results
-- Update the linked GitHub Issue status (`done`, `blocked`, or `handoff`) and mirror key notes in `HANDOFF.md`.
+- Update the linked GitHub Issue status (`done`, `blocked`, or `handoff`) and mirror key notes in `HANDOFF.local.md`.
 
 ## Boundaries
 - Do not introduce backend contract changes without coordinating through the shared API contract.

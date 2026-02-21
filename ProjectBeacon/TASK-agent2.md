@@ -24,12 +24,12 @@
 - Deterministic status transitions (`draft -> locked -> assigned`)
 
 ## Handoff Requirements
-- Update `HANDOFF.md` with:
+- Update `HANDOFF.local.md` with:
   - final request/response schemas
   - status transition rules
   - dependency/replan validation behavior
   - verification commands + results
-- Update the linked GitHub Issue status (`done`, `blocked`, or `handoff`) and mirror key notes in `HANDOFF.md`.
+- Update the linked GitHub Issue status (`done`, `blocked`, or `handoff`) and mirror key notes in `HANDOFF.local.md`.
 
 ## Boundaries
 - Depend on Agent 1 schema/contracts; do not rewrite stable DB primitives without coordination.

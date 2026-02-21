@@ -25,12 +25,12 @@
 - Working CRUD endpoints for projects/members/skills/docs
 
 ## Handoff Requirements
-- Update `HANDOFF.md` with:
+- Update `HANDOFF.local.md` with:
   - endpoints implemented
   - migration status
   - verification commands + results
   - blockers/assumptions
-- Update the linked GitHub Issue status (`done`, `blocked`, or `handoff`) and mirror key notes in `HANDOFF.md`.
+- Update the linked GitHub Issue status (`done`, `blocked`, or `handoff`) and mirror key notes in `HANDOFF.local.md`.
 
 ## Boundaries
 - Do not implement AI planning pipeline logic owned by Agent 2.
