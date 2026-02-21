@@ -1,10 +1,24 @@
 import { HttpError } from "@/lib/server/errors";
-import { supabaseRestGet } from "@/lib/server/supabase-rest";
+import { selectSingle } from "@/lib/server/supabase-rest";
 
 export type ProjectRole = "admin" | "user";
 
-type ProjectMemberRoleRow = {
-  role: string;
+export type ProjectMemberRow = {
+  id: string;
+  project_id: string;
+  user_id: string;
+  role: "owner" | "member";
+};
+
+export type ProjectRow = {
+  id: string;
+  name: string;
+  description: string;
+  deadline: string;
+  owner_user_id: string;
+  planning_status: "draft" | "locked" | "assigned";
+  created_at: string;
+  updated_at: string;
 };
 
 export function normalizeProjectRole(role: string): ProjectRole {
@@ -13,25 +27,6 @@ export function normalizeProjectRole(role: string): ProjectRole {
   }
 
   return "user";
-}
-
-export async function requireProjectMembership(
-  projectId: string,
-  userId: string,
-): Promise<{ role: ProjectRole }> {
-  const memberRows = await supabaseRestGet<ProjectMemberRoleRow[]>(
-    `project_members?select=role&project_id=eq.${encodeURIComponent(projectId)}&user_id=eq.${encodeURIComponent(userId)}&limit=1`,
-  );
-
-  const memberRow = memberRows.at(0);
-
-  if (!memberRow) {
-    throw new HttpError(403, "FORBIDDEN", "Project membership is required.");
-  }
-
-  return {
-    role: normalizeProjectRole(memberRow.role),
-  };
 }
 
 export function roleCapabilities(role: ProjectRole): {
@@ -45,5 +40,41 @@ export function roleCapabilities(role: ProjectRole): {
     role,
     canManageProject: isAdmin,
     canEditWorkflow: isAdmin,
+  };
+}
+
+export async function getProjectById(
+  projectId: string,
+): Promise<ProjectRow | null> {
+  return selectSingle<ProjectRow>("projects", {
+    select: "*",
+    id: `eq.${projectId}`,
+  });
+}
+
+export async function getProjectMembership(
+  projectId: string,
+  userId: string,
+): Promise<ProjectMemberRow | null> {
+  return selectSingle<ProjectMemberRow>("project_members", {
+    select: "*",
+    project_id: `eq.${projectId}`,
+    user_id: `eq.${userId}`,
+  });
+}
+
+export async function requireProjectMembership(
+  projectId: string,
+  userId: string,
+): Promise<{ role: ProjectRole; membership: ProjectMemberRow }> {
+  const membership = await getProjectMembership(projectId, userId);
+
+  if (!membership) {
+    throw new HttpError(403, "FORBIDDEN", "Project membership is required.");
+  }
+
+  return {
+    role: normalizeProjectRole(membership.role),
+    membership,
   };
 }
