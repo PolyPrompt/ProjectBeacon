@@ -115,28 +115,33 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-## Dashboard and Workspace (Agent 3 MVP)
+## Planning Pipeline APIs (Agent 2)
 
-- `/` redirects to `/projects/demo-project`.
-- `/projects/[projectId]` renders the dashboard shell with:
-  - project summary/status
-  - members list
-  - current draft task list
-  - dependency preview
-  - links into each workspace step
-- Workspace flow is route-based (individual pages):
-  1. `/projects/[projectId]/workspace/context` (`context + docs`)
-  2. `/projects/[projectId]/workspace/clarify`
-  3. `/projects/[projectId]/workspace/generate`
-  4. `/projects/[projectId]/workspace/review`
-  5. `/projects/[projectId]/workspace/lock`
-  6. `/projects/[projectId]/workspace/assign`
+The backend now includes MVP planning endpoints for the AI workflow:
 
-Implementation notes:
+- `POST /api/projects/:projectId/context/confidence`
+- `POST /api/projects/:projectId/context/clarify`
+- `POST /api/projects/:projectId/context/clarify-response`
+- `POST /api/projects/:projectId/ai/generate-tasks`
+- `POST /api/projects/:projectId/planning/lock`
+- `POST /api/projects/:projectId/assignments/run`
+- `POST /api/projects/:projectId/replan`
+- `POST /api/projects/:projectId/task-reassignment-requests`
+- `POST /api/task-reassignment-requests/:requestId/respond`
 
-- UI is wired only to frozen `API_CONTRACT.md` endpoints.
-- A local workspace draft store keeps state consistent across step pages (context/docs/clarification/tasks/dependencies/status).
-- Scaffold fallback activates only when endpoints are unavailable/network-failing (`404/405/501` or fetch failure), so real API validation/permission errors remain visible.
+Status transitions are deterministic and enforced server-side:
+
+- `draft -> locked -> assigned`
+
+Dependency edges are cycle-validated on generation and replan.
+
+## Local Auth Convention (Interim)
+
+Until Clerk bootstrap wiring is fully integrated, authenticated API calls should include one of these headers:
+
+- `x-user-id`
+- `x-projectbeacon-user-id`
+- `x-clerk-user-id`
 
 ## Multi-Agent GitHub Automation
 
