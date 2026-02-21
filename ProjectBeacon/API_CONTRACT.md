@@ -354,10 +354,123 @@ Response `201`:
     "fileName": "requirements.pdf",
     "mimeType": "application/pdf",
     "sizeBytes": 482193,
-    "storageKey": "projects/p_123/docs/doc_123-requirements.pdf",
     "uploadedByUserId": "uuid",
+    "isPublic": false,
+    "usedForPlanning": true,
     "createdAt": "2026-02-21T00:00:00.000Z"
   }
+}
+```
+
+## `GET /api/projects/:projectId/documents`
+
+Response `200`:
+
+```json
+{
+  "documents": [
+    {
+      "id": "doc_123",
+      "projectId": "p_123",
+      "fileName": "requirements.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 482193,
+      "uploadedByUserId": "uuid",
+      "isPublic": false,
+      "usedForPlanning": true,
+      "createdAt": "2026-02-21T00:00:00.000Z"
+    }
+  ],
+  "role": "user"
+}
+```
+
+## `DELETE /api/projects/:projectId/documents`
+
+Request:
+
+```json
+{
+  "documentId": "doc_123"
+}
+```
+
+Response `200`:
+
+```json
+{
+  "deleted": true,
+  "documentId": "doc_123"
+}
+```
+
+## `GET /api/projects/:projectId/documents/:documentId/access`
+
+Response `200`:
+
+```json
+{
+  "documentId": "doc_123",
+  "isPublic": false,
+  "assignedUserIds": ["uuid"],
+  "canManage": true
+}
+```
+
+## `PATCH /api/projects/:projectId/documents/:documentId/access`
+
+Request:
+
+```json
+{
+  "isPublic": false,
+  "assignedUserIds": ["uuid"]
+}
+```
+
+Response `200`:
+
+```json
+{
+  "updated": true,
+  "documentId": "doc_123",
+  "isPublic": false,
+  "assignedUserIds": ["uuid"]
+}
+```
+
+## `GET /api/projects/:projectId/documents/:documentId/view`
+
+Response `200`:
+
+```json
+{
+  "documentId": "doc_123",
+  "fileName": "requirements.pdf",
+  "mimeType": "application/pdf",
+  "signedUrl": "https://<supabase-signed-url>",
+  "expiresInSeconds": 120
+}
+```
+
+Cache policy: `Cache-Control: no-store, max-age=0`
+
+## `GET /api/projects/:projectId/documents/used-in-planning`
+
+Response `200`:
+
+```json
+{
+  "documents": [
+    {
+      "id": "doc_123",
+      "projectId": "p_123",
+      "fileName": "requirements.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 482193,
+      "createdAt": "2026-02-21T00:00:00.000Z"
+    }
+  ]
 }
 ```
 
