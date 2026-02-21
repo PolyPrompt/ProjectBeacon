@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import type { WorkflowTaskDTO, WorkflowTimelineDTO } from "@/types/workflow";
+import { useMemo, useEffect, useState } from "react";
+
+import type {
+  WorkflowTimelineDTO,
+  WorkflowTimelineEdgeDTO,
+  WorkflowTimelineTaskDTO,
+} from "@/types/workflow";
 
 type TimelinePageProps = {
   projectId: string;
@@ -10,30 +15,53 @@ type TimelinePageProps = {
   selectedTaskId: string | null;
 };
 
-const FALLBACK_TASKS: WorkflowTaskDTO[] = [
+const FALLBACK_TASKS: WorkflowTimelineTaskDTO[] = [
   {
     id: "t_timeline_1",
     title: "Collect project requirements",
     status: "done",
-    dueAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    dependencyTaskIds: [],
+    softDeadline: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    difficultyPoints: 2,
+    assigneeUserId: "user_001",
+    sequenceIndex: 0,
+    totalTasks: 3,
     phase: "beginning",
+    dueDatePlacement: "early",
   },
   {
     id: "t_timeline_2",
     title: "Generate workflow board",
     status: "in_progress",
-    dueAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    dependencyTaskIds: ["t_timeline_1"],
+    softDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    difficultyPoints: 3,
+    assigneeUserId: "user_002",
+    sequenceIndex: 1,
+    totalTasks: 3,
     phase: "middle",
+    dueDatePlacement: "mid",
   },
   {
     id: "t_timeline_3",
     title: "Final review and submission",
     status: "todo",
-    dueAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    dependencyTaskIds: ["t_timeline_2"],
+    softDeadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+    difficultyPoints: 5,
+    assigneeUserId: null,
+    sequenceIndex: 2,
+    totalTasks: 3,
     phase: "end",
+    dueDatePlacement: "late",
+  },
+];
+
+const FALLBACK_EDGES: WorkflowTimelineEdgeDTO[] = [
+  {
+    taskId: "t_timeline_2",
+    dependsOnTaskId: "t_timeline_1",
+  },
+  {
+    taskId: "t_timeline_3",
+    dependsOnTaskId: "t_timeline_2",
   },
 ];
 
@@ -42,21 +70,24 @@ function parseTimelinePayload(value: unknown): WorkflowTimelineDTO | null {
     return null;
   }
 
-  const payload = value as {
-    tasks?: WorkflowTaskDTO[];
-    capabilities?: { canEdit?: boolean; canReassign?: boolean };
-  };
+  const payload = value as Partial<WorkflowTimelineDTO>;
 
-  if (!Array.isArray(payload.tasks)) {
+  if (!payload.capability || typeof payload.capability !== "object") {
+    return null;
+  }
+
+  if (!Array.isArray(payload.tasks) || !Array.isArray(payload.edges)) {
     return null;
   }
 
   return {
-    tasks: payload.tasks,
-    capabilities: {
-      canEdit: Boolean(payload.capabilities?.canEdit),
-      canReassign: payload.capabilities?.canReassign,
+    capability: {
+      role: payload.capability.role === "admin" ? "admin" : "user",
+      canManageProject: Boolean(payload.capability.canManageProject),
+      canEditWorkflow: Boolean(payload.capability.canEditWorkflow),
     },
+    tasks: payload.tasks,
+    edges: payload.edges,
   };
 }
 
@@ -64,10 +95,12 @@ function dueDateLabel(value: string | null): string {
   if (!value) {
     return "No due date";
   }
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return "Invalid date";
   }
+
   return date.toLocaleString();
 }
 
@@ -76,8 +109,13 @@ export function TimelinePage({
   role,
   selectedTaskId,
 }: TimelinePageProps) {
-  const [tasks, setTasks] = useState<WorkflowTaskDTO[]>([]);
-  const [canEdit, setCanEdit] = useState(role === "admin");
+  const [tasks, setTasks] = useState<WorkflowTimelineTaskDTO[]>([]);
+  const [edges, setEdges] = useState<WorkflowTimelineEdgeDTO[]>([]);
+  const [capability, setCapability] = useState({
+    role,
+    canManageProject: role === "admin",
+    canEditWorkflow: role === "admin",
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -112,12 +150,18 @@ export function TimelinePage({
 
         if (!cancelled) {
           setTasks(payload.tasks);
-          setCanEdit(Boolean(payload.capabilities.canEdit));
+          setEdges(payload.edges);
+          setCapability(payload.capability);
         }
       } catch (timelineError) {
         if (!cancelled) {
           setTasks(FALLBACK_TASKS);
-          setCanEdit(role === "admin");
+          setEdges(FALLBACK_EDGES);
+          setCapability({
+            role,
+            canManageProject: role === "admin",
+            canEditWorkflow: role === "admin",
+          });
           setError(
             timelineError instanceof Error
               ? `${timelineError.message}. Showing scaffold timeline.`
@@ -141,20 +185,30 @@ export function TimelinePage({
 
   const orderedTasks = useMemo(
     () =>
-      [...tasks].sort((left, right) => {
-        if (!left.dueAt && !right.dueAt) {
-          return 0;
-        }
-        if (!left.dueAt) {
-          return 1;
-        }
-        if (!right.dueAt) {
-          return -1;
-        }
-        return new Date(left.dueAt).getTime() - new Date(right.dueAt).getTime();
-      }),
+      [...tasks].sort(
+        (left, right) => left.sequenceIndex - right.sequenceIndex,
+      ),
     [tasks],
   );
+
+  const dependenciesByTask = useMemo(() => {
+    const map = new Map<string, string[]>();
+
+    for (const edge of edges) {
+      const dependencies = map.get(edge.taskId) ?? [];
+      dependencies.push(edge.dependsOnTaskId);
+      map.set(edge.taskId, dependencies);
+    }
+
+    for (const [taskId, dependencyIds] of map.entries()) {
+      map.set(
+        taskId,
+        [...new Set(dependencyIds)].sort((a, b) => a.localeCompare(b)),
+      );
+    }
+
+    return map;
+  }, [edges]);
 
   return (
     <section className="space-y-5">
@@ -184,10 +238,9 @@ export function TimelinePage({
           </div>
         </div>
         <p className="mt-3 text-xs font-medium text-slate-500">
-          Edit affordances:{" "}
-          {canEdit
-            ? "enabled by API capability flags"
-            : "read-only by API capability flags"}
+          Capability: role `{capability.role}` · manage project:{" "}
+          {capability.canManageProject ? "yes" : "no"} · edit workflow:{" "}
+          {capability.canEditWorkflow ? "yes" : "no"}
         </p>
       </header>
 
@@ -207,17 +260,23 @@ export function TimelinePage({
         </p>
       ) : (
         <ol className="space-y-3">
-          {orderedTasks.map((task, index) => {
+          {orderedTasks.map((task) => {
             const isSelected = task.id === selectedTaskId;
+            const dependencyTaskIds = dependenciesByTask.get(task.id) ?? [];
+
             return (
               <li
                 key={task.id}
-                className={`rounded-2xl border bg-white p-4 shadow-sm ${isSelected ? "border-sky-400 ring-2 ring-sky-200" : "border-slate-200"}`}
+                className={`rounded-2xl border bg-white p-4 shadow-sm ${
+                  isSelected
+                    ? "border-sky-400 ring-2 ring-sky-200"
+                    : "border-slate-200"
+                }`}
                 id={`task-${task.id}`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-slate-900">
-                    {index + 1}. {task.title}
+                    {task.sequenceIndex + 1}. {task.title}
                   </p>
                   {isSelected ? (
                     <span className="rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-700">
@@ -225,14 +284,19 @@ export function TimelinePage({
                     </span>
                   ) : null}
                 </div>
+
                 <p className="mt-1 text-xs text-slate-500">
-                  {task.status} · phase {task.phase} · due{" "}
-                  {dueDateLabel(task.dueAt)}
+                  {task.status} · phase {task.phase} · {task.difficultyPoints}{" "}
+                  pts · due {dueDateLabel(task.softDeadline)}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Assignee: {task.assigneeUserId ?? "unassigned"} · due
+                  placement: {task.dueDatePlacement}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
                   Dependencies:{" "}
-                  {task.dependencyTaskIds.length > 0
-                    ? task.dependencyTaskIds.join(", ")
+                  {dependencyTaskIds.length > 0
+                    ? dependencyTaskIds.join(", ")
                     : "none"}
                 </p>
               </li>
