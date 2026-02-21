@@ -104,3 +104,13 @@
 - Impact on files or behavior:
   - Branch and PR sequence now mirrors deterministic planning flow and task dependencies.
   - Issue closure is tied to PR completion with explicit issue links per task.
+
+## 2026-02-21T18:54:12Z
+
+- Decision summary: Close agent2 issues `#12`-`#16` immediately after opening their matching PRs and posting issue->PR linkage comments.
+- Rationale: User requested closeout after PR completion in this overnight run; all required task deliverables were already implemented and pushed in branch/PR form.
+- Alternatives considered:
+  - Leave issues open until stacked PRs are merged to `main`.
+  - Close only the lead issue and keep dependent issues open.
+- Impact on files or behavior:
+  - Issues `#12`, `#13`, `#14`, `#15`, and `#16` are now closed with traceable comments pointing to PRs `#34`-`#38`.
