@@ -3,6 +3,7 @@
 This document is the shared API contract across agents. Freeze request/response shapes here before heavy implementation.
 
 ## Contract Rules
+
 - Use UTC ISO timestamps in responses.
 - Use snake_case in DB, camelCase in API DTOs.
 - Validate all payloads with Zod at API boundary.
@@ -22,11 +23,13 @@ This document is the shared API contract across agents. Freeze request/response 
 - Permission failures must return `403`.
 
 ## Ownership Map
+
 - Agent 1: foundation + CRUD endpoints
 - Agent 2: AI/planning/assignment/replan/reassignment endpoints
 - Agent 3: UI integration against frozen contracts
 
 ## Status Model
+
 - Project planning status: `draft -> locked -> assigned`
 - Task status: `todo | in_progress | blocked | done`
 
@@ -35,6 +38,7 @@ This document is the shared API contract across agents. Freeze request/response 
 ```ts
 export type ProjectPlanningStatus = "draft" | "locked" | "assigned";
 export type TaskStatus = "todo" | "in_progress" | "blocked" | "done";
+export type ProjectRole = "admin" | "user";
 
 export type ApiError = {
   error: {
@@ -45,17 +49,25 @@ export type ApiError = {
 };
 ```
 
+Role compatibility note:
+
+- API DTOs must use `admin | user`.
+- DB adapters may still map legacy values (`owner | member`) to API role names.
+
 ## Agent 1 Contracts
 
 ## `POST /api/users/bootstrap`
+
 Purpose: ensure local `users` row exists/updated from Clerk identity.
 
 Request:
+
 ```json
 {}
 ```
 
 Response `200`:
+
 ```json
 {
   "userId": "uuid",
@@ -66,7 +78,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects`
+
 Request:
+
 ```json
 {
   "name": "CS Capstone",
@@ -76,6 +90,7 @@ Request:
 ```
 
 Response `201`:
+
 ```json
 {
   "id": "p_123",
@@ -88,7 +103,9 @@ Response `201`:
 ```
 
 ## `GET /api/projects/:projectId`
+
 Response `200`:
+
 ```json
 {
   "id": "p_123",
@@ -101,7 +118,9 @@ Response `200`:
 ```
 
 ## `PATCH /api/projects/:projectId`
+
 Request:
+
 ```json
 {
   "name": "Updated Name",
@@ -113,7 +132,9 @@ Request:
 Response `200`: same shape as `GET /api/projects/:projectId`.
 
 ## `GET /api/projects/:projectId/members`
+
 Response `200`:
+
 ```json
 {
   "members": [
@@ -121,32 +142,37 @@ Response `200`:
       "userId": "uuid",
       "name": "Ada Lovelace",
       "email": "ada@school.edu",
-      "role": "owner"
+      "role": "admin"
     }
   ]
 }
 ```
 
 ## `POST /api/projects/:projectId/members`
+
 Request:
+
 ```json
 {
   "userId": "uuid",
-  "role": "member"
+  "role": "user"
 }
 ```
 
 Response `201`:
+
 ```json
 {
   "projectId": "p_123",
   "userId": "uuid",
-  "role": "member"
+  "role": "user"
 }
 ```
 
 ## `GET /api/me/skills`
+
 Response `200`:
+
 ```json
 {
   "skills": [
@@ -161,7 +187,9 @@ Response `200`:
 ```
 
 ## `POST /api/me/skills`
+
 Request:
+
 ```json
 {
   "skillName": "React",
@@ -170,6 +198,7 @@ Request:
 ```
 
 Response `200`:
+
 ```json
 {
   "id": "us_001",
@@ -180,7 +209,9 @@ Response `200`:
 ```
 
 ## `GET /api/projects/:projectId/skills`
+
 Response `200`:
+
 ```json
 {
   "skills": [
@@ -196,7 +227,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/skills/import-profile`
+
 Request:
+
 ```json
 {
   "userId": "uuid"
@@ -204,6 +237,7 @@ Request:
 ```
 
 Response `200`:
+
 ```json
 {
   "imported": 4,
@@ -212,9 +246,11 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/documents`
+
 Request: multipart upload flow or presigned upload finalize payload.
 
 Response `201`:
+
 ```json
 {
   "document": {
@@ -233,7 +269,9 @@ Response `201`:
 ## Agent 2 Contracts
 
 ## `POST /api/projects/:projectId/context/confidence`
+
 Response `200`:
+
 ```json
 {
   "confidence": 72,
@@ -245,7 +283,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/context/clarify`
+
 Response `200`:
+
 ```json
 {
   "questions": [
@@ -256,7 +296,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/context/clarify-response`
+
 Request:
+
 ```json
 {
   "question": "What are the required deliverables?",
@@ -265,6 +307,7 @@ Request:
 ```
 
 Response `200`:
+
 ```json
 {
   "confidence": 84,
@@ -276,9 +319,11 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/ai/generate-tasks`
+
 Behavior: generates draft task graph only; leaves assignees null.
 
 Response `200`:
+
 ```json
 {
   "tasks": [
@@ -315,7 +360,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/planning/lock`
+
 Response `200`:
+
 ```json
 {
   "projectId": "p_123",
@@ -324,7 +371,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/assignments/run`
+
 Response `200`:
+
 ```json
 {
   "projectId": "p_123",
@@ -334,7 +383,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/replan`
+
 Response `200`:
+
 ```json
 {
   "projectId": "p_123",
@@ -345,7 +396,9 @@ Response `200`:
 ```
 
 ## `POST /api/projects/:projectId/task-reassignment-requests`
+
 Request:
+
 ```json
 {
   "requestType": "swap",
@@ -357,6 +410,7 @@ Request:
 ```
 
 Response `201`:
+
 ```json
 {
   "id": "rr_001",
@@ -365,7 +419,9 @@ Response `201`:
 ```
 
 ## `POST /api/task-reassignment-requests/:requestId/respond`
+
 Request:
+
 ```json
 {
   "action": "accept"
@@ -373,6 +429,7 @@ Request:
 ```
 
 Response `200`:
+
 ```json
 {
   "id": "rr_001",
@@ -381,12 +438,14 @@ Response `200`:
 ```
 
 ## Agent 3 Integration Notes
+
 - Build UI to these contracts; do not assume unstated fields.
 - Gate generation on clarification readiness.
 - Show planning state badges: `draft`, `locked`, `assigned`.
 - Keep assignment controls disabled unless status allows action.
 
 ## Change Control
+
 - Any contract change requires:
   1. Update this file first.
   2. Add entry to `DECISIONS.md` with rationale.
