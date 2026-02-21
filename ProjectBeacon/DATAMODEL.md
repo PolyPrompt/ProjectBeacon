@@ -23,9 +23,11 @@ Purpose: identity and top-level user account.
 
 Fields:
 - `id` (PK)
+- `clerk_user_id` (UNIQUE)
 - `name`
 - `email` (UNIQUE)
 - `created_at`
+- `updated_at`
 
 ## 2) `projects`
 
@@ -132,6 +134,7 @@ Constraints:
 Purpose: dependency graph between tasks.
 
 Fields:
+- `project_id` (FK -> `projects.id`)
 - `id` (PK)
 - `task_id` (FK -> `tasks.id`)
 - `depends_on_task_id` (FK -> `tasks.id`)
@@ -139,6 +142,7 @@ Fields:
 Constraints:
 - UNIQUE (`task_id`, `depends_on_task_id`)
 - CHECK (`task_id` != `depends_on_task_id`)
+- Both tasks in a dependency must belong to the same `project_id`
 
 MVP dependency semantics:
 - Treat all links as **finish-to-start**.
