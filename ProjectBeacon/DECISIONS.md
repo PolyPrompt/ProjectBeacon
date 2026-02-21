@@ -65,3 +65,25 @@
 - Impact on files or behavior:
   - Updated `app/layout.tsx` and `src/app/layout.tsx`.
   - Updated `app/globals.css` and `src/app/globals.css`.
+
+## 2026-02-21T19:20:54Z - Convert Workspace Flow from Single Section to Route-Based Steps
+
+- Decision summary: Move workspace flow from one dashboard section into dedicated routes for each stage (`context`, `clarify`, `generate`, `review`, `lock`, `assign`).
+- Rationale: Current requirement explicitly asks for individual pages for the sequence `context + docs -> clarify -> generate draft -> review -> lock -> assign` and UI references are page-oriented.
+- Alternatives considered:
+  - Keep one in-page wizard section: rejected because it does not satisfy the individual-pages requirement.
+  - Keep only three coarse pages (`intake`, `clarify`, `review`): rejected because it compresses lock/assign into one stage and reduces milestone clarity.
+- Impact on files or behavior:
+  - Added route set under `app/projects/[projectId]/workspace/*`.
+  - Updated `app/projects/[projectId]/page.tsx` to act as dashboard entry rather than embedded workflow executor.
+
+## 2026-02-21T19:20:54Z - Persist Cross-Page Draft State in Local Workspace Store
+
+- Decision summary: Introduce a client-side workspace draft store (localStorage-backed) to keep context/docs/clarification/tasks/dependencies/planning status synchronized across step pages.
+- Rationale: With backend endpoints still partially in-flight and no frozen read APIs for all draft entities, route transitions would otherwise lose generated/edit state.
+- Alternatives considered:
+  - Keep state only in component memory per page: rejected because navigation between pages would reset flow state.
+  - Require backend read/write coverage for every step before UI progression: rejected because it would block agent3 overnight progress.
+- Impact on files or behavior:
+  - Added `lib/workspace/draft-store.ts` with contract-safe API fallback behavior.
+  - Added shared server fetch helpers in `lib/workspace/page-data.ts` and `lib/workspace/fetch-contract.ts`.

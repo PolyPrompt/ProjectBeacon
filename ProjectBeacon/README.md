@@ -117,25 +117,26 @@ Open `http://localhost:3000`.
 
 ## Dashboard and Workspace (Agent 3 MVP)
 
-- `/` now redirects to `/projects/demo-project`.
-- `/projects/[projectId]` renders the MVP dashboard shell:
-  - project summary
+- `/` redirects to `/projects/demo-project`.
+- `/projects/[projectId]` renders the dashboard shell with:
+  - project summary/status
   - members list
-  - task list
+  - current draft task list
   - dependency preview
-- The same page includes a guided planning workspace flow:
-  1. add/update context text
-  2. upload docs
-  3. run clarification checks/questions
-  4. generate draft tasks
-  5. review/edit draft tasks
-  6. lock and assign
+  - links into each workspace step
+- Workspace flow is route-based (individual pages):
+  1. `/projects/[projectId]/workspace/context` (`context + docs`)
+  2. `/projects/[projectId]/workspace/clarify`
+  3. `/projects/[projectId]/workspace/generate`
+  4. `/projects/[projectId]/workspace/review`
+  5. `/projects/[projectId]/workspace/lock`
+  6. `/projects/[projectId]/workspace/assign`
 
-Implementation note:
+Implementation notes:
 
-- UI is wired to frozen API contract endpoints where available.
-- Fallback scaffold behavior only activates when endpoints are unavailable/network-failing, so normal API validation errors stay visible.
-- Clarification includes a local mock Q&A progression in fallback mode so `clarify -> generate` remains testable before backend readiness.
+- UI is wired only to frozen `API_CONTRACT.md` endpoints.
+- A local workspace draft store keeps state consistent across step pages (context/docs/clarification/tasks/dependencies/status).
+- Scaffold fallback activates only when endpoints are unavailable/network-failing (`404/405/501` or fetch failure), so real API validation/permission errors remain visible.
 
 ## Multi-Agent GitHub Automation
 
