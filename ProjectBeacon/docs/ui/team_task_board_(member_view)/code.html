@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Team Task Board - Project Alpha</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#622faf",
+                        "background-light": "#f7f6f8",
+                        "background-dark": "#18131f",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #332942; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #493b5e; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="w-20 lg:w-64 border-r border-primary/20 bg-background-light dark:bg-background-dark flex flex-col items-center lg:items-start py-6 px-4">
+<div class="flex items-center gap-3 mb-10 px-2">
+<div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">dashboard_customize</span>
+</div>
+<span class="text-xl font-bold hidden lg:block">Nexus UI</span>
+</div>
+<nav class="flex-1 w-full space-y-2">
+<a class="flex items-center gap-3 p-3 rounded-lg bg-primary/20 text-primary w-full transition-colors" href="#">
+<span class="material-symbols-outlined">view_kanban</span>
+<span class="font-semibold hidden lg:block">Team Board</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 text-slate-500 dark:text-slate-400 w-full transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-semibold hidden lg:block">Insights</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 text-slate-500 dark:text-slate-400 w-full transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-semibold hidden lg:block">Directory</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 text-slate-500 dark:text-slate-400 w-full transition-colors" href="#">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="font-semibold hidden lg:block">Discussions</span>
+</a>
+</nav>
+<div class="mt-auto w-full pt-6 border-t border-primary/10">
+<a class="flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 text-slate-500 dark:text-slate-400 w-full transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-semibold hidden lg:block">Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col overflow-hidden">
+<!-- Top Navigation -->
+<header class="h-16 border-b border-primary/20 flex items-center justify-between px-6 lg:px-10 bg-background-light dark:bg-background-dark/50 backdrop-blur-md">
+<div class="flex items-center gap-6">
+<h2 class="text-lg font-bold tracking-tight">Project Alpha</h2>
+<div class="hidden md:flex items-center bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 gap-2">
+<span class="material-symbols-outlined text-sm">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm p-0 placeholder:text-slate-500 w-48" placeholder="Find a task..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative p-2 rounded-lg hover:bg-primary/10 text-slate-600 dark:text-slate-300 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full"></span>
+</button>
+<div class="h-8 w-px bg-primary/20 mx-1"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="text-xs font-bold leading-none">Jordan Lee</p>
+<p class="text-[10px] text-slate-500">Member View</p>
+</div>
+<img class="size-9 rounded-full border-2 border-primary/40 object-cover" data-alt="User profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIebEK04XjlIFQxHAcHIH_tsGDQ2s6VVOEdcii1tn2T-n04nKgYLolZe_oe2pd9KE9pL2Cugb3NV3WgtGVNRHg2ULWzdQU4xTktKcaZekFfgRAysx5zw53DwQMKPcLbY_Ha3RWydrJweYmcOFNbLM6y_Fd-FpBL7_AE03lFGmADggqWjwvTyykiD2YMaHjCqTFD3JXdCIp1BDchjmXb4hpG_OlhMnFAknxsXRtnEjx8nN96L0zttK7RrubcnoAuS9Qsg8jDm7KvdI"/>
+</div>
+</div>
+</header>
+<!-- Board Header -->
+<div class="p-6 lg:p-10 pb-4">
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+<div>
+<h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">Team Task Overview</h1>
+<p class="text-slate-500 dark:text-slate-400 mt-1 font-medium">Standard internal view • Updated 5 mins ago</p>
+</div>
+<div class="flex flex-wrap gap-4">
+<div class="flex flex-col gap-1 min-w-[140px] rounded-xl p-4 bg-primary/10 border border-primary/20">
+<p class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Total Tasks</p>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-black">24</span>
+<span class="text-xs text-green-500 font-bold">+2%</span>
+</div>
+</div>
+<div class="flex flex-col gap-1 min-w-[200px] rounded-xl p-4 bg-red-500/10 border border-red-500/20">
+<p class="text-red-500/80 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">timer</span>
+                                Deadline Countdown
+                            </p>
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-black text-red-500 tracking-tight">04d : 12h : 30m</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Task Board Content -->
+<div class="flex-1 overflow-x-auto p-6 lg:px-10 pb-10 custom-scrollbar">
+<div class="flex gap-6 h-full min-w-[1200px]">
+<!-- Alex Column -->
+<div class="flex-1 flex flex-col bg-slate-100/50 dark:bg-slate-900/40 rounded-xl p-3 border border-slate-200 dark:border-slate-800">
+<div class="flex items-center justify-between px-2 mb-4">
+<div class="flex items-center gap-2">
+<span class="font-bold">Alex</span>
+<span class="bg-primary/20 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">6</span>
+</div>
+<span class="material-symbols-outlined text-slate-400 text-lg">more_horiz</span>
+</div>
+<div class="flex-1 space-y-3 overflow-y-auto custom-scrollbar pr-1">
+<!-- Task Card -->
+<div class="bg-white dark:bg-[#241d2f] p-4 rounded-lg border border-slate-200 dark:border-primary/10 shadow-sm hover:border-primary/40 transition-all cursor-default group">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-bold text-sm leading-tight group-hover:text-primary transition-colors">UI Refinement</h4>
+<div class="flex gap-1">
+<span class="size-2 rounded-full bg-red-500"></span>
+<span class="size-2 rounded-full bg-red-500"></span>
+<span class="size-2 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+</div>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">Update dark mode tokens across all dashboard components for consistent styling.</p>
+<div class="mt-4 flex items-center justify-between">
+<div class="flex -space-x-2">
+<img class="size-6 rounded-full border-2 border-white dark:border-[#241d2f]" data-alt="Contributor avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8iIY1pi4UaDYGQPn_V_tHExo7ZOW4AwdZlwC9YH2GUToe_1omYNBIg-SKfHr_HBo23qJt8DzRB9w9UAl_bzvPVC8aQDDv-ar0RGpaqgAHfPnq1m358Lz4i5d33OHdeb6Aw_3XKrCDLBqNrXycm7Ka2kruZtSt2eoCAyvD1qM2Rc9bEvbX78Bpa225hX5ay08FMkbj_0gzJGXHSMeuEgjPZCsEiBP0kbYmAK7F_vr-AViGioiZbmNP6l6uFOYCywnwVUDTEz4Gqcs"/>
+</div>
+<span class="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded uppercase">In Progress</span>
+</div>
+</div>
+<div class="bg-white dark:bg-[#241d2f] p-4 rounded-lg border border-slate-200 dark:border-primary/10 shadow-sm cursor-default">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-bold text-sm leading-tight">Asset Audit</h4>
+<div class="flex gap-1">
+<span class="size-2 rounded-full bg-yellow-500"></span>
+<span class="size-2 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+<span class="size-2 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+</div>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400">Inventory check on all new vector illustrations.</p>
+</div>
+</div>
+</div>
+<!-- Sarah Column -->
+<div class="flex-1 flex flex-col bg-slate-100/50 dark:bg-slate-900/40 rounded-xl p-3 border border-slate-200 dark:border-slate-800">
+<div class="flex items-center justify-between px-2 mb-4">
+<div class="flex items-center gap-2">
+<span class="font-bold">Sarah</span>
+<span class="bg-primary/20 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">8</span>
+</div>
+<span class="material-symbols-outlined text-slate-400 text-lg">more_horiz</span>
+</div>
+<div class="flex-1 space-y-3 overflow-y-auto custom-scrollbar pr-1">
+<div class="bg-white dark:bg-[#241d2f] p-4 rounded-lg border border-slate-200 dark:border-primary/10 shadow-sm cursor-default">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-bold text-sm leading-tight">API Integration</h4>
+<div class="flex gap-1">
+<span class="size-2 rounded-full bg-red-500"></span>
+<span class="size-2 rounded-full bg-red-500"></span>
+<span class="size-2 rounded-full bg-red-500"></span>
+</div>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">Connect task board endpoints to the main SQL cluster database.</p>
+<div class="mt-4 flex items-center justify-between">
+<span class="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded uppercase">Pending</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Jordan Column (Current User Highlight) -->
+<div class="flex-1 flex flex-col bg-primary/5 dark:bg-primary/5 rounded-xl p-3 border-2 border-primary/20 shadow-lg shadow-primary/5">
+<div class="flex items-center justify-between px-2 mb-4">
+<div class="flex items-center gap-2">
+<span class="font-bold text-primary">Jordan (You)</span>
+<span class="bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full">5</span>
+</div>
+<span class="material-symbols-outlined text-primary text-lg">star</span>
+</div>
+<div class="flex-1 space-y-3 overflow-y-auto custom-scrollbar pr-1">
+<div class="bg-white dark:bg-[#241d2f] p-4 rounded-lg border-2 border-primary shadow-md cursor-default">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-bold text-sm leading-tight">Data Schema</h4>
+<div class="flex gap-1">
+<span class="size-2 rounded-full bg-yellow-500"></span>
+<span class="size-2 rounded-full bg-yellow-500"></span>
+<span class="size-2 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+</div>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">Update JSON structures for the new task categorization system.</p>
+<div class="mt-4 flex items-center justify-between">
+<span class="text-[10px] font-bold text-white bg-primary px-2 py-0.5 rounded uppercase">In Focus</span>
+</div>
+</div>
+<div class="bg-white dark:bg-[#241d2f] p-4 rounded-lg border border-slate-200 dark:border-primary/10 shadow-sm cursor-default">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-bold text-sm leading-tight">Documentation</h4>
+<div class="flex gap-1">
+<span class="size-2 rounded-full bg-green-500"></span>
+<span class="size-2 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+<span class="size-2 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+</div>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400">Complete the technical specs for the API v2.</p>
+</div>
+</div>
+</div>
+<!-- Sam Column -->
+<div class="flex-1 flex flex-col bg-slate-100/50 dark:bg-slate-900/40 rounded-xl p-3 border border-slate-200 dark:border-slate-800">
+<div class="flex items-center justify-between px-2 mb-4">
+<div class="flex items-center gap-2">
+<span class="font-bold">Sam</span>
+<span class="bg-primary/20 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">5</span>
+</div>
+<span class="material-symbols-outlined text-slate-400 text-lg">more_horiz</span>
+</div>
+<div class="flex-1 space-y-3 overflow-y-auto custom-scrollbar pr-1">
+<div class="bg-white dark:bg-[#241d2f] p-4 rounded-lg border border-slate-200 dark:border-primary/10 shadow-sm cursor-default">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-bold text-sm leading-tight">User Testing</h4>
+<div class="flex gap-1">
+<span class="size-2 rounded-full bg-red-500"></span>
+<span class="size-2 rounded-full bg-red-500"></span>
+<span class="size-2 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+</div>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">Conduct 3 remote sessions with stakeholders from the logistics team.</p>
+<div class="mt-4 flex items-center justify-between">
+<span class="text-[10px] font-bold text-green-500 bg-green-500/10 px-2 py-0.5 rounded uppercase">Ready</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

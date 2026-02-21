@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Project Delegator - Kanban Board</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#622faf",
+                        "background-light": "#f7f6f8",
+                        "background-dark": "#18131f",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Manrope', sans-serif;
+        }
+        .kanban-column {
+            min-width: 240px;
+            max-width: 260px;
+        }
+        .glass-panel {
+            background: rgba(98, 47, 175, 0.05);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(98, 47, 175, 0.2);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #332942;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #622faf;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between border-b border-primary/20 bg-background-light dark:bg-background-dark/50 px-8 py-3 sticky top-0 z-50 backdrop-blur-md">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-primary">
+<div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">auto_awesome</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-extrabold leading-tight tracking-tight">Delegator.ai</h2>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-primary text-sm font-semibold border-b-2 border-primary pb-1" href="#">Sprint Board</a>
+<a class="text-slate-500 dark:text-slate-400 text-sm font-medium hover:text-primary transition-colors" href="#">Team Capacity</a>
+<a class="text-slate-500 dark:text-slate-400 text-sm font-medium hover:text-primary transition-colors" href="#">Efficiency Insights</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden lg:flex items-center bg-slate-200 dark:bg-primary/10 rounded-lg px-3 py-1.5 gap-2 border border-primary/20">
+<span class="material-symbols-outlined text-primary text-sm">bolt</span>
+<span class="text-xs font-bold text-primary uppercase tracking-wider">AI Engine Active</span>
+</div>
+<button class="p-2 rounded-lg bg-slate-200 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-primary/20 hover:text-primary transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="size-9 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center overflow-hidden">
+<img alt="User Profile" class="size-full object-cover" data-alt="User profile avatar showing professional male designer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqJeAcBxvai3ed4VLgNf5C3-fE4NaIXagWgZHIlMJ9b5hvk4zLM5u5_b1qMNTybCSE-S-xIKFcLBFu1yFRDpGwerbSa5gpA6XFXaxGNS6upJv4dPPbmx63vHwImhvZ2GJbjDCzuXUr7R4ApfRbsHMaowVE-qNY8AiIr1w1MjdpsVtt6b4dwvOGQA4v-l8XvRq68v2sJGzcucunHKA39oScSWBfaXXgrqujTbrwMtzHUw_EEd9rifyeUoFHLTkMqd4UPi-h1s5h5Ew"/>
+</div>
+</div>
+</header>
+<!-- Unified Status Bar -->
+<section class="bg-slate-100 dark:bg-[#1f1a29] border-b border-primary/10 px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-8">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-bold">Total Tasks</span>
+<span class="text-xl font-extrabold text-primary">24</span>
+</div>
+<div class="h-8 w-px bg-slate-300 dark:bg-slate-700"></div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-bold">Countdown to Deadline</span>
+<span class="text-xl font-extrabold text-slate-900 dark:text-white">12 Days Left</span>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg shadow-primary/20 hover:brightness-110 transition-all">
+<span class="material-symbols-outlined text-sm">add</span>
+                New Task
+            </button>
+<button class="flex items-center gap-2 bg-slate-200 dark:bg-white/5 text-slate-700 dark:text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-300 dark:hover:bg-white/10 transition-all">
+<span class="material-symbols-outlined text-sm">smart_toy</span>
+                Re-Delegate
+            </button>
+</div>
+</section>
+<!-- Kanban Board Container -->
+<main class="flex-1 overflow-x-auto custom-scrollbar bg-background-light dark:bg-background-dark p-6">
+<div class="flex flex-col gap-8 min-w-max"><div class="flex min-w-max pb-4 gap-4">
+<!-- Column: Alex -->
+<div class="kanban-column flex flex-col gap-4">
+<div class="flex items-center gap-3 px-2 mb-2"><div class="size-8 rounded-full border-2 border-primary overflow-hidden shrink-0">
+<img alt="Alex" class="object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRSa5CcQulb62-28jaoZjoYz6U4br8ND0-wTv2WaN78lLdkhf_GprEuzW_ItRr0T7mToA48srTBy_oYQs9j11FQjicI5xE2zAPmuCBN_-D41q19G-kKYlFCPC1Tug5N5GSsjkrXmuwNLAzATQJattU5tqTau3YqetYwBtQTAzXJeMFaSteV8QarawaLAoMuDGsyJe3nUPp5NTxp5jkbv2zMxOJN55vVI82HgkJ8IdJrzskgFhkv8JtjkH5dPjPBUW-F2k2aintrbo"/>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-bold text-sm text-slate-900 dark:text-white">Alex</span>
+<span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-green-500/10 text-green-500 border border-green-500/20">2 Tasks</span>
+</div>
+<p class="text-[10px] text-slate-500 dark:text-slate-400 italic leading-tight">Assigned for deep expertise in backend security protocols and infrastructure scaling.</p>
+</div></div>
+<div class="flex flex-col gap-3">
+<!-- Refactor Legacy Auth (88% - Hidden confidence) -->
+<div class="bg-white dark:bg-[#241d2f] rounded-xl border border-slate-200 dark:border-[#332942] shadow-sm hover:border-primary/50 transition-all cursor-grab active:cursor-grabbing group relative p-3">
+<div class="absolute top-4 left-4 size-2.5 rounded-full bg-orange-500"></div>
+<div class="pl-5">
+<h4 class="font-bold text-slate-900 dark:text-white text-sm leading-tight mb-1">Refactor Legacy Auth</h4>
+<p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mb-2">Migrate OIDC implementation to newer security standards.</p>
+<div class="flex items-center justify-between">
+<div class="flex gap-1">
+<span class="text-[9px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-500 font-bold">Security</span>
+<span class="text-[9px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-500 font-bold">Node.js</span>
+</div>
+</div>
+<div class="text-[10px] font-bold text-primary/70">Suggested Deadline: 4d</div>
+</div>
+</div>
+<!-- Scale Inference Engine (94% - Hidden confidence) -->
+<div class="bg-white dark:bg-[#241d2f] rounded-xl border-l-4 border-l-primary border border-slate-200 dark:border-[#332942] shadow-sm hover:border-primary/50 transition-all cursor-grab active:cursor-grabbing group relative p-3">
+<div class="absolute top-4 left-4 size-2.5 rounded-full bg-purple-500"></div>
+<div class="pl-5">
+<h4 class="font-bold text-slate-900 dark:text-white text-sm leading-tight mb-1">Scale Inference Engine</h4>
+<p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mb-2">Optimize load balancer for high-concurrency LLM calls.</p>
+<div class="flex items-center justify-between">
+<div class="flex gap-1">
+<span class="text-[9px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-500 font-bold">Cloud</span>
+<span class="text-[9px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-500 font-bold">DevOps</span>
+</div>
+</div>
+<div class="text-[10px] font-bold text-primary/70">Suggested Deadline: 4d</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: Sarah -->
+<div class="kanban-column flex flex-col gap-4">
+<div class="flex items-center gap-3 px-2 mb-2"><div class="size-8 rounded-full border-2 border-primary overflow-hidden shrink-0">
+<img alt="Sarah" class="object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeCwLIt3leNI6rhMyUPOrAl8AJta68JCmOhdqnFVAs8rbHTB0VWfgneB_9q2R2PzX5orf1cVUM33HKrwrLySUDBVfkwgJGE0hKQGTAWe1azpi5HEEbkdZ68dGz0bhu3xY4TUrP2ypatysK5uwabC54OeOwKxd8fRUpC-atL8P3nCUmkYtdbSwMiq-MapU_OJfXWEzuG9zbYKOukyNLg-3f0_ThSGcE9Tw33J-ynOjgKss-Giltll-PPW-ICxJxWcqa-nAORtQ15HQ"/>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-bold text-sm text-slate-900 dark:text-white">Sarah</span>
+<span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-green-500/10 text-green-500 border border-green-500/20">1 Task</span>
+</div>
+<p class="text-[10px] text-slate-500 dark:text-slate-400 italic leading-tight">Matched for her expertise in frontend component architecture and React hooks.</p>
+</div></div>
+<div class="flex flex-col gap-3">
+<!-- Mobile Responsiveness (97% - Hidden confidence) -->
+<div class="bg-white dark:bg-[#241d2f] rounded-xl border border-slate-200 dark:border-[#332942] shadow-sm hover:border-primary/50 transition-all cursor-grab active:cursor-grabbing group relative p-3">
+<div class="absolute top-4 left-4 size-2.5 rounded-full bg-green-500"></div>
+<div class="pl-5">
+<h4 class="font-bold text-slate-900 dark:text-white text-sm leading-tight mb-1">Mobile Responsiveness Audit</h4>
+<p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mb-2">Ensure all AI components render correctly.</p>
+<div class="flex items-center justify-between">
+<div class="flex gap-1">
+<span class="text-[9px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-500 font-bold">CSS</span>
+<span class="text-[9px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-500 font-bold">UI</span>
+</div>
+</div>
+<div class="text-[10px] font-bold text-primary/70">Suggested Deadline: 4d</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: Jordan -->
+<div class="kanban-column flex flex-col gap-4">
+<div class="flex items-center gap-3 px-2 mb-2"><div class="size-8 rounded-full border-2 border-primary overflow-hidden shrink-0">
+<img alt="Jordan" class="object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBph4pLTPXZ5lat3Mm8L2aknMzRdFNAAkQqS60r2A9vVg7Dnxy3W0tIN5vNFnPYGeTHaHJ08DQ60Jp-Q0hFRsjL2VyDw7stRbQtnw3ocZQ6SIxF1nR-LcpglruP6xNaXslkkQl9-1fL8aeRr32lfQdanwsWjZgOu3OA5F_n8teU_jFp9wDvwJ1L-B7qrWqD0uoI_PN8NWQykcw01g1XxrzIM3rY69aBNR1k9ZrPnB6VAcA8L735EUr7NbrFB5LlpQNRP_vDV4aIbtQ"/>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-bold text-sm text-slate-900 dark:text-white">Jordan</span>
+<span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-green-500/10 text-green-500 border border-green-500/20">2 Tasks</span>
+</div>
+<p class="text-[10px] text-slate-500 dark:text-slate-400 italic leading-tight">Selected due to high NLP skill affinity and proven performance in data pipeline automation.</p>
+</div></div>
+<div class="flex flex-col gap-3">
+<!-- Fine-tune Transformer Layers (92% - Hidden confidence) -->
+<div class="bg-white dark:bg-[#241d2f] rounded-xl border border-slate-200 dark:border-[#332942] shadow-sm hover:border-primary/50 transition-all cursor-grab active:cursor-grabbing group relative p-3">
+<div class="absolute top-4 left-4 size-2.5 rounded-full bg-purple-500"></div>
+<div class="pl-5">
+<h4 class="font-bold text-slate-900 dark:text-white text-sm leading-tight mb-1">Fine-tune Transformer Layers</h4>
+<p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mb-2">Refine model for better inference latency.</p>
+<div class="flex items-center justify-between">
+<div class="flex gap-1">
+<span class="text-[9px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-500 font-bold">NLP</span>
+<span class="text-[9px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-500 font-bold">Python</span>
+</div>
+</div>
+<div class="text-[10px] font-bold text-primary/70">Suggested Deadline: 4d</div>
+</div>
+</div>
+<!-- Dataset Cleaning Pipeline (85% - Shown confidence threshold boundary, usually inclusive but request says < 85, so 85 is hidden) -->
+<div class="bg-white dark:bg-[#241d2f] rounded-xl border border-slate-200 dark:border-[#332942] shadow-sm hover:border-primary/50 transition-all cursor-grab active:cursor-grabbing group relative p-3">
+<div class="absolute top-4 left-4 size-2.5 rounded-full bg-orange-500"></div>
+<div class="pl-5">
+<h4 class="font-bold text-slate-900 dark:text-white text-sm leading-tight mb-1">Dataset Cleaning Pipeline</h4>
+<p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mb-2">Automate outlier detection in data lake.</p>
+<div class="flex items-center justify-between">
+<div class="flex gap-1">
+<span class="text-[9px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-500 font-bold">Pandas</span>
+<span class="text-[9px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-500 font-bold">ETL</span>
+</div>
+</div>
+<div class="text-[10px] font-bold text-primary/70">Suggested Deadline: 4d</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: Sam -->
+<div class="kanban-column flex flex-col gap-4">
+<div class="flex items-center gap-3 px-2 mb-2"><div class="size-8 rounded-full border-2 border-primary overflow-hidden shrink-0">
+<img alt="Sam" class="object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDreRB5QMOHDDcyYkNBwS_0vuZN0gE9pbf_H2Bhf5yhrDHHvaYd6PFlOcCduPidt4dMF9RtBM2UcoATauMoiTJFryOFxWQSr6lh7SFIPgGtKxOXnoLkcv_c4MlgZjA8kERK4fXOtXA9XdZe1RQt61PRipotAN8At3yU3wrmp8CBFu8n4ccF5R4JXKo1L7B_NY0GrZWugWWXySMc4vpAh2QHctPjJ0l6dBvS7_JQMtPNmv2qWl5LXNYl8m1ANZQ-Uhcfal67HnVcb38"/>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-bold text-sm text-slate-900 dark:text-white">Sam</span>
+<span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-green-500/10 text-green-500 border border-green-500/20">1 Task</span>
+</div>
+<p class="text-[10px] text-slate-500 dark:text-slate-400 italic leading-tight">Leveraging high current availability to ensure comprehensive unit test coverage.</p>
+</div></div>
+<div class="flex flex-col gap-3">
+<!-- Unit Test Coverage (99% - Hidden confidence) -->
+<div class="bg-white dark:bg-[#241d2f] rounded-xl border border-slate-200 dark:border-[#332942] shadow-sm hover:border-primary/50 transition-all cursor-grab active:cursor-grabbing group relative p-3">
+<div class="absolute top-4 left-4 size-2.5 rounded-full bg-green-500"></div>
+<div class="pl-5">
+<h4 class="font-bold text-slate-900 dark:text-white text-sm leading-tight mb-1">Unit Test Coverage</h4>
+<p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mb-2">Reach 90% coverage on core APIs.</p>
+<div class="flex items-center justify-between">
+<div class="flex gap-1">
+<span class="text-[9px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-500 font-bold">Testing</span>
+<span class="text-[9px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-500 font-bold">Jest</span>
+</div>
+</div>
+<div class="text-[10px] font-bold text-primary/70">Suggested Deadline: 4d</div>
+</div>
+</div>
+</div>
+</div>
+</div></div>
+</main>
+<!-- AI Delegation Insight Footer -->
+<div class="fixed bottom-6 right-8 z-[60]">
+<button class="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-full font-bold text-sm shadow-xl shadow-primary/40 hover:brightness-110 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-lg">send</span>
+        Finalize and Send to Group
+    </button>
+</div>
+</body></html>
