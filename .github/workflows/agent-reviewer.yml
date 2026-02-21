@@ -1,0 +1,67 @@
+name: Agent Reviewer
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - labeled
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: agent-reviewer-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: contains(github.event.pull_request.labels.*.name, 'agent1') || contains(github.event.pull_request.labels.*.name, 'agent2') || contains(github.event.pull_request.labels.*.name, 'agent3')
+    runs-on: [self-hosted, macOS, X64]
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Run Codex reviewer
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: ProjectBeacon/docs/agents/reviewer.md
+          safety-strategy: none
+          sandbox: workspace-write
+
+      - name: Post review comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if [[ -f ProjectBeacon/REVIEW_COMMENT.md ]]; then
+            gh pr comment "$PR_NUMBER" --body-file ProjectBeacon/REVIEW_COMMENT.md
+          elif [[ -f REVIEW_COMMENT.md ]]; then
+            gh pr comment "$PR_NUMBER" --body-file REVIEW_COMMENT.md
+          else
+            gh pr comment "$PR_NUMBER" --body "Automated review completed by reviewer agent."
+          fi
+
+      - name: Enable auto-merge squash
+        id: automerge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          gh pr merge "$PR_NUMBER" --auto --squash
+
+      - name: Comment on auto-merge failure
+        if: failure() && steps.automerge.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          gh pr comment "$PR_NUMBER" --body "Auto-merge (squash) could not be enabled automatically. A human reviewer should verify required checks, branch protection settings, and merge permissions."

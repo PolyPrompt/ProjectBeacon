@@ -114,3 +114,50 @@ npm run dev
 ```
 
 Open `http://localhost:3000`.
+
+## Multi-Agent GitHub Automation
+
+This repo includes scheduled Codex builder agents and a PR reviewer agent:
+
+- Builders: `agent1`, `agent2`, `agent3`
+- Reviewer: `reviewer`
+- Workflows are in `.github/workflows/agent-*.yml`
+
+### Required GitHub Settings
+
+- Actions permissions must allow write access for `GITHUB_TOKEN` (contents, pull requests, issues).
+- Repository settings should allow GitHub Actions to create and approve pull requests if your policy requires explicit enablement.
+- Add secret `OPENAI_API_KEY` for `openai/codex-action@v1`.
+
+### Required Labels
+
+Create these labels exactly:
+
+- `status:ready`
+- `agent1`
+- `agent2`
+- `agent3`
+
+### Issue Dependency Format
+
+Builder agents only pick issues that are:
+
+- Open
+- Labeled `agent:<name>` and `status:ready`
+- Dependency-ready
+
+Dependencies are parsed from a single issue-body line:
+
+```text
+deps: #123 #456
+```
+
+Each listed dependency must be closed before the issue is eligible.
+
+### Self-Hosted Runner Labels
+
+Workflows are currently pinned to self-hosted runners and do not fall back to GitHub-hosted runners. Ensure your runner has these labels:
+
+- `self-hosted`
+- `macOS`
+- `X64`
