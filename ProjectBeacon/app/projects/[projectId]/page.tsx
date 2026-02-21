@@ -4,6 +4,7 @@ import { DependencyPreview } from "@/components/dashboard/dependency-preview";
 import { ProjectMembersList } from "@/components/dashboard/project-members-list";
 import { ProjectSummaryCard } from "@/components/dashboard/project-summary-card";
 import { ProjectTaskList } from "@/components/dashboard/project-task-list";
+import PlanningWorkspace from "@/components/projects/planning-workspace";
 import { requireSessionUser } from "@/lib/auth/session";
 import { getServiceSupabaseClient } from "@/lib/supabase/server";
 
@@ -199,6 +200,10 @@ export default async function ProjectDashboardPage({
       <DependencyPreview
         dependencyEdges={dashboardViewModel.dependencyEdges}
         tasks={dashboardViewModel.tasks}
+      />
+      <PlanningWorkspace
+        projectId={projectId}
+        userIdHeaderValue={sessionUser.userId}
       />
     </section>
   );

@@ -3,11 +3,19 @@
 import { useMemo, useState } from "react";
 
 type ClarificationPanelProps = {
+  disabled?: boolean;
+  onAnswerSubmitted?: (payload: {
+    answer: string;
+    question: string;
+    state: ClarificationState;
+  }) => void;
+  onQuestionsChange?: (questions: string[]) => void;
+  onStateChange?: (state: ClarificationState) => void;
   projectId: string;
   userIdHeaderValue: string;
 };
 
-type ClarificationState = {
+export type ClarificationState = {
   confidence: number;
   threshold: number;
   askedCount: number;
@@ -16,6 +24,10 @@ type ClarificationState = {
 };
 
 export default function ClarificationPanel({
+  disabled = false,
+  onAnswerSubmitted,
+  onQuestionsChange,
+  onStateChange,
   projectId,
   userIdHeaderValue,
 }: ClarificationPanelProps) {
@@ -58,6 +70,7 @@ export default function ClarificationPanel({
       const nextQuestions = payload.questions ?? [];
       setQuestions(nextQuestions);
       setSelectedQuestion(nextQuestions[0] ?? "");
+      onQuestionsChange?.(nextQuestions);
     } catch (unknownError) {
       setError(
         unknownError instanceof Error
@@ -93,6 +106,7 @@ export default function ClarificationPanel({
       }
 
       setState(payload);
+      onStateChange?.(payload);
     } catch (unknownError) {
       setError(
         unknownError instanceof Error
@@ -133,6 +147,12 @@ export default function ClarificationPanel({
       }
 
       setState(payload);
+      onStateChange?.(payload);
+      onAnswerSubmitted?.({
+        answer,
+        question: selectedQuestion,
+        state: payload,
+      });
       setAnswer("");
       await fetchQuestions();
     } catch (unknownError) {
@@ -153,7 +173,7 @@ export default function ClarificationPanel({
           type="button"
           className="rounded bg-black px-3 py-2 text-sm text-white"
           onClick={recomputeConfidence}
-          disabled={loading}
+          disabled={loading || disabled}
         >
           Compute confidence
         </button>
@@ -161,7 +181,7 @@ export default function ClarificationPanel({
           type="button"
           className="rounded border border-black px-3 py-2 text-sm"
           onClick={fetchQuestions}
-          disabled={loading}
+          disabled={loading || disabled}
         >
           Get clarifying questions
         </button>
@@ -207,7 +227,7 @@ export default function ClarificationPanel({
         type="button"
         className="rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
         onClick={submitAnswer}
-        disabled={loading || !canSubmit}
+        disabled={loading || !canSubmit || disabled}
       >
         Submit answer
       </button>
