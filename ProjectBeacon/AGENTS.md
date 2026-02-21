@@ -89,6 +89,12 @@ npm run start
 
 - If behavior, setup, or architecture changes, update:
   - `./README.md`
+- Track current in-progress ownership and task scope in:
+  - `./TASK.md` (create if missing)
+- `./TASK.md` usage rules:
+  - add/update a short entry at start of work with agent identifier, UTC start time, task summary, and target files
+  - update the same entry when scope changes
+  - mark status at end (`done`, `blocked`, or `handoff`)
 - Track active work and handoff notes in:
   - `./HANDOFF.md` (create if missing when relevant to active work)
 - Keep a running major-decision log in:
