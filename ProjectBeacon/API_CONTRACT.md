@@ -541,6 +541,85 @@ Notes:
 - `dueDatePlacement` values: `early | mid | late | unscheduled`.
 - Non-members must receive `403`.
 
+## `GET /api/projects/:projectId/workflow/board`
+
+Response `200`:
+
+```json
+{
+  "capability": {
+    "role": "admin",
+    "canManageProject": true,
+    "canEditWorkflow": true
+  },
+  "columns": [
+    {
+      "userId": "u_1",
+      "name": "Ada Lovelace",
+      "email": "ada@school.edu",
+      "role": "admin",
+      "tasks": [
+        {
+          "id": "t_123",
+          "title": "Build Auth Middleware",
+          "status": "todo",
+          "softDeadline": "2026-03-01T00:00:00.000Z",
+          "difficultyPoints": 3,
+          "phase": "middle"
+        }
+      ]
+    }
+  ],
+  "unassigned": []
+}
+```
+
+Notes:
+
+- `columns` contains one column per project member.
+- `phase` values: `beginning | middle | end`.
+- Non-members must receive `403`.
+
+## `GET /api/projects/:projectId/workflow/timeline`
+
+Response `200`:
+
+```json
+{
+  "capability": {
+    "role": "user",
+    "canManageProject": false,
+    "canEditWorkflow": false
+  },
+  "tasks": [
+    {
+      "id": "t_123",
+      "title": "Build Auth Middleware",
+      "status": "todo",
+      "softDeadline": "2026-03-01T00:00:00.000Z",
+      "difficultyPoints": 3,
+      "assigneeUserId": "u_1",
+      "sequenceIndex": 4,
+      "totalTasks": 10,
+      "phase": "middle",
+      "dueDatePlacement": "mid"
+    }
+  ],
+  "edges": [
+    {
+      "taskId": "t_123",
+      "dependsOnTaskId": "t_001"
+    }
+  ]
+}
+```
+
+Notes:
+
+- Timeline order is dependency-aware and deterministic.
+- `dueDatePlacement` values: `early | mid | late | unscheduled`.
+- Non-members must receive `403`.
+
 ## Agent 3 Integration Notes
 
 - Build UI to these contracts; do not assume unstated fields.

@@ -606,6 +606,8 @@ Output:
 - `GET /projects/:id/tasks/my` -> reads `tasks` filtered by (`project_id`, authenticated `assignee_user_id`) with `due_at` ordering
 - `GET /projects/:id/tasks/:taskId/detail` -> reads `tasks`, `task_dependencies`, `task_required_skills`, `skills`, `project_member_skills` + fallback `user_skills`
 - `GET /projects/:id/workflow/timeline/:taskId` -> reads `projects`, `tasks`, and `task_dependencies` for deterministic phase/dependency timing placement
+- `GET /projects/:id/workflow/board` -> reads `project_members`, `users`, `tasks`, and `task_dependencies` for assignee-column board projection
+- `GET /projects/:id/workflow/timeline` -> reads `projects`, `tasks`, and `task_dependencies` for ordered timeline flow + dependency edges
 - `GET/POST/PATCH/DELETE /tasks/:id/required-skills...` -> `task_required_skills`
 - `GET/POST/DELETE /tasks/:id/dependencies...` -> `task_dependencies`
 - `POST /projects/:id/task-reassignment-requests` -> create `task_reassignment_requests` (`swap` or `handoff`)

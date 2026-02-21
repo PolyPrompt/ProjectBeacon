@@ -7,7 +7,7 @@ type ProjectMemberRoleRow = {
   role: string;
 };
 
-function normalizeProjectRole(role: string): ProjectRole {
+export function normalizeProjectRole(role: string): ProjectRole {
   if (role === "owner" || role === "admin") {
     return "admin";
   }

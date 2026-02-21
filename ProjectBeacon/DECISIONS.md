@@ -21,3 +21,16 @@
   - `app/api/projects/[projectId]/workflow/timeline/[taskId]/route.ts`
   - `API_CONTRACT.md`
   - `DATAMODEL.md`
+
+## 2026-02-21T21:16:19Z
+- Decision: Expose workflow write capability flags (`canManageProject`, `canEditWorkflow`) directly in board/timeline aggregate responses based on normalized project role.
+- Rationale: Frontend needs a single trusted source of role-aware affordances to avoid client-side drift and duplicate role-logic inference.
+- Alternatives considered:
+  - Infer capabilities in frontend only from raw role.
+  - Return role only and leave write-gate matrix undocumented.
+- Impact:
+  - `lib/workflow/board-view.ts`
+  - `lib/workflow/timeline-view.ts`
+  - `app/api/projects/[projectId]/workflow/board/route.ts`
+  - `app/api/projects/[projectId]/workflow/timeline/route.ts`
+  - `API_CONTRACT.md`

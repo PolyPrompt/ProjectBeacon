@@ -59,3 +59,26 @@
   - `API_CONTRACT.md`
   - `DATAMODEL.md`
   - `DECISIONS.md`
+
+## 2026-02-21T21:16:19Z - PB-023 Milestone (Agent2)
+- Issue: `#45` `[PB-023] Workflow Board and Timeline Aggregate APIs` (claimed, in progress to done path).
+- Completed:
+  - Added `GET /api/projects/:projectId/workflow/board`.
+  - Added `GET /api/projects/:projectId/workflow/timeline`.
+  - Implemented workflow board read model with member-based columns, unassigned bucket, and dependency-aware phase tags.
+  - Implemented workflow timeline read model with ordered task flow, dependency edges, and due-date placement (`early|mid|late|unscheduled`).
+  - Added role-based capability flags in aggregate responses (`role`, `canManageProject`, `canEditWorkflow`).
+  - Updated `API_CONTRACT.md` and `DATAMODEL.md` mappings for aggregate workflow endpoints.
+- Verification:
+  - `npm run format:check` => fail due pre-existing repository-wide formatting drift in docs/task files and `HANDOFF.md`/`DECISIONS.md`.
+  - `npm run lint` => pass.
+  - `npm run build` => pass.
+- Files changed:
+  - `app/api/projects/[projectId]/workflow/board/route.ts`
+  - `app/api/projects/[projectId]/workflow/timeline/route.ts`
+  - `lib/workflow/board-view.ts`
+  - `lib/workflow/timeline-view.ts`
+  - `lib/server/project-access.ts`
+  - `API_CONTRACT.md`
+  - `DATAMODEL.md`
+  - `DECISIONS.md`
