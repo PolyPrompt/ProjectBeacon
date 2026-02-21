@@ -38,6 +38,7 @@ This document is the shared API contract across agents. Freeze request/response 
 ```ts
 export type ProjectPlanningStatus = "draft" | "locked" | "assigned";
 export type TaskStatus = "todo" | "in_progress" | "blocked" | "done";
+export type ProjectRole = "admin" | "user";
 
 export type ApiError = {
   error: {
@@ -47,6 +48,11 @@ export type ApiError = {
   };
 };
 ```
+
+Role compatibility note:
+
+- API DTOs must use `admin | user`.
+- DB adapters may still map legacy values (`owner | member`) to API role names.
 
 ## Agent 1 Contracts
 
@@ -136,7 +142,7 @@ Response `200`:
       "userId": "uuid",
       "name": "Ada Lovelace",
       "email": "ada@school.edu",
-      "role": "owner"
+      "role": "admin"
     }
   ]
 }
@@ -149,7 +155,7 @@ Request:
 ```json
 {
   "userId": "uuid",
-  "role": "member"
+  "role": "user"
 }
 ```
 
@@ -159,7 +165,7 @@ Response `201`:
 {
   "projectId": "p_123",
   "userId": "uuid",
-  "role": "member"
+  "role": "user"
 }
 ```
 
