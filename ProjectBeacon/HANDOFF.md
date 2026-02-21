@@ -35,3 +35,21 @@
 - blockers/notes:
   - upstream API tasks (`PB-021`, `PB-022`) are not fully closed; dashboard currently supports explicit scaffold mode
 
+## 2026-02-21T21:31:32Z - PB-026 complete (agent3)
+- issue: #48 (`PB-026`)
+- status: implemented and validated on branch `agent3/pb-026-documents-page`
+- delivered:
+  - dedicated documents page route with admin/user role behavior
+  - admin controls: upload, assign access, remove actions (API-wired)
+  - user read-only labeling and no mutation affordances
+  - “used to generate tasks” section
+  - signed-URL preview modal with embed popup (`/documents/:documentId/view`)
+  - loading/empty/error/scaffold states for documents and preview retrieval
+- verification:
+  - `npm run format:check` -> fails on pre-existing repo files outside task scope
+  - `npx prettier --check` on touched files -> pass
+  - `npm run lint` -> pass (no warnings)
+  - `npm run build` -> pass
+- blockers/notes:
+  - upstream document APIs (`PB-020`) remain open; scaffold fallback and tolerant parsing are explicit
+

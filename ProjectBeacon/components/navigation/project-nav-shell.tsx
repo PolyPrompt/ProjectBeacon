@@ -32,6 +32,7 @@ export function ProjectNavShell({
   children,
 }: ProjectNavShellProps) {
   const pathname = usePathname();
+  const isDocumentsRoute = pathname.includes("/documents");
 
   const navItems: NavItem[] = [
     {
@@ -102,6 +103,11 @@ export function ProjectNavShell({
             </form>
           </div>
         </div>
+        {isDocumentsRoute && role === "user" ? (
+          <p className="mx-auto w-full max-w-7xl px-4 pb-3 text-xs font-medium text-slate-500 sm:px-6">
+            Documents are in read-only mode for users.
+          </p>
+        ) : null}
       </header>
 
       <main className="mx-auto w-full max-w-7xl px-4 py-6 pb-24 sm:px-6 md:pb-6">

@@ -9,3 +9,9 @@
 - alternatives considered: hard-fail dashboard render until all APIs are live; rejected because it blocks UI verification and role QA.
 - impact: Added `lib/workspace/page-data.ts` with strict DTO normalization, scaffold notices, and task-detail modal fallback behavior.
 
+## 2026-02-21T21:31:32Z
+- decision: Implemented documents management UI with permissive response parsing (`signedUrl`/`url`/nested forms) and scaffold fallback documents when list/view endpoints fail.
+- rationale: Document APIs (`PB-020`) are still open, but PB-026 requires preview/embed and role-aware controls now.
+- alternatives considered: enforce a single strict response shape and hard-fail UI when not matched; rejected to preserve progress and end-to-end UX validation.
+- impact: Added role-aware documents page + preview modal with explicit read-only user state and admin mutation controls that attempt contract endpoints.
+
