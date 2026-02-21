@@ -114,3 +114,56 @@ npm run dev
 ```
 
 Open `http://localhost:3000`.
+
+## Multi-Agent GitHub Automation
+
+This repo includes scheduled Codex builder agents and a PR reviewer agent:
+
+- Builders: `frontend`, `backend`, `docs`
+- Reviewer: `reviewer`
+- Workflows are in `.github/workflows/agent-*.yml`
+
+### Required GitHub Settings
+
+- Actions permissions must allow write access for `GITHUB_TOKEN` (contents, pull requests, issues).
+- Repository settings should allow GitHub Actions to create and approve pull requests if your policy requires explicit enablement.
+- Add secret `OPENAI_API_KEY` for `openai/codex-action@v1`.
+
+### Required Labels
+
+Create these labels exactly:
+
+- `status:ready`
+- `status:in-progress`
+- `status:blocked`
+- `needs-human`
+- `codex-bot`
+- `agent:frontend`
+- `agent:backend`
+- `agent:docs`
+
+### Issue Dependency Format
+
+Builder agents only pick issues that are:
+
+- Open
+- Labeled `agent:<name>` and `status:ready`
+- Not labeled `needs-human`
+- Dependency-ready
+
+Dependencies are parsed from a single issue-body line:
+
+```text
+deps: #123 #456
+```
+
+Each listed dependency must be closed before the issue is eligible.
+
+### Self-Hosted Runner Labels
+
+By default workflows can run on `ubuntu-latest`. To route to self-hosted runners, set repository variable `USE_SELF_HOSTED_RUNNERS=true` and provide runners with these labels:
+
+- frontend builder: `self-hosted`, `agent-frontend`
+- backend builder: `self-hosted`, `agent-backend`
+- docs builder: `self-hosted`, `agent-docs`
+- reviewer: `self-hosted`, `agent-reviewer`
