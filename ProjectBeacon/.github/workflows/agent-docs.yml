@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "*/10 * * * *"
   workflow_dispatch:
+    inputs:
+      test_mode:
+        description: "Temporary test run: bypass in-progress lock for this run"
+        required: false
+        default: "false"
 
 permissions:
   contents: write
@@ -26,6 +31,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           AGENT_LABEL: agent:agent3
+          SKIP_IN_PROGRESS_CHECK: ${{ inputs.test_mode == 'true' && 'true' || 'false' }}
         run: |
           set -euo pipefail
           bash .github/scripts/pick_issue.sh

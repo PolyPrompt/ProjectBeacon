@@ -6,6 +6,7 @@ if [[ -z "${AGENT_LABEL}" ]]; then
   echo "AGENT_LABEL is required" >&2
   exit 1
 fi
+SKIP_IN_PROGRESS_CHECK="${SKIP_IN_PROGRESS_CHECK:-false}"
 
 emit_output() {
   local key="$1"
@@ -18,18 +19,22 @@ emit_output() {
 }
 
 # If this agent already has an in-progress issue, do not pick another.
-in_progress_count="$(gh issue list \
-  --state open \
-  --label "${AGENT_LABEL}" \
-  --label "status:in-progress" \
-  --limit 1 \
-  --json number \
-  --jq 'length')"
+# Can be bypassed for temporary manual testing by setting:
+# SKIP_IN_PROGRESS_CHECK=true
+if [[ "${SKIP_IN_PROGRESS_CHECK}" != "true" ]]; then
+  in_progress_count="$(gh issue list \
+    --state open \
+    --label "${AGENT_LABEL}" \
+    --label "status:in-progress" \
+    --limit 1 \
+    --json number \
+    --jq 'length')"
 
-if [[ "${in_progress_count}" != "0" ]]; then
-  emit_output "HAS_IN_PROGRESS" "true"
-  emit_output "ISSUE_NUMBER" ""
-  exit 0
+  if [[ "${in_progress_count}" != "0" ]]; then
+    emit_output "HAS_IN_PROGRESS" "true"
+    emit_output "ISSUE_NUMBER" ""
+    exit 0
+  fi
 fi
 
 mapfile -t candidate_numbers < <(gh issue list \
