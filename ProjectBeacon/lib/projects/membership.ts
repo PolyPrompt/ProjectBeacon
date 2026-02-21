@@ -1,7 +1,9 @@
+import type { SessionUser } from "@/lib/auth/clerk-auth";
 import { ApiHttpError } from "@/lib/api/errors";
 import { getServiceSupabaseClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type ProjectRole = "owner" | "member";
+export type ProjectRole = "owner" | "member" | "admin" | "user";
 
 export type ProjectMembership = {
   projectId: string;
@@ -9,12 +11,50 @@ export type ProjectMembership = {
   role: ProjectRole;
 };
 
-export async function requireProjectMember(
+type ProjectMembershipRecord = {
+  project_id: string;
+  user_id: string;
+  role: string;
+};
+
+function toProjectMembership(record: ProjectMembershipRecord): ProjectMembership {
+  return {
+    projectId: record.project_id,
+    userId: record.user_id,
+    role: record.role as ProjectRole,
+  };
+}
+
+export async function resolveActorUserId(
+  supabase: SupabaseClient,
+  sessionUser: SessionUser,
+): Promise<string | null> {
+  if (sessionUser.localUserId) {
+    return sessionUser.localUserId;
+  }
+
+  if (!sessionUser.email) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("users")
+    .select("id")
+    .eq("email", sessionUser.email)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data?.id ?? null;
+}
+
+export async function getProjectMembership(
+  supabase: SupabaseClient,
   projectId: string,
   userId: string,
-): Promise<ProjectMembership> {
-  const supabase = getServiceSupabaseClient();
-
+): Promise<ProjectMembershipRecord | null> {
   const { data, error } = await supabase
     .from("project_members")
     .select("project_id,user_id,role")
@@ -23,15 +63,38 @@ export async function requireProjectMember(
     .maybeSingle();
 
   if (error) {
-    throw new ApiHttpError(
-      500,
-      "DB_ERROR",
-      "Failed to load project membership",
-      error.message,
-    );
+    throw error;
   }
 
-  if (!data) {
+  return data;
+}
+
+export async function countProjectAdmins(
+  supabase: SupabaseClient,
+  projectId: string,
+): Promise<number> {
+  const { count, error } = await supabase
+    .from("project_members")
+    .select("id", { count: "exact", head: true })
+    .eq("project_id", projectId)
+    .in("role", ["admin", "owner"]);
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
+}
+
+export async function requireProjectMember(
+  projectId: string,
+  userId: string,
+): Promise<ProjectMembership> {
+  const supabase = getServiceSupabaseClient();
+
+  const record = await getProjectMembership(supabase, projectId, userId);
+
+  if (!record) {
     throw new ApiHttpError(
       403,
       "FORBIDDEN",
@@ -39,11 +102,7 @@ export async function requireProjectMember(
     );
   }
 
-  return {
-    projectId: data.project_id,
-    userId: data.user_id,
-    role: data.role,
-  };
+  return toProjectMembership(record);
 }
 
 export async function requireProjectOwner(
@@ -52,7 +111,7 @@ export async function requireProjectOwner(
 ): Promise<ProjectMembership> {
   const membership = await requireProjectMember(projectId, userId);
 
-  if (membership.role !== "owner") {
+  if (membership.role !== "owner" && membership.role !== "admin") {
     throw new ApiHttpError(
       403,
       "FORBIDDEN",

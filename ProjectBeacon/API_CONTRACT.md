@@ -39,6 +39,12 @@ This document is the shared API contract across agents. Freeze request/response 
 export type ProjectPlanningStatus = "draft" | "locked" | "assigned";
 export type TaskStatus = "todo" | "in_progress" | "blocked" | "done";
 export type ProjectRole = "admin" | "user";
+export type ProjectSettingsCapabilities = {
+  canShare: boolean;
+  canLeave: boolean;
+  canEditProject: boolean;
+  canDeleteProject: boolean;
+};
 
 export type ApiError = {
   error: {
@@ -166,6 +172,95 @@ Response `201`:
   "projectId": "p_123",
   "userId": "uuid",
   "role": "user"
+}
+```
+
+## `GET /api/projects/:projectId/settings`
+
+Response `200`:
+
+```json
+{
+  "projectId": "p_123",
+  "role": "admin",
+  "capabilities": {
+    "canShare": true,
+    "canLeave": true,
+    "canEditProject": true,
+    "canDeleteProject": true
+  }
+}
+```
+
+## `PATCH /api/projects/:projectId/settings`
+
+Request:
+
+```json
+{
+  "name": "Updated Name",
+  "deadline": "2026-03-25T00:00:00.000Z"
+}
+```
+
+Response `200`:
+
+```json
+{
+  "id": "p_123",
+  "name": "Updated Name",
+  "description": "Team project details",
+  "deadline": "2026-03-25T00:00:00.000Z",
+  "ownerUserId": "uuid",
+  "planningStatus": "draft"
+}
+```
+
+## `DELETE /api/projects/:projectId/settings`
+
+Response `200`:
+
+```json
+{
+  "deleted": true,
+  "projectId": "p_123"
+}
+```
+
+## `POST /api/projects/:projectId/leave`
+
+Response `200`:
+
+```json
+{
+  "left": true,
+  "projectId": "p_123",
+  "userId": "uuid"
+}
+```
+
+Failure `409` when last admin attempts to leave:
+
+```json
+{
+  "error": {
+    "code": "LAST_ADMIN_LEAVE_FORBIDDEN",
+    "message": "The last project admin cannot leave before assigning another admin.",
+    "details": null
+  }
+}
+```
+
+## `POST /api/projects/:projectId/share-link`
+
+Response `200`:
+
+```json
+{
+  "projectId": "p_123",
+  "token": "<signed-token>",
+  "expiresAt": "2026-03-01T00:00:00.000Z",
+  "joinUrl": "https://app.example.com/join/<signed-token>"
 }
 ```
 
