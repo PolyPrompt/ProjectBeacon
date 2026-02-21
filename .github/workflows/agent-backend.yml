@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ${{ vars.USE_SELF_HOSTED_RUNNERS == 'true' && fromJSON('["self-hosted","agent-agent2"]') || 'ubuntu-latest' }}
+    runs-on: [self-hosted, macOS, X64]
     steps:
       - name: Checkout
         uses: actions/checkout@v4

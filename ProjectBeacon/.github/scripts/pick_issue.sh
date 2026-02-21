@@ -21,15 +21,15 @@ emit_output() {
 # Legacy output for workflow compatibility.
 emit_output "HAS_IN_PROGRESS" "false"
 
-mapfile -t candidate_numbers < <(gh issue list \
+candidate_numbers="$(gh issue list \
   --state open \
   --label "${AGENT_LABEL}" \
   --label "status:ready" \
   --limit 100 \
   --json number \
-  --jq '.[].number')
+  --jq '.[].number')"
 
-for issue_number in "${candidate_numbers[@]:-}"; do
+while IFS= read -r issue_number; do
   [[ -z "${issue_number}" ]] && continue
 
   # Skip issues that already have an open PR linked via Fixes #<issue>.
@@ -48,21 +48,21 @@ for issue_number in "${candidate_numbers[@]:-}"; do
   deps_ok="true"
 
   if [[ -n "${deps_line}" ]]; then
-    mapfile -t deps < <(printf '%s\n' "${deps_line}" | grep -oE '#[0-9]+' | tr -d '#')
-    for dep in "${deps[@]:-}"; do
+    deps="$(printf '%s\n' "${deps_line}" | grep -oE '#[0-9]+' | tr -d '#')"
+    while IFS= read -r dep; do
       [[ -z "${dep}" ]] && continue
       dep_state="$(gh issue view "${dep}" --json state --jq '.state' 2>/dev/null || echo "MISSING")"
       if [[ "${dep_state}" != "CLOSED" ]]; then
         deps_ok="false"
         break
       fi
-    done
+    done <<< "${deps}"
   fi
 
   if [[ "${deps_ok}" == "true" ]]; then
     emit_output "ISSUE_NUMBER" "${issue_number}"
     exit 0
   fi
-done
+done <<< "${candidate_numbers}"
 
 emit_output "ISSUE_NUMBER" ""

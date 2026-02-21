@@ -156,9 +156,8 @@ Each listed dependency must be closed before the issue is eligible.
 
 ### Self-Hosted Runner Labels
 
-By default workflows can run on `ubuntu-latest`. To route to self-hosted runners, set repository variable `USE_SELF_HOSTED_RUNNERS=true` and provide runners with these labels:
+Workflows are currently pinned to self-hosted runners and do not fall back to GitHub-hosted runners. Ensure your runner has these labels:
 
-- agent1 builder: `self-hosted`, `agent-agent1`
-- agent2 builder: `self-hosted`, `agent-agent2`
-- agent3 builder: `self-hosted`, `agent-agent3`
-- reviewer: `self-hosted`, `agent-reviewer`
+- `self-hosted`
+- `macOS`
+- `X64`
