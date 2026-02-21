@@ -476,6 +476,13 @@ Response `200`:
 
 ## Agent 2 Contracts
 
+Auth + authorization behavior for Agent 2 endpoints:
+
+- Use runtime session auth only (no client-supplied identity headers).
+- Return `401` when unauthenticated.
+- Return `403` when requester is not a project member.
+- `planning/lock` and `assignments/run` require `admin` capability.
+
 ## `POST /api/projects/:projectId/context/confidence`
 
 Response `200`:

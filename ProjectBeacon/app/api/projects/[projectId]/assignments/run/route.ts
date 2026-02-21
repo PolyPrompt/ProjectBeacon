@@ -10,7 +10,7 @@ import {
 import { jsonError } from "@/lib/server/errors";
 import {
   mapRouteError,
-  requireOwner,
+  requireProjectAdmin,
   requireProjectAccess,
 } from "@/lib/server/route-helpers";
 import { selectRows, updateRows } from "@/lib/server/supabase-rest";
@@ -34,9 +34,9 @@ export async function POST(
       return access.response;
     }
 
-    const ownerResponse = requireOwner(access.membership);
-    if (ownerResponse) {
-      return ownerResponse;
+    const adminResponse = requireProjectAdmin(access.membership);
+    if (adminResponse) {
+      return adminResponse;
     }
 
     if (
