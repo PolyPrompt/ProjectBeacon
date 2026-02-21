@@ -36,26 +36,11 @@ jobs:
           set -euo pipefail
           bash .github/scripts/pick_issue.sh
 
-      - name: Exit if agent already has in-progress issue
-        if: steps.pick.outputs.HAS_IN_PROGRESS == 'true'
-        run: |
-          set -euo pipefail
-          echo "agent:agent3 already has an in-progress issue; exiting."
-
       - name: Exit if no eligible issue
-        if: steps.pick.outputs.HAS_IN_PROGRESS != 'true' && steps.pick.outputs.ISSUE_NUMBER == ''
+        if: steps.pick.outputs.ISSUE_NUMBER == ''
         run: |
           set -euo pipefail
           echo "No eligible issue found for agent:agent3."
-
-      - name: Claim issue
-        if: steps.pick.outputs.ISSUE_NUMBER != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ steps.pick.outputs.ISSUE_NUMBER }}
-        run: |
-          set -euo pipefail
-          bash .github/scripts/claim_issue.sh
 
       - name: Build prompt from issue + task profile
         if: steps.pick.outputs.ISSUE_NUMBER != ''
@@ -109,15 +94,14 @@ jobs:
             echo "HAS_CHANGES=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Unclaim and comment when no changes produced
+      - name: Comment when no changes produced
         if: steps.pick.outputs.ISSUE_NUMBER != '' && steps.changes.outputs.HAS_CHANGES == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ steps.pick.outputs.ISSUE_NUMBER }}
-          MESSAGE: "Automation run completed but no changes were produced, so this issue has been returned to status:ready."
+          MESSAGE: "Automation run completed but no changes were produced."
         run: |
           set -euo pipefail
-          bash .github/scripts/unclaim_issue.sh
           bash .github/scripts/comment_issue.sh
 
       - name: Ensure PR body exists
@@ -177,5 +161,4 @@ jobs:
             --head "${BRANCH_NAME}" \
             --title "${pr_title}" \
             --body-file PR_BODY.md \
-            --label "codex-bot" \
             --label "agent:agent3"

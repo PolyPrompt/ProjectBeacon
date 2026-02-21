@@ -18,35 +18,29 @@ emit_output() {
   fi
 }
 
-# If this agent already has an in-progress issue, do not pick another.
-# Can be bypassed for temporary manual testing by setting:
-# SKIP_IN_PROGRESS_CHECK=true
-if [[ "${SKIP_IN_PROGRESS_CHECK}" != "true" ]]; then
-  in_progress_count="$(gh issue list \
-    --state open \
-    --label "${AGENT_LABEL}" \
-    --label "status:in-progress" \
-    --limit 1 \
-    --json number \
-    --jq 'length')"
-
-  if [[ "${in_progress_count}" != "0" ]]; then
-    emit_output "HAS_IN_PROGRESS" "true"
-    emit_output "ISSUE_NUMBER" ""
-    exit 0
-  fi
-fi
+# Legacy output for workflow compatibility.
+emit_output "HAS_IN_PROGRESS" "false"
 
 mapfile -t candidate_numbers < <(gh issue list \
   --state open \
   --label "${AGENT_LABEL}" \
   --label "status:ready" \
   --limit 100 \
-  --json number,labels \
-  --jq '.[] | select((.labels | map(.name) | index("needs-human")) | not) | .number')
+  --json number \
+  --jq '.[].number')
 
 for issue_number in "${candidate_numbers[@]:-}"; do
   [[ -z "${issue_number}" ]] && continue
+
+  # Skip issues that already have an open PR linked via Fixes #<issue>.
+  open_pr_count="$(gh pr list \
+    --state open \
+    --search "\"Fixes #${issue_number}\"" \
+    --json number \
+    --jq 'length')"
+  if [[ "${open_pr_count}" != "0" ]]; then
+    continue
+  fi
 
   issue_body="$(gh issue view "${issue_number}" --json body --jq '.body // ""')"
 
@@ -66,11 +60,9 @@ for issue_number in "${candidate_numbers[@]:-}"; do
   fi
 
   if [[ "${deps_ok}" == "true" ]]; then
-    emit_output "HAS_IN_PROGRESS" "false"
     emit_output "ISSUE_NUMBER" "${issue_number}"
     exit 0
   fi
 done
 
-emit_output "HAS_IN_PROGRESS" "false"
 emit_output "ISSUE_NUMBER" ""

@@ -134,10 +134,6 @@ This repo includes scheduled Codex builder agents and a PR reviewer agent:
 Create these labels exactly:
 
 - `status:ready`
-- `status:in-progress`
-- `status:blocked`
-- `needs-human`
-- `codex-bot`
 - `agent:agent1`
 - `agent:agent2`
 - `agent:agent3`
@@ -148,7 +144,6 @@ Builder agents only pick issues that are:
 
 - Open
 - Labeled `agent:<name>` and `status:ready`
-- Not labeled `needs-human`
 - Dependency-ready
 
 Dependencies are parsed from a single issue-body line:
