@@ -104,6 +104,31 @@ npm run start
   - alternatives considered
   - impact on files or behavior
 
+## UI Reference Usage
+
+- Visual/source reference files live in `./docs/ui` (images + html examples).
+- Goal is to get close in layout, hierarchy, and interaction flow, not exact pixel-perfect parity.
+- When conflicts exist, product/task requirements and API contracts take priority over UI reference.
+
+How to use `./docs/ui`:
+- Read relevant files in `./docs/ui` before implementing UI work.
+- Preserve page structure, key components/states, and primary user flows.
+- If reference includes out-of-scope features, omit or stub them.
+- If required tasks are missing in reference, implement required behavior using the same visual language.
+- Record intentional UI deviations in `./HANDOFF.md` with a brief reason.
+
+Priority order for decisions:
+1. `./tasks.md`
+2. `./API_CONTRACT.md`
+3. `./DATAMODEL.md`
+4. `./docs/ui`
+
+UI Definition of Done:
+- Core layout/flow is close to `./docs/ui`.
+- Required task behavior is implemented even where reference is incomplete.
+- Loading, empty, and error states are handled.
+- Remove hardcoded mock assumptions once corresponding API endpoint exists.
+
 ## Git and Review Hygiene
 
 - Keep commits focused and small.
