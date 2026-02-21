@@ -80,7 +80,7 @@ jobs:
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           prompt-file: ProjectBeacon/PROMPT.md
-          safety-strategy: drop-sudo
+          safety-strategy: none
           sandbox: workspace-write
 
       - name: Detect code changes

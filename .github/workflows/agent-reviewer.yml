@@ -31,7 +31,7 @@ jobs:
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           prompt-file: ProjectBeacon/docs/agents/reviewer.md
-          safety-strategy: drop-sudo
+          safety-strategy: none
           sandbox: workspace-write
 
       - name: Post review comment
