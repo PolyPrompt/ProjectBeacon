@@ -24,7 +24,7 @@ Important: for this subtree, most product code changes should happen in this dir
 ## Working Directory Rules
 
 - Before running Node/Next commands, change into app root:
-  - `cd ProjectBeacon/ProjectBeacon` (from `/Users/brandoneng/Desktop/Beacon`)
+  - `cd ProjectBeacon/ProjectBeacon`
 - Run package manager commands from that app directory unless explicitly required otherwise.
 
 ## Agent Identity Guard
@@ -175,3 +175,7 @@ UI Definition of Done:
 - Keep commits focused and small.
 - Include file paths and concrete verification results in handoff summaries.
 - If pre-existing unrelated modifications are present, do not revert them unless the user asks.
+- Use a separate branch per issue/task; never work directly on `main`.
+- Branch naming convention: `agent<id>/pb-<task-id>-<short-slug>` (for example `agent1/pb-004-project-create-api`).
+- Keep branch scope to one task/issue when possible; if scope expands, open a new issue/branch.
+- Before opening a PR, sync with latest `main` (rebase or merge) and rerun required checks.
