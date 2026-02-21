@@ -33,6 +33,7 @@ export function ProjectNavShell({
 }: ProjectNavShellProps) {
   const pathname = usePathname();
   const isDocumentsRoute = pathname.includes("/documents");
+  const isSettingsRoute = pathname.includes("/settings");
 
   const navItems: NavItem[] = [
     {
@@ -106,6 +107,11 @@ export function ProjectNavShell({
         {isDocumentsRoute && role === "user" ? (
           <p className="mx-auto w-full max-w-7xl px-4 pb-3 text-xs font-medium text-slate-500 sm:px-6">
             Documents are in read-only mode for users.
+          </p>
+        ) : null}
+        {isSettingsRoute && role === "user" ? (
+          <p className="mx-auto w-full max-w-7xl px-4 pb-3 text-xs font-medium text-slate-500 sm:px-6">
+            Settings are in user mode; admin-only controls are hidden.
           </p>
         ) : null}
       </header>

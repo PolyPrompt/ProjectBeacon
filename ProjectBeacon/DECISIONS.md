@@ -15,3 +15,9 @@
 - alternatives considered: enforce a single strict response shape and hard-fail UI when not matched; rejected to preserve progress and end-to-end UX validation.
 - impact: Added role-aware documents page + preview modal with explicit read-only user state and admin mutation controls that attempt contract endpoints.
 
+## 2026-02-21T21:34:21Z
+- decision: Settings page uses API-first mutations with graceful scaffold behavior for share/leave/update/delete while dependency endpoints (`PB-019`) are still open.
+- rationale: `PB-027` requires complete role-aware UX flows now, including delete-confirmation safety and redirect behavior.
+- alternatives considered: hide settings actions until backend fully ships; rejected because it blocks QA coverage of role-based post-onboarding paths.
+- impact: Added role-aware settings component with explicit admin-only visibility, typed-delete confirmation (`DELETE`), and redirect-on-success behavior.
+

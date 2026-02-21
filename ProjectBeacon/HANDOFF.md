@@ -53,3 +53,21 @@
 - blockers/notes:
   - upstream document APIs (`PB-020`) remain open; scaffold fallback and tolerant parsing are explicit
 
+## 2026-02-21T21:34:21Z - PB-027 complete (agent3)
+- issue: #49 (`PB-027`)
+- status: implemented and validated on branch `agent3/pb-027-settings-page`
+- delivered:
+  - settings page with role-aware controls
+  - member actions: share link generation + leave project
+  - admin actions: update project name/deadline and delete project
+  - admin-only controls hidden for users
+  - explicit delete confirmation (`DELETE`) and redirect behavior
+  - user-mode settings hint in shared nav shell
+- verification:
+  - `npm run format:check` -> fails on pre-existing repo files outside task scope
+  - `npx prettier --check` on touched files -> pass
+  - `npm run lint` -> pass
+  - `npm run build` -> pass
+- blockers/notes:
+  - upstream settings APIs (`PB-019`) are still open; UI currently degrades with clear status messages when endpoints are unavailable
+
