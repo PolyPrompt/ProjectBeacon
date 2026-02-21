@@ -26,6 +26,8 @@ Important: for this subtree, most product code changes should happen in this dir
 - Before running Node/Next commands, change into app root:
   - `cd ProjectBeacon/ProjectBeacon`
 - Run package manager commands from that app directory unless explicitly required otherwise.
+- Before running project commands, read `./.env.local` and export its variables into the current shell session.
+- If required environment variables are missing after loading `.env.local`, stop and record the missing keys in `./HANDOFF.local.md`.
 
 ## Agent Identity Guard
 
@@ -134,6 +136,11 @@ where table_schema = 'public' and table_name = 'test_items';
   - each workstream must have an issue with assignee, status label, and dependency links
   - PRs must reference the issue (for example `Closes #123`)
   - if working locally without network access, record temporary notes in `./HANDOFF.local.md` until issue sync is possible
+- Task intake source of truth is GitHub Issues:
+  - at start of run and before each new task, query GitHub for open issues assigned to current `AGENT_ID`
+  - pick the next issue labeled `status:ready` and matching agent ownership label (`agent1`, `agent2`, or `agent3`)
+  - do not start tasks from local docs alone when a conflicting GitHub issue state exists
+  - if no ready assigned issues exist, log idle/block reason in `./HANDOFF.local.md` and stop or poll later
 - Track active work and handoff notes in:
   - `./HANDOFF.local.md` (create if missing when relevant to active work)
 - Keep a running major-decision log in:
