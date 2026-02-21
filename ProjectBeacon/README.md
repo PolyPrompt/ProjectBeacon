@@ -115,6 +115,34 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+## Planning Pipeline APIs (Agent 2)
+
+The backend now includes MVP planning endpoints for the AI workflow:
+
+- `POST /api/projects/:projectId/context/confidence`
+- `POST /api/projects/:projectId/context/clarify`
+- `POST /api/projects/:projectId/context/clarify-response`
+- `POST /api/projects/:projectId/ai/generate-tasks`
+- `POST /api/projects/:projectId/planning/lock`
+- `POST /api/projects/:projectId/assignments/run`
+- `POST /api/projects/:projectId/replan`
+- `POST /api/projects/:projectId/task-reassignment-requests`
+- `POST /api/task-reassignment-requests/:requestId/respond`
+
+Status transitions are deterministic and enforced server-side:
+
+- `draft -> locked -> assigned`
+
+Dependency edges are cycle-validated on generation and replan.
+
+## Local Auth Convention (Interim)
+
+Until Clerk bootstrap wiring is fully integrated, authenticated API calls should include one of these headers:
+
+- `x-user-id`
+- `x-projectbeacon-user-id`
+- `x-clerk-user-id`
+
 ## Multi-Agent GitHub Automation
 
 This repo includes scheduled Codex builder agents and a PR reviewer agent:
