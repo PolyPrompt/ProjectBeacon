@@ -29,6 +29,8 @@
 ## Boundaries
 - Do not introduce backend contract changes without coordinating through the shared API contract.
 - Prefer mocks until Agent 1/2 endpoints are stable, then switch to real integrations.
+- Do not pick up or modify tasks/issues owned by `agent1` or `agent2`.
+- Before starting each new task, confirm `AGENT_ID=agent3`; if not, stop and report mismatch.
 
 ## Execution Order
 - Agent 1 starts immediately (unblocks everyone).

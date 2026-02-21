@@ -35,6 +35,8 @@
 ## Boundaries
 - Do not implement AI planning pipeline logic owned by Agent 2.
 - Do not do dashboard integration owned by Agent 3 beyond minimal API smoke checks.
+- Do not pick up or modify tasks/issues owned by `agent2` or `agent3`.
+- Before starting each new task, confirm `AGENT_ID=agent1`; if not, stop and report mismatch.
 
 ## Execution Order
 - Agent 1 starts immediately (unblocks everyone).

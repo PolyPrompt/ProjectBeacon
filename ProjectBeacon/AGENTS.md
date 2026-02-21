@@ -27,6 +27,13 @@ Important: for this subtree, most product code changes should happen in this dir
   - `cd ProjectBeacon/ProjectBeacon` (from `/Users/brandoneng/Desktop/Beacon`)
 - Run package manager commands from that app directory unless explicitly required otherwise.
 
+## Agent Identity Guard
+
+- Use `AGENT_ID` from environment to determine current role (`agent1`, `agent2`, or `agent3`).
+- At the start of every new task/issue, verify `AGENT_ID` matches the assigned owner role before making changes.
+- During long autonomous runs, re-check `AGENT_ID` at each task boundary (and at least once every hour) to prevent role drift.
+- If `AGENT_ID` is missing/invalid or mismatched with task ownership, stop and report the mismatch in `HANDOFF.md`.
+
 ## Stack Snapshot
 
 - Framework: Next.js `16.1.6`
@@ -48,6 +55,40 @@ npm run format:check
 npm run format
 npm run build
 npm run start
+```
+
+## Supabase Table Creation
+
+Use Supabase Management API only for schema changes. Do not use `supabase db push` in this repo.
+
+1. Prepare SQL (optionally keep a matching file under `./supabase/migrations` for history), for example:
+
+```sql
+create table if not exists public.test_items (
+  id bigint generated always as identity primary key,
+  name text not null,
+  notes text,
+  created_at timestamptz not null default now()
+);
+```
+
+2. Run SQL through Supabase Management API using `SUPABASE_ACCESS_TOKEN`:
+
+```bash
+ref="<your-project-ref>"
+curl -sS "https://api.supabase.com/v1/projects/$ref/database/query" \
+  -X POST \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  --data '{"query":"create table if not exists public.test_items (id bigint generated always as identity primary key, name text not null, notes text, created_at timestamptz not null default now());"}'
+```
+
+3. Verify table exists (also via Management API SQL query):
+
+```sql
+select table_schema, table_name
+from information_schema.tables
+where table_schema = 'public' and table_name = 'test_items';
 ```
 
 ## Validation Strategy

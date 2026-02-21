@@ -34,6 +34,8 @@
 ## Boundaries
 - Depend on Agent 1 schema/contracts; do not rewrite stable DB primitives without coordination.
 - Do not implement full dashboard UX owned by Agent 3.
+- Do not pick up or modify tasks/issues owned by `agent1` or `agent3`.
+- Before starting each new task, confirm `AGENT_ID=agent2`; if not, stop and report mismatch.
 
 ## Execution Order
 - Agent 1 starts immediately (unblocks everyone).
