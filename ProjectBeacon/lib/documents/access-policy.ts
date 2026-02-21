@@ -38,7 +38,7 @@ export async function listDocumentsForRole(params: {
   const { data, error } = await supabase
     .from("project_documents")
     .select(
-      "id,project_id,file_name,mime_type,size_bytes,uploaded_by_user_id,is_public,used_for_planning,created_at",
+      "id,project_id,storage_key,file_name,mime_type,size_bytes,uploaded_by_user_id,is_public,used_for_planning,created_at",
     )
     .eq("project_id", projectId)
     .order("created_at", { ascending: false });
