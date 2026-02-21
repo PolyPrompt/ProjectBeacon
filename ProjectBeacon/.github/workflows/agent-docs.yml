@@ -1,4 +1,4 @@
-name: Agent Builder Docs
+name: Agent Builder Agent3
 
 on:
   schedule:
@@ -11,12 +11,12 @@ permissions:
   issues: write
 
 concurrency:
-  group: agent-builder-docs
+  group: agent-builder-agent3
   cancel-in-progress: false
 
 jobs:
   build:
-    runs-on: ${{ vars.USE_SELF_HOSTED_RUNNERS == 'true' && fromJSON('["self-hosted","agent-docs"]') || 'ubuntu-latest' }}
+    runs-on: ${{ vars.USE_SELF_HOSTED_RUNNERS == 'true' && fromJSON('["self-hosted","agent-agent3"]') || 'ubuntu-latest' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,7 +25,7 @@ jobs:
         id: pick
         env:
           GH_TOKEN: ${{ github.token }}
-          AGENT_LABEL: agent:docs
+          AGENT_LABEL: agent:agent3
         run: |
           set -euo pipefail
           bash .github/scripts/pick_issue.sh
@@ -34,13 +34,13 @@ jobs:
         if: steps.pick.outputs.HAS_IN_PROGRESS == 'true'
         run: |
           set -euo pipefail
-          echo "agent:docs already has an in-progress issue; exiting."
+          echo "agent:agent3 already has an in-progress issue; exiting."
 
       - name: Exit if no eligible issue
         if: steps.pick.outputs.HAS_IN_PROGRESS != 'true' && steps.pick.outputs.ISSUE_NUMBER == ''
         run: |
           set -euo pipefail
-          echo "No eligible issue found for agent:docs."
+          echo "No eligible issue found for agent:agent3."
 
       - name: Claim issue
         if: steps.pick.outputs.ISSUE_NUMBER != ''
@@ -51,7 +51,7 @@ jobs:
           set -euo pipefail
           bash .github/scripts/claim_issue.sh
 
-      - name: Build prompt from issue + agent instructions
+      - name: Build prompt from issue + task profile
         if: steps.pick.outputs.ISSUE_NUMBER != ''
         env:
           GH_TOKEN: ${{ github.token }}
@@ -61,22 +61,26 @@ jobs:
           ISSUE_TITLE="$(gh issue view "$ISSUE_NUMBER" --json title --jq '.title')"
           ISSUE_BODY="$(gh issue view "$ISSUE_NUMBER" --json body --jq '.body // ""')"
           {
-            echo "You are builder agent: docs."
+            echo "You are builder agent: agent3."
             echo
             echo "Implement GitHub issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}"
             echo
             echo "Issue body:"
             echo "${ISSUE_BODY}"
             echo
-            echo "Requirements:"
-            echo "- Make the minimal correct code changes for this issue."
-            echo "- Run relevant checks/tests and fix issues."
-            echo "- Create/update PR_BODY.md at repository root following the exact required format."
-            echo "- Include 'Fixes #${ISSUE_NUMBER}' in PR_BODY.md."
-            echo "- Do not modify workflow automation files unless the issue asks for it."
+            echo "Execution requirements:"
+            echo "- Follow AGENTS.md repository rules."
+            echo "- Follow TASK-agent3.md ownership/boundaries/handoff requirements."
+            echo "- Produce code changes for this issue only."
+            echo "- Run relevant verification commands from AGENTS.md."
+            echo "- Create/update PR_BODY.md in repo root with sections: Summary, Issue link, Tests run, Risk/rollback, Checklist."
+            echo "- Include 'Fixes #${ISSUE_NUMBER}' in the title and PR_BODY.md."
             echo
-            echo "Agent instructions:"
-            cat docs/agents/docs.md
+            echo "Repository policy:"
+            cat AGENTS.md
+            echo
+            echo "Task agent profile:"
+            cat TASK-agent3.md
           } > PROMPT.md
 
       - name: Run Codex
@@ -88,7 +92,7 @@ jobs:
           safety-strategy: drop-sudo
           sandbox: workspace-write
 
-      - name: Detect changes
+      - name: Detect code changes
         if: steps.pick.outputs.ISSUE_NUMBER != ''
         id: changes
         run: |
@@ -143,13 +147,13 @@ jobs:
         run: |
           set -euo pipefail
           timestamp="$(date +%Y%m%d%H%M%S)"
-          branch="codex/docs/issue-${ISSUE_NUMBER}-${timestamp}"
+          branch="codex/agent3/issue-${ISSUE_NUMBER}-${timestamp}"
           echo "BRANCH_NAME=${branch}" >> "$GITHUB_ENV"
           git config user.name "codex-bot"
           git config user.email "codex-bot@users.noreply.github.com"
           git checkout -b "${branch}"
-          git add -A ':!PR_BODY.md'
-          git commit -m "docs: resolve issue #${ISSUE_NUMBER}" || true
+          git add -A ':!PR_BODY.md' ':!PROMPT.md'
+          git commit -m "feat(agent3): resolve issue #${ISSUE_NUMBER}"
           git push -u origin "${branch}"
 
       - name: Create PR
@@ -161,11 +165,11 @@ jobs:
         run: |
           set -euo pipefail
           issue_title="$(gh issue view "$ISSUE_NUMBER" --json title --jq '.title')"
-          pr_title="[agent:docs] Fixes #${ISSUE_NUMBER} - ${issue_title}"
+          pr_title="[agent:agent3] Fixes #${ISSUE_NUMBER} - ${issue_title}"
           gh pr create \
             --base main \
             --head "${BRANCH_NAME}" \
             --title "${pr_title}" \
             --body-file PR_BODY.md \
             --label "codex-bot" \
-            --label "agent:docs"
+            --label "agent:agent3"

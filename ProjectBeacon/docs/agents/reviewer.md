@@ -1,8 +1,8 @@
 # Reviewer Agent
 
 Review goals
-- Validate that PR changes are within expected scope for the labeled agent.
-- Validate dependency satisfaction for linked issue dependencies when visible in issue body (`deps: #123 #456`).
+- Validate that PR changes are within expected scope for the labeled agent (`agent:agent1`, `agent:agent2`, `agent:agent3`).
+- Validate dependency satisfaction for linked issue dependencies when visible in issue body (`deps: #123 #456`), and flag mismatches.
 - Verify tests/lint/build evidence is present in PR description or commits.
 - Identify risky changes and call them out.
 

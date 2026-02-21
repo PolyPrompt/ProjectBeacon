@@ -119,7 +119,7 @@ Open `http://localhost:3000`.
 
 This repo includes scheduled Codex builder agents and a PR reviewer agent:
 
-- Builders: `frontend`, `backend`, `docs`
+- Builders: `agent1`, `agent2`, `agent3`
 - Reviewer: `reviewer`
 - Workflows are in `.github/workflows/agent-*.yml`
 
@@ -138,9 +138,9 @@ Create these labels exactly:
 - `status:blocked`
 - `needs-human`
 - `codex-bot`
-- `agent:frontend`
-- `agent:backend`
-- `agent:docs`
+- `agent:agent1`
+- `agent:agent2`
+- `agent:agent3`
 
 ### Issue Dependency Format
 
@@ -163,7 +163,7 @@ Each listed dependency must be closed before the issue is eligible.
 
 By default workflows can run on `ubuntu-latest`. To route to self-hosted runners, set repository variable `USE_SELF_HOSTED_RUNNERS=true` and provide runners with these labels:
 
-- frontend builder: `self-hosted`, `agent-frontend`
-- backend builder: `self-hosted`, `agent-backend`
-- docs builder: `self-hosted`, `agent-docs`
+- agent1 builder: `self-hosted`, `agent-agent1`
+- agent2 builder: `self-hosted`, `agent-agent2`
+- agent3 builder: `self-hosted`, `agent-agent3`
 - reviewer: `self-hosted`, `agent-reviewer`
