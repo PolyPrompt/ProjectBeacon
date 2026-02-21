@@ -9,7 +9,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { BootstrapUser } from "@/components/auth/bootstrap-user";
-
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -25,7 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <ClerkProvider>
+        <ClerkProvider appearance={{ cssLayerName: "clerk" }}>
           <header className="border-b border-black/10 px-6 py-4">
             <nav className="mx-auto flex w-full max-w-5xl items-center justify-between">
               <Link href="/" className="font-semibold">

@@ -115,6 +115,45 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+### Auth Environment
+
+Copy `.env.example` to `.env.local` and set Clerk keys:
+
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`
+- `NEXT_PUBLIC_CLERK_SIGN_IN_URL` (default `/sign-in`)
+- `NEXT_PUBLIC_CLERK_SIGN_UP_URL` (default `/sign-up`)
+
+### Route Protection
+
+- `/projects/**` requires an authenticated Clerk session and redirects unauthenticated users to sign-in.
+- `/api/**` requires authentication by default.
+- Public API exceptions are limited to `/api/public/**` and `/api/health/**`.
+
+## Planning Pipeline APIs (Agent 2)
+
+The backend now includes MVP planning endpoints for the AI workflow:
+
+- `POST /api/projects/:projectId/context/confidence`
+- `POST /api/projects/:projectId/context/clarify`
+- `POST /api/projects/:projectId/context/clarify-response`
+- `POST /api/projects/:projectId/ai/generate-tasks`
+- `POST /api/projects/:projectId/planning/lock`
+- `POST /api/projects/:projectId/assignments/run`
+- `POST /api/projects/:projectId/replan`
+- `POST /api/projects/:projectId/task-reassignment-requests`
+- `POST /api/task-reassignment-requests/:requestId/respond`
+
+Status transitions are deterministic and enforced server-side:
+
+- `draft -> locked -> assigned`
+
+Dependency edges are cycle-validated on generation and replan.
+
+## Local Auth Convention
+
+Server components and route handlers should read auth from Clerk helpers (`@clerk/nextjs/server`) or shared wrappers in `lib/auth/clerk-auth.ts`. Avoid ad-hoc header-based auth.
+
 ## Multi-Agent GitHub Automation
 
 This repo includes scheduled Codex builder agents and a PR reviewer agent:
