@@ -24,7 +24,7 @@
   - API integration coverage
   - manual QA paths + outcomes
   - verification commands + results
-- Update `TASK.md` status (`done`, `blocked`, or `handoff`).
+- Update the linked GitHub Issue status (`done`, `blocked`, or `handoff`) and mirror key notes in `HANDOFF.md`.
 
 ## Boundaries
 - Do not introduce backend contract changes without coordinating through the shared API contract.

@@ -30,7 +30,7 @@
   - migration status
   - verification commands + results
   - blockers/assumptions
-- Update `TASK.md` status (`done`, `blocked`, or `handoff`).
+- Update the linked GitHub Issue status (`done`, `blocked`, or `handoff`) and mirror key notes in `HANDOFF.md`.
 
 ## Boundaries
 - Do not implement AI planning pipeline logic owned by Agent 2.
