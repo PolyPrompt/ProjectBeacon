@@ -1,10 +1,15 @@
-export default function BoardPlaceholderPage() {
-  return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h1 className="text-2xl font-semibold text-slate-900">Board</h1>
-      <p className="mt-2 text-sm text-slate-600">
-        Board view is being finalized in PB-028.
-      </p>
-    </section>
-  );
+import { BoardPage } from "@/components/workflow/board-page";
+import { requireSessionUser } from "@/lib/auth/session";
+
+type ProjectBoardRouteProps = {
+  params: Promise<{ projectId: string }>;
+};
+
+export default async function ProjectBoardRoute({
+  params,
+}: ProjectBoardRouteProps) {
+  const { projectId } = await params;
+  const sessionUser = await requireSessionUser(`/projects/${projectId}/board`);
+
+  return <BoardPage projectId={projectId} role={sessionUser.role} />;
 }

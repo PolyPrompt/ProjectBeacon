@@ -1,10 +1,26 @@
-export default function TimelinePlaceholderPage() {
+import { TimelinePage } from "@/components/workflow/timeline-page";
+import { requireSessionUser } from "@/lib/auth/session";
+
+type ProjectTimelineRouteProps = {
+  params: Promise<{ projectId: string }>;
+  searchParams: Promise<{ taskId?: string }>;
+};
+
+export default async function ProjectTimelineRoute({
+  params,
+  searchParams,
+}: ProjectTimelineRouteProps) {
+  const { projectId } = await params;
+  const { taskId } = await searchParams;
+  const sessionUser = await requireSessionUser(
+    `/projects/${projectId}/timeline`,
+  );
+
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h1 className="text-2xl font-semibold text-slate-900">Timeline</h1>
-      <p className="mt-2 text-sm text-slate-600">
-        Timeline view is being finalized in PB-028.
-      </p>
-    </section>
+    <TimelinePage
+      projectId={projectId}
+      role={sessionUser.role}
+      selectedTaskId={typeof taskId === "string" ? taskId : null}
+    />
   );
 }

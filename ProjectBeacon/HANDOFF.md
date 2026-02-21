@@ -71,3 +71,22 @@
 - blockers/notes:
   - upstream settings APIs (`PB-019`) are still open; UI currently degrades with clear status messages when endpoints are unavailable
 
+## 2026-02-21T21:37:35Z - PB-028 complete (agent3)
+- issue: #50 (`PB-028`)
+- status: implemented and validated on branch `agent3/pb-028-workflow-pages`
+- delivered:
+  - dedicated workflow `Board` and `Timeline` pages in navbar flow
+  - explicit `Board <-> Timeline` view switch on both pages
+  - board renders one column per user with assigned task cards
+  - timeline renders ordered execution with due dates, phase, and dependency links
+  - timeline deep-link support via `?taskId=` highlighting selected task
+  - capability-flag-based edit affordance messaging with role fallback
+  - loading/empty/error/scaffold states for workflow endpoints
+- verification:
+  - `npm run format:check` -> fails on pre-existing repo files outside task scope
+  - `npx prettier --check` on touched files -> pass
+  - `npm run lint` -> pass
+  - `npm run build` -> pass
+- blockers/notes:
+  - upstream workflow APIs (`PB-023`) remain open; workflow pages fall back to scaffold payloads with explicit notices
+

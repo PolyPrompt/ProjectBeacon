@@ -21,3 +21,9 @@
 - alternatives considered: hide settings actions until backend fully ships; rejected because it blocks QA coverage of role-based post-onboarding paths.
 - impact: Added role-aware settings component with explicit admin-only visibility, typed-delete confirmation (`DELETE`), and redirect-on-success behavior.
 
+## 2026-02-21T21:37:35Z
+- decision: Workflow pages (`PB-028`) use API capability flags when present and role-based fallback capability defaults when workflow endpoints are unavailable.
+- rationale: `PB-023` dependency remains open/in-progress, but board/timeline UX and deep-link paths are required for post-onboarding completion.
+- alternatives considered: hide workflow pages until APIs are done; rejected because it blocks end-to-end navigation and modal deep-link validation.
+- impact: Added dedicated board/timeline pages with explicit view switch control, per-user board columns, timeline ordering, and selected-task highlight via query deep-link.
+
