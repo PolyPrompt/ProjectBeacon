@@ -182,3 +182,18 @@
   - Added `components/projects/planning-workspace.tsx` and `components/projects/context-editor.tsx`.
   - Updated `components/projects/clarification-panel.tsx` with submit/answer state hooks.
   - Updated `app/projects/[projectId]/page.tsx` to include a unified workspace section.
+
+## 2026-02-22T01:05:52Z
+
+- Decision summary:
+  - Rebuild `/projects/:projectId/workspace` as a reference-parity upload intake surface while keeping clarification/lock/assign controls available in secondary sections below the bento upload area.
+- Rationale:
+  - `PB-035` requires strong visual parity for upload + spec intake, but removing downstream controls would regress existing planning functionality used by current role flows.
+- Alternatives considered:
+  - Keep the previous generic step-list workspace UI with no parity updates.
+  - Move clarification/lock/assign controls off-page to separate routes before parity work.
+- Impact on files or behavior:
+  - `app/projects/[projectId]/workspace/page.tsx`
+  - `components/projects/planning-workspace.tsx`
+  - `components/projects/context-editor.tsx`
+  - `components/projects/project-documents-uploader.tsx`
