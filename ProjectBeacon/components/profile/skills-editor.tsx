@@ -587,7 +587,7 @@ export function SkillsEditor({
                 disabled={!isReadyToContinue || isSaving}
                 onClick={() => router.push(continueHref)}
               >
-                Save & Continue
+                Continue to adding project documents
               </button>
             </div>
           </section>
