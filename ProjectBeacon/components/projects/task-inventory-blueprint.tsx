@@ -11,6 +11,7 @@ type InventoryPriority = "low" | "medium" | "high";
 
 type TaskInventoryBlueprintProps = {
   isProceeding: boolean;
+  onTaskCountChange?: (count: number) => void;
   onProceedToDelegation: () => void | Promise<void>;
   planningStatus: PlanningStatus;
   projectId: string;
@@ -213,6 +214,7 @@ function exportTasks(tasks: InventoryTask[], projectId: string): void {
 
 export default function TaskInventoryBlueprint({
   isProceeding,
+  onTaskCountChange,
   onProceedToDelegation,
   planningStatus,
   projectId,
@@ -256,6 +258,7 @@ export default function TaskInventoryBlueprint({
           setCommittedTasks(tasks);
           setDraftTasks(cloneTasks(tasks));
           setMode("review");
+          onTaskCountChange?.(tasks.length);
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -264,6 +267,7 @@ export default function TaskInventoryBlueprint({
               ? loadError.message
               : "Failed to load task inventory.",
           );
+          onTaskCountChange?.(0);
         }
       } finally {
         if (!cancelled) {
@@ -278,7 +282,7 @@ export default function TaskInventoryBlueprint({
       cancelled = true;
       controller.abort();
     };
-  }, [projectId, refreshToken]);
+  }, [onTaskCountChange, projectId, refreshToken]);
 
   const activeTasks = mode === "edit" ? draftTasks : committedTasks;
   const groupedTasks = useMemo(
