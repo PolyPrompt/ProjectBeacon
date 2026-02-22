@@ -776,9 +776,15 @@ export function BoardPage({
     () => tasks.find((task) => task.id === selectedTaskId) ?? null,
     [selectedTaskId, tasks],
   );
+  const unassignedTodoCount = useMemo(
+    () => unassigned.filter((task) => task.status === "todo").length,
+    [unassigned],
+  );
   const totalTasks = tasks.length;
   const canRunDelegationActions =
     capability.canEditWorkflow || capability.role === "user";
+  const canAssignUnassignedTasks =
+    capability.canManageProject && unassignedTodoCount > 0;
   const groupedMode =
     !isDraftPlanning && (mode === "categorized" || mode === "finalized");
   const activeCreateLane =
@@ -1046,6 +1052,62 @@ export function BoardPage({
     }
   }
 
+  async function handleAssignUnassignedTasks() {
+    if (!canAssignUnassignedTasks || isAssigningUnassigned) {
+      return;
+    }
+
+    try {
+      setIsAssigningUnassigned(true);
+      setError(null);
+      setActionMessage(null);
+
+      const response = await fetch(
+        `/api/projects/${projectId}/assignments/assign-unassigned`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(await readErrorMessage(response));
+      }
+
+      const payload = (await response.json()) as {
+        assignedCount?: number;
+        assignmentMode?: "openai" | "deterministic" | "none";
+      };
+      const assignedCount =
+        typeof payload.assignedCount === "number" ? payload.assignedCount : 0;
+      const mode = payload.assignmentMode;
+
+      if (assignedCount === 0 || mode === "none") {
+        setActionMessage("No unassigned todo tasks needed assignment.");
+      } else if (mode === "openai") {
+        setActionMessage(
+          `Assigned ${assignedCount} unassigned task${assignedCount === 1 ? "" : "s"} using AI.`,
+        );
+      } else {
+        setActionMessage(
+          `Assigned ${assignedCount} unassigned task${assignedCount === 1 ? "" : "s"} using deterministic fallback.`,
+        );
+      }
+
+      setReloadToken((current) => current + 1);
+    } catch (assignError) {
+      setError(
+        assignError instanceof Error
+          ? assignError.message
+          : "Failed to assign unassigned tasks.",
+      );
+    } finally {
+      setIsAssigningUnassigned(false);
+    }
+  }
+
   return (
     <section className="h-full overflow-auto bg-[#18131f] text-slate-100">
       <div className="h-full">
@@ -1133,6 +1195,36 @@ export function BoardPage({
                   >
                     New Task
                   </button>
+
+                  {canAssignUnassignedTasks ? (
+                    <button
+                      type="button"
+                      className="rounded-lg border border-cyan-400/50 bg-cyan-500/15 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-cyan-100 hover:bg-cyan-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={isAssigningUnassigned}
+                      onClick={() => {
+                        void handleAssignUnassignedTasks();
+                      }}
+                    >
+                      {isAssigningUnassigned
+                        ? "Assigning..."
+                        : "Assign Unassigned Tasks"}
+                    </button>
+                  ) : null}
+
+                  <div className="flex rounded-lg border border-slate-700 bg-[#17141f] p-1">
+                    <Link
+                      href={`/projects/${projectId}/userflow/board`}
+                      className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white"
+                    >
+                      Board
+                    </Link>
+                    <Link
+                      href={`/projects/${projectId}/userflow/timeline`}
+                      className="rounded-md px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-800"
+                    >
+                      Timeline
+                    </Link>
+                  </div>
                 </div>
               </div>
 
