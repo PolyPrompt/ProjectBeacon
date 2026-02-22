@@ -28,16 +28,15 @@ export function ProjectNavShell({
   const rootClassName = isSettingsRoute
     ? "min-h-screen bg-[#120d1c]"
     : "min-h-screen bg-[#18131F]";
-  const mainClassName = isSettingsRoute
-    ? "min-h-[calc(100vh-73px)]"
-    : "mx-auto w-full max-w-7xl px-4 py-6 sm:px-6";
+  const mainClassName = isBoardRoute
+    ? "h-[calc(100vh-73px)]"
+    : isSettingsRoute
+      ? "min-h-[calc(100vh-73px)]"
+      : "mx-auto w-full max-w-7xl px-4 py-6 sm:px-6";
   if (isStandaloneInventoryRoute) {
     return <>{children}</>;
   }
 
-  if (isBoardRoute) {
-    return <main className="min-h-screen">{children}</main>;
-  }
   return (
     <div className={rootClassName}>
       <NavBar

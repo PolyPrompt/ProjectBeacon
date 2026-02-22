@@ -89,8 +89,11 @@ export function NavBar(props: NavBarProps) {
       },
       {
         label: "Workflow",
-        href: `/projects/${props.projectId}/board`,
-        match: (path) => path.includes("/board") || path.includes("/timeline"),
+        href: `/projects/${props.projectId}/userflow/board`,
+        match: (path) =>
+          path.includes("/userflow") ||
+          path.includes("/board") ||
+          path.includes("/timeline"),
       },
       {
         label: "Settings",
