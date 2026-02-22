@@ -425,7 +425,9 @@ function moveTaskBetweenLanes(
     return null;
   }
 
-  const nextTask = forceTodo ? { ...movedTask, status: "todo" } : movedTask;
+  const nextTask = forceTodo
+    ? { ...movedTask, status: "todo" as const }
+    : movedTask;
 
   if (toLaneId === "unassigned") {
     nextUnassigned.push(nextTask);

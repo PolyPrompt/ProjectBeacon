@@ -26,7 +26,11 @@ export function JoinProjectClient({ token }: { token: string }) {
 
         if (!response.ok) {
           if (!cancelled) {
-            setError(data?.error?.message ?? "Unable to join this project.");
+            setError(
+              "error" in data && data.error?.message
+                ? data.error.message
+                : "Unable to join this project.",
+            );
           }
           return;
         }
