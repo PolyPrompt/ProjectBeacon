@@ -79,10 +79,6 @@ function canUpdateTaskByRole(
   return task.assignee_user_id === actorUserId;
 }
 
-function canReassignTaskByRole(role: ProjectRole): boolean {
-  return role === "admin";
-}
-
 function isAssignmentChanged(
   currentAssignee: string | null,
   nextAssignee: string | null,
