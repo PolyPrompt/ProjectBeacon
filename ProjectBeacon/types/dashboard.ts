@@ -27,6 +27,7 @@ export type TaskDetailModalDTO = {
   id: string;
   title: string;
   description: string;
+  status: TaskStatus;
   softDeadline: string | null;
   assignmentReasoning: string;
   dependencyTaskIds: string[];

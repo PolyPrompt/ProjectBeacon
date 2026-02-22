@@ -210,3 +210,18 @@
 - Impact on files or behavior:
   - `app/profile/page.tsx`
   - `components/profile/skills-editor.tsx`
+
+## 2026-02-22T02:34:05Z
+
+- Decision summary:
+  - Add task-status write API with explicit transition policy and role-scoped authorization.
+- Rationale:
+  - Dashboard/modal execution flow needs a contract-safe mutation endpoint; role scope must prevent users from changing tasks they do not own while preserving admin control.
+- Alternatives considered:
+  - Allow unrestricted task status updates for any project member.
+  - Allow free-form transitions between all statuses.
+- Impact on files or behavior:
+  - New mutation route `app/api/projects/[projectId]/tasks/[taskId]/route.ts`.
+  - Task detail route includes `status` and now shares session-based project access guard.
+  - Dashboard modal contract/runtime checks now include `status`.
+  - `API_CONTRACT.md` documents the new patch endpoint and `401/403/404/409/422` semantics.
