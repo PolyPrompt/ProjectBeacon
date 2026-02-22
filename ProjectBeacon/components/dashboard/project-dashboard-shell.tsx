@@ -20,6 +20,7 @@ export type DashboardMember = {
   name: string;
   email: string;
   role: "owner" | "member";
+  inviteStatus: "accepted";
 };
 
 export type DashboardTask = MyTaskDTO & {

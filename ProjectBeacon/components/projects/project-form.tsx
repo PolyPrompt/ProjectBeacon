@@ -266,8 +266,6 @@ export function ProjectForm() {
     setShareStatus(null);
 
     try {
-      const projectUrl = `http://localhost:3000/projects/${projectId}/skills`;
-
       const response = await fetch(`/api/projects/${projectId}/share-email`, {
         method: "POST",
         headers: {
@@ -275,7 +273,6 @@ export function ProjectForm() {
         },
         body: JSON.stringify({
           emails: rosterEmails,
-          projectUrl,
         }),
       });
 
@@ -283,6 +280,9 @@ export function ProjectForm() {
         error?: { message?: string };
         failed?: Array<{ email?: string; reason?: string }>;
         sent?: Array<{ email?: string; status?: string }>;
+        token?: string;
+        expiresAt?: string;
+        joinUrl?: string;
       };
 
       if (!response.ok) {
@@ -299,12 +299,16 @@ export function ProjectForm() {
             .join(", ")
         : "";
 
-      setJoinLink({
-        projectId,
-        token: "project-dashboard",
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        joinUrl: projectUrl,
-      });
+      if (data.token && data.expiresAt && data.joinUrl) {
+        setJoinLink({
+          projectId,
+          token: data.token,
+          expiresAt: data.expiresAt,
+          joinUrl: data.joinUrl,
+        });
+      } else {
+        setJoinLink(null);
+      }
 
       if (failedCount > 0) {
         setShareStatus(
