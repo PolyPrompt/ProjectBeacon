@@ -450,13 +450,13 @@ export function TimelinePage({
           <div className="flex flex-wrap items-center gap-2">
             <Link
               className="rounded-lg border border-violet-900/70 bg-violet-500/15 px-3 py-1.5 text-sm font-semibold text-violet-100"
-              href={`/projects/${projectId}/timeline`}
+              href={`/projects/${projectId}/userflow/timeline`}
             >
               Timeline
             </Link>
             <Link
               className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm font-semibold text-slate-300 hover:border-violet-500/60"
-              href={`/projects/${projectId}/board`}
+              href={`/projects/${projectId}/userflow/board`}
             >
               Board
             </Link>
@@ -486,8 +486,8 @@ export function TimelinePage({
                 const nextTaskId = event.target.value;
                 const nextUrl =
                   nextTaskId.length > 0
-                    ? `/projects/${projectId}/timeline?taskId=${encodeURIComponent(nextTaskId)}`
-                    : `/projects/${projectId}/timeline`;
+                    ? `/projects/${projectId}/userflow/timeline?taskId=${encodeURIComponent(nextTaskId)}`
+                    : `/projects/${projectId}/userflow/timeline`;
 
                 router.push(nextUrl);
               }}
