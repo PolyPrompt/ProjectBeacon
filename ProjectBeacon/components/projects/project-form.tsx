@@ -885,18 +885,12 @@ export function ProjectForm() {
                     Planning status: {project.planningStatus}
                   </p>
 
-                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div className="mt-3">
                     <Link
                       href={`/projects/${project.id}/workspace`}
                       className="rounded-lg border border-violet-500/50 bg-violet-600/20 px-3 py-2 text-center text-xs font-semibold text-violet-100 transition hover:bg-violet-600/35"
                     >
-                      Continue to Workspace Intake
-                    </Link>
-                    <Link
-                      href={`/projects/${project.id}`}
-                      className="rounded-lg border border-slate-700 bg-slate-900/40 px-3 py-2 text-center text-xs font-semibold text-slate-200 transition hover:bg-slate-900/70"
-                    >
-                      Open Project Dashboard
+                      Add Project Documents
                     </Link>
                   </div>
                 </div>
