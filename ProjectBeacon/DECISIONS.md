@@ -168,3 +168,17 @@
   - Added canonical role types in `types/roles.ts`.
   - Updated role language in `API_CONTRACT.md` and `DATAMODEL.md`.
   - Permission guards can now consistently return `403` using normalized role semantics.
+
+## 2026-02-21T23:15:51Z
+
+- Decision summary:
+  - Implement `PB-016` workspace context persistence through `PATCH /api/projects/:projectId` (`description`) until a dedicated project-context CRUD contract is available.
+- Rationale:
+  - The current contract exposes clarify/generate/lock/assign APIs but no explicit `project_contexts` CRUD endpoint. Reusing project description keeps frontend flow API-safe without inventing backend fields.
+- Alternatives considered:
+  - Add an uncontracted `/api/projects/:projectId/contexts` client dependency.
+  - Keep requirement text only in client-local state with no persistence.
+- Impact on files or behavior:
+  - Added `components/projects/planning-workspace.tsx` and `components/projects/context-editor.tsx`.
+  - Updated `components/projects/clarification-panel.tsx` with submit/answer state hooks.
+  - Updated `app/projects/[projectId]/page.tsx` to include a unified workspace section.
