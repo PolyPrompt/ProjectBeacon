@@ -40,16 +40,6 @@ type BoardLane = {
   tone: "viewer" | "unassigned" | "neutral";
 };
 
-type BoardAssigneeSummary = {
-  id: string;
-  label: string;
-  taskCount: number;
-  inProgressCount: number;
-  blockedCount: number;
-  contextLine: string;
-  tone: BoardLane["tone"];
-};
-
 type DraggedTask = {
   taskId: string;
   fromLaneId: string;
@@ -372,26 +362,6 @@ function rationaleForTask(task: BoardTaskView): string {
   return "Assigned for closeout quality and release-readiness coverage.";
 }
 
-function laneContextLine(
-  laneId: string,
-  laneTaskCount: number,
-  viewerUserId: string,
-): string {
-  if (laneId === "unassigned") {
-    return "Awaiting owner assignment before delegation is finalized.";
-  }
-
-  if (laneId === viewerUserId) {
-    return "Personal lane prioritized for your active sprint execution.";
-  }
-
-  if (laneTaskCount === 0) {
-    return "No active cards in this lane for the current cycle.";
-  }
-
-  return "Matched by role fit and recent throughput in related work.";
-}
-
 function moveTaskBetweenLanes(
   sourceColumns: WorkflowBoardColumnDTO[],
   sourceUnassigned: WorkflowBoardTaskDTO[],
@@ -467,6 +437,38 @@ function moveTaskBetweenLanes(
   };
 }
 
+function setTaskStatusInBoard(
+  sourceColumns: WorkflowBoardColumnDTO[],
+  sourceUnassigned: WorkflowBoardTaskDTO[],
+  taskId: string,
+  status: WorkflowBoardTaskDTO["status"],
+): {
+  columns: WorkflowBoardColumnDTO[];
+  unassigned: WorkflowBoardTaskDTO[];
+} {
+  return {
+    columns: sourceColumns.map((column) => ({
+      ...column,
+      tasks: column.tasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              status,
+            }
+          : task,
+      ),
+    })),
+    unassigned: sourceUnassigned.map((task) =>
+      task.id === taskId
+        ? {
+            ...task,
+            status,
+          }
+        : task,
+    ),
+  };
+}
+
 function boardCard(
   task: BoardTaskView,
   nowMs: number | null,
@@ -475,10 +477,13 @@ function boardCard(
   onOpenTask?: (taskId: string) => void,
   onDragStart?: (taskId: string) => void,
   onDragEnd?: () => void,
+  onMarkComplete?: (taskId: string) => void,
+  isCompleting = false,
 ) {
   const cardLabel = `${task.title}. ${statusLabel(task.status)}. ${dueLabel(task.softDeadline, nowMs)}`;
   const difficultyDots = difficultyDotCount(task);
   const activeDifficultyDotClass = difficultyDotColorClass(difficultyDots);
+  const canMarkComplete = Boolean(onMarkComplete) && task.status !== "done";
 
   return (
     <article
@@ -537,7 +542,24 @@ function boardCard(
           {dueLabel(task.softDeadline, nowMs)}
         </p>
       ) : null}
-      <div className="mt-3 flex justify-end">
+      <div className="mt-3 flex items-center justify-between gap-2">
+        {canMarkComplete ? (
+          <button
+            type="button"
+            className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-200 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isCompleting}
+            onClick={(event) => {
+              event.stopPropagation();
+              onMarkComplete?.(task.id);
+            }}
+          >
+            {isCompleting ? "Saving..." : "Complete Task"}
+          </button>
+        ) : (
+          <span className="text-[10px] font-semibold text-emerald-300/80">
+            {task.status === "done" ? "Completed" : ""}
+          </span>
+        )}
         <button
           type="button"
           className="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-violet-200 hover:bg-violet-500/20"
@@ -573,6 +595,7 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
   const [reloadToken, setReloadToken] = useState(0);
   const [createTaskLaneId, setCreateTaskLaneId] = useState<string | null>(null);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [completingTaskIds, setCompletingTaskIds] = useState<string[]>([]);
 
   useEffect(() => {
     setNowMs(Date.now());
@@ -729,29 +752,6 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
     ];
   }, [columns, isDraftPlanning, unassigned, viewerUserId]);
 
-  const assigneeSummaries = useMemo<BoardAssigneeSummary[]>(
-    () =>
-      lanes.map((lane) => {
-        const inProgressCount = lane.tasks.filter(
-          (task) => task.status === "in_progress",
-        ).length;
-        const blockedCount = lane.tasks.filter(
-          (task) => task.status === "blocked",
-        ).length;
-
-        return {
-          id: lane.id,
-          label: lane.title,
-          taskCount: lane.taskCount,
-          inProgressCount,
-          blockedCount,
-          contextLine: laneContextLine(lane.id, lane.taskCount, viewerUserId),
-          tone: lane.tone,
-        };
-      }),
-    [lanes, viewerUserId],
-  );
-
   const tasks = useMemo(
     () => flattenBoard(columns, unassigned),
     [columns, unassigned],
@@ -860,6 +860,71 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
         moveError instanceof Error
           ? moveError.message
           : "Failed to move task between team members.",
+      );
+    }
+  }
+
+  async function handleTaskComplete(taskId: string): Promise<void> {
+    if (isDraftPlanning) {
+      return;
+    }
+
+    if (completingTaskIds.includes(taskId)) {
+      return;
+    }
+
+    const existingTask = tasks.find((task) => task.id === taskId);
+    if (!existingTask || existingTask.status === "done") {
+      return;
+    }
+
+    const previousColumns = columns;
+    const previousUnassigned = unassigned;
+    const optimisticState = setTaskStatusInBoard(
+      columns,
+      unassigned,
+      taskId,
+      "done",
+    );
+
+    setColumns(optimisticState.columns);
+    setUnassigned(optimisticState.unassigned);
+    setCompletingTaskIds((current) =>
+      current.includes(taskId) ? current : [...current, taskId],
+    );
+    setError(null);
+    setActionMessage(null);
+
+    try {
+      const response = await fetch(
+        `/api/projects/${projectId}/tasks/${taskId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: "done",
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(await readErrorMessage(response));
+      }
+
+      setActionMessage("Task completed and saved.");
+    } catch (completeError) {
+      setColumns(previousColumns);
+      setUnassigned(previousUnassigned);
+      setError(
+        completeError instanceof Error
+          ? completeError.message
+          : "Failed to complete task.",
+      );
+    } finally {
+      setCompletingTaskIds((current) =>
+        current.filter((currentTaskId) => currentTaskId !== taskId),
       );
     }
   }
@@ -1028,35 +1093,6 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                 </div>
               </div>
 
-              {assigneeSummaries.length > 0 ? (
-                <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-4">
-                  {assigneeSummaries.map((summary) => (
-                    <article
-                      key={summary.id}
-                      className={`rounded-xl border p-3 ${
-                        summary.tone === "viewer"
-                          ? "border-violet-400/45 bg-violet-500/10"
-                          : summary.tone === "unassigned"
-                            ? "border-amber-400/35 bg-amber-500/10"
-                            : "border-slate-700 bg-[#17141f]"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <h2 className="text-xs font-bold text-slate-100">
-                          {summary.label}
-                        </h2>
-                        <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-bold text-violet-200">
-                          {summary.taskCount}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-[10px] text-slate-400">
-                        {summary.contextLine}
-                      </p>
-                    </article>
-                  ))}
-                </div>
-              ) : null}
-
               {error ? (
                 <p className="rounded-xl border border-amber-300/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
                   {error}
@@ -1192,6 +1228,12 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                                             setDraggedTask(null);
                                             setDropLaneId(null);
                                           },
+                                          isDraftPlanning
+                                            ? undefined
+                                            : (taskId) => {
+                                                void handleTaskComplete(taskId);
+                                              },
+                                          completingTaskIds.includes(task.id),
                                         ),
                                       )}
                                     </div>
@@ -1229,6 +1271,12 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                                   setDraggedTask(null);
                                   setDropLaneId(null);
                                 },
+                                isDraftPlanning
+                                  ? undefined
+                                  : (taskId) => {
+                                      void handleTaskComplete(taskId);
+                                    },
+                                completingTaskIds.includes(task.id),
                               ),
                             )
                           )}
