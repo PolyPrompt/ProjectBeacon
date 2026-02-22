@@ -65,17 +65,35 @@ function isSoftSkill(skillName: string): boolean {
   return SOFT_SKILLS.has(skillName.trim());
 }
 
-function SkillLevelBar({ level }: { level: number }) {
+function SkillLevelBar({
+  level,
+  onLevelChange,
+}: {
+  level: number;
+  onLevelChange?: (nextLevel: number) => void;
+}) {
   return (
     <div className="mt-2 grid grid-cols-5 gap-1">
       {Array.from({ length: 5 }).map((_, index) => {
         const isActive = index < level;
+        const nextLevel = index + 1;
         return (
-          <div
+          <button
             key={index}
-            className={`h-1.5 rounded ${
-              isActive ? "bg-violet-500" : "bg-slate-700"
+            type="button"
+            className={`h-1.5 cursor-pointer rounded transition-colors duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-violet-300 ${
+              isActive
+                ? "bg-violet-500 hover:bg-violet-400"
+                : "bg-slate-700 hover:bg-violet-500/35"
             }`}
+            onClick={() => {
+              if (!onLevelChange || nextLevel === level) {
+                return;
+              }
+
+              onLevelChange(nextLevel);
+            }}
+            aria-label={`Set level ${nextLevel}`}
           />
         );
       })}
@@ -199,6 +217,18 @@ export function SkillsEditor() {
 
   async function updateSkillLevel(id: string, nextLevel: number) {
     setError(null);
+    let previousLevel: number | null = null;
+
+    setSkills((previous) =>
+      previous.map((skill) => {
+        if (skill.id !== id) {
+          return skill;
+        }
+
+        previousLevel = skill.level;
+        return { ...skill, level: nextLevel };
+      }),
+    );
 
     const response = await fetch("/api/me/skills", {
       method: "PATCH",
@@ -209,14 +239,17 @@ export function SkillsEditor() {
     const data = await response.json();
     if (!response.ok) {
       setError(data?.error?.message ?? "Failed to update skill");
+      if (previousLevel !== null) {
+        setSkills((previous) =>
+          previous.map((skill) =>
+            skill.id === id
+              ? { ...skill, level: previousLevel as number }
+              : skill,
+          ),
+        );
+      }
       return;
     }
-
-    setSkills((previous) =>
-      previous.map((skill) =>
-        skill.id === id ? { ...skill, level: nextLevel } : skill,
-      ),
-    );
   }
 
   async function removeSkill(id: string) {
@@ -347,7 +380,12 @@ export function SkillsEditor() {
                           {levelToLabel(skill.level)}
                         </span>
                       </div>
-                      <SkillLevelBar level={skill.level} />
+                      <SkillLevelBar
+                        level={skill.level}
+                        onLevelChange={(nextLevel) =>
+                          void updateSkillLevel(skill.id, nextLevel)
+                        }
+                      />
                       <div className="mt-2 flex items-center gap-2">
                         <select
                           className="rounded border border-violet-500/30 bg-[#1b1629] px-2 py-1 text-xs text-slate-100"
@@ -401,7 +439,12 @@ export function SkillsEditor() {
                             {levelToLabel(skill.level)}
                           </span>
                         </div>
-                        <SkillLevelBar level={skill.level} />
+                        <SkillLevelBar
+                          level={skill.level}
+                          onLevelChange={(nextLevel) =>
+                            void updateSkillLevel(skill.id, nextLevel)
+                          }
+                        />
                         <div className="mt-2 flex items-center gap-2">
                           <select
                             className="rounded border border-violet-500/30 bg-[#1b1629] px-2 py-1 text-xs text-slate-100"

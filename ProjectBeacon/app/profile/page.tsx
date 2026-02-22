@@ -18,7 +18,7 @@ export default async function ProfilePage() {
         </p>
         <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-100 md:text-5xl">
           You&apos;re in! Welcome to{" "}
-          <span className="text-violet-400">Team Alpha</span>
+          <span className="text-violet-400">TaskLogger</span>
         </h1>
         <p className="mt-3 max-w-3xl text-base text-slate-300">
           Build your technical profile so Project Beacon can match you with the
