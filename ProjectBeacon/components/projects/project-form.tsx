@@ -171,9 +171,10 @@ export function ProjectForm() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [deadlineDate, setDeadlineDate] = useState("");
-  const [milestones, setMilestones] = useState<Milestone[]>([
-    { id: nextId(), title: "", date: "" },
-  ]);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [isAddingMilestone, setIsAddingMilestone] = useState(false);
+  const [newMilestoneTitle, setNewMilestoneTitle] = useState("");
+  const [newMilestoneDate, setNewMilestoneDate] = useState("");
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [newMemberInput, setNewMemberInput] = useState("");
@@ -282,19 +283,26 @@ export function ProjectForm() {
     }
   }
 
-  function updateMilestone(id: string, updates: Partial<Milestone>) {
-    setMilestones((current) =>
-      current.map((milestone) =>
-        milestone.id === id ? { ...milestone, ...updates } : milestone,
-      ),
-    );
+  function addMilestoneFromInput() {
+    const title = newMilestoneTitle.trim();
+    const date = newMilestoneDate.trim();
+
+    if (!date) {
+      return;
+    }
+
+    setMilestones((current) => [
+      ...current,
+      { id: nextId(), title: title || "Untitled milestone", date },
+    ]);
+    setNewMilestoneTitle("");
+    setNewMilestoneDate("");
+    setIsAddingMilestone(false);
   }
 
   function removeMilestone(id: string) {
     setMilestones((current) =>
-      current.length === 1
-        ? current
-        : current.filter((milestone) => milestone.id !== id),
+      current.filter((milestone) => milestone.id !== id),
     );
   }
 
@@ -464,50 +472,68 @@ export function ProjectForm() {
                       <button
                         className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-400 transition hover:text-violet-300"
                         type="button"
-                        onClick={() =>
-                          setMilestones((current) => [
-                            ...current,
-                            { id: nextId(), title: "", date: "" },
-                          ])
-                        }
+                        onClick={() => setIsAddingMilestone(true)}
                       >
                         + Add
                       </button>
                     </div>
 
                     <div className="space-y-2.5">
+                      {isAddingMilestone ? (
+                        <div className="space-y-2 rounded-xl border border-violet-700/60 bg-[#11091d] p-3">
+                          <input
+                            className="w-full bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-500"
+                            type="text"
+                            value={newMilestoneTitle}
+                            onChange={(event) =>
+                              setNewMilestoneTitle(event.target.value)
+                            }
+                            onKeyDown={(event) => {
+                              if (event.key !== "Enter") {
+                                return;
+                              }
+
+                              event.preventDefault();
+                              addMilestoneFromInput();
+                            }}
+                            placeholder="Milestone title"
+                            autoFocus
+                          />
+                          <input
+                            className="w-full bg-transparent text-sm text-slate-300 outline-none"
+                            type="date"
+                            value={newMilestoneDate}
+                            onChange={(event) =>
+                              setNewMilestoneDate(event.target.value)
+                            }
+                            onKeyDown={(event) => {
+                              if (event.key !== "Enter") {
+                                return;
+                              }
+
+                              event.preventDefault();
+                              addMilestoneFromInput();
+                            }}
+                          />
+                        </div>
+                      ) : null}
+
                       {milestones.map((milestone) => (
                         <div
                           key={milestone.id}
                           className="rounded-xl border border-violet-900/35 bg-black/15 p-3"
                         >
-                          <input
-                            className="mb-2 w-full bg-transparent text-[22px] font-semibold text-slate-100 outline-none placeholder:text-slate-500"
-                            type="text"
-                            placeholder="Milestone name"
-                            value={milestone.title}
-                            onChange={(event) =>
-                              updateMilestone(milestone.id, {
-                                title: event.target.value,
-                              })
-                            }
-                          />
+                          <p className="mb-2 text-[22px] font-semibold text-slate-100">
+                            {milestone.title}
+                          </p>
                           <div className="flex items-center justify-between gap-3">
-                            <input
-                              className="w-full bg-transparent text-xs text-slate-400 outline-none"
-                              type="date"
-                              value={milestone.date}
-                              onChange={(event) =>
-                                updateMilestone(milestone.id, {
-                                  date: event.target.value,
-                                })
-                              }
-                            />
+                            <p className="text-xs text-slate-400">
+                              {milestone.date}
+                            </p>
                             <button
                               className="text-slate-500 transition hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
                               type="button"
                               onClick={() => removeMilestone(milestone.id)}
-                              disabled={milestones.length === 1}
                               aria-label="Remove milestone"
                             >
                               ×
@@ -516,9 +542,11 @@ export function ProjectForm() {
                         </div>
                       ))}
 
-                      <div className="rounded-xl border border-dashed border-violet-900/50 px-3 py-3 text-[22px] italic text-slate-500">
-                        Add next milestone...
-                      </div>
+                      {milestones.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-violet-900/50 px-3 py-3 text-sm italic text-slate-500">
+                          No milestones yet.
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 </div>
