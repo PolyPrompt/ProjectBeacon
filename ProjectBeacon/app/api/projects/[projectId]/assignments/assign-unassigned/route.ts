@@ -95,7 +95,7 @@ export async function POST(
       assigneeUserId: task.assignee_user_id,
     }));
 
-    const aiAssignments = await generateTaskAssignments({
+    const aiResult = await generateTaskAssignments({
       projectId,
       projectName: access.project.name,
       projectDescription: access.project.description,
@@ -103,16 +103,17 @@ export async function POST(
       members: effectiveSkills,
       taskRequirements: requirements,
     });
+    const aiAssignments = aiResult.assignments;
 
     const assignmentResult =
-      aiAssignments !== null
+      aiAssignments
         ? {
             assignments: aiAssignments,
             assignedCount: aiAssignments.length,
           }
         : assignTasks(normalizedTasks, effectiveSkills, requirements);
 
-    const assignmentMode = aiAssignments !== null ? "openai" : "deterministic";
+    const assignmentMode = aiAssignments ? "openai" : "deterministic";
 
     for (const assignment of assignmentResult.assignments) {
       await updateRows<TaskRow>(
