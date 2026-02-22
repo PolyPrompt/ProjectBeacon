@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { ShareEmailForm } from "@/components/projects/share-email-form";
@@ -430,6 +431,39 @@ export function ProjectForm() {
               </p>
             </div>
           )}
+
+          {project ? (
+            <div className="mt-4 space-y-3 rounded-lg border border-sky-200 bg-sky-50 p-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-sky-800/80">
+                  Active project context
+                </p>
+                <p className="mt-1 text-sm font-semibold text-sky-950">
+                  {project.name}
+                </p>
+                <p className="mt-1 text-xs text-sky-900/80">
+                  Project ID: {project.id}
+                </p>
+                <p className="text-xs text-sky-900/80">
+                  Planning status: {project.planningStatus}
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Link
+                  href={`/projects/${project.id}/workspace`}
+                  className="rounded-lg bg-sky-700 px-3 py-2 text-center text-sm font-semibold text-white transition hover:bg-sky-600"
+                >
+                  Continue to Workspace Intake
+                </Link>
+                <Link
+                  href={`/projects/${project.id}`}
+                  className="rounded-lg border border-sky-700/30 bg-white px-3 py-2 text-center text-sm font-semibold text-sky-900 transition hover:bg-sky-100"
+                >
+                  Open Project Dashboard
+                </Link>
+              </div>
+            </div>
+          ) : null}
 
           <button
             className="mt-3 w-full rounded-lg border border-black/20 px-4 py-2 text-sm font-medium disabled:opacity-50"
