@@ -8,6 +8,7 @@ import {
 import { jsonError } from "@/lib/server/errors";
 import {
   normalizeProjectRole,
+  type ProjectMemberRow,
   type ProjectRole,
 } from "@/lib/server/project-access";
 import { selectSingle, updateRows } from "@/lib/server/supabase-rest";
@@ -20,9 +21,18 @@ type RouteContext = {
   }>;
 };
 
-const updateTaskStatusSchema = z.object({
-  status: z.enum(["todo", "in_progress", "blocked", "done"]),
-});
+const updateTaskSchema = z
+  .object({
+    status: z.enum(["todo", "in_progress", "blocked", "done"]).optional(),
+    assigneeUserId: z.string().uuid().nullable().optional(),
+  })
+  .refine(
+    (value) => value.status !== undefined || value.assigneeUserId !== undefined,
+    {
+      message: "At least one of status or assigneeUserId must be provided.",
+      path: ["status"],
+    },
+  );
 
 const allowedTransitions: Record<TaskStatus, TaskStatus[]> = {
   todo: ["in_progress", "blocked", "done"],
@@ -51,6 +61,13 @@ function canUpdateTaskByRole(
   return task.assignee_user_id === actorUserId;
 }
 
+function isAssignmentChanged(
+  currentAssignee: string | null,
+  nextAssignee: string | null,
+): boolean {
+  return currentAssignee !== nextAssignee;
+}
+
 export async function PATCH(
   request: Request,
   { params }: RouteContext,
@@ -63,7 +80,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const parsed = updateTaskStatusSchema.safeParse(body);
+    const parsed = updateTaskSchema.safeParse(body);
     if (!parsed.success) {
       return jsonError(422, "VALIDATION_ERROR", "Invalid request body.", {
         issues: parsed.error.flatten(),
@@ -82,42 +99,79 @@ export async function PATCH(
     }
 
     const actorRole = normalizeProjectRole(access.membership.role);
-    if (!canUpdateTaskByRole(actorRole, access.userId, task)) {
-      return jsonError(
-        403,
-        "FORBIDDEN",
-        "You do not have permission to update this task.",
-      );
+    const payload = parsed.data;
+    const nextStatus = payload.status;
+    const nextAssigneeUserId = payload.assigneeUserId;
+
+    if (nextStatus !== undefined) {
+      if (!canUpdateTaskByRole(actorRole, access.userId, task)) {
+        return jsonError(
+          403,
+          "FORBIDDEN",
+          "You do not have permission to update this task status.",
+        );
+      }
+
+      if (!canTransitionTaskStatus(task.status, nextStatus)) {
+        return jsonError(
+          409,
+          "INVALID_STATE",
+          "Invalid task status transition.",
+          {
+            from: task.status,
+            to: nextStatus,
+            allowedTo: allowedTransitions[task.status],
+          },
+        );
+      }
     }
 
-    const nextStatus = parsed.data.status;
-    if (!canTransitionTaskStatus(task.status, nextStatus)) {
-      return jsonError(
-        409,
-        "INVALID_STATE",
-        "Invalid task status transition.",
+    if (nextAssigneeUserId !== undefined && nextAssigneeUserId !== null) {
+      const assigneeMembership = await selectSingle<ProjectMemberRow>(
+        "project_members",
         {
-          from: task.status,
-          to: nextStatus,
-          allowedTo: allowedTransitions[task.status],
+          select: "id,project_id,user_id,role",
+          project_id: `eq.${projectId}`,
+          user_id: `eq.${nextAssigneeUserId}`,
         },
       );
+
+      if (!assigneeMembership) {
+        return jsonError(
+          422,
+          "INVALID_ASSIGNEE",
+          "Selected assignee is not a member of this project.",
+        );
+      }
     }
 
-    if (task.status === nextStatus) {
+    const statusUnchanged =
+      nextStatus === undefined || task.status === nextStatus;
+    const assigneeUnchanged =
+      nextAssigneeUserId === undefined ||
+      !isAssignmentChanged(task.assignee_user_id, nextAssigneeUserId);
+
+    if (statusUnchanged && assigneeUnchanged) {
       return NextResponse.json({ task: mapTaskRowToDto(task) });
     }
 
-    const [updatedTask] = await updateRows<TaskRow>(
-      "tasks",
-      {
-        status: nextStatus,
-      },
-      {
-        id: `eq.${taskId}`,
-        project_id: `eq.${projectId}`,
-      },
-    );
+    const patch: Partial<{
+      status: TaskStatus;
+      assignee_user_id: string | null;
+    }> = {};
+
+    if (nextStatus !== undefined) {
+      patch.status = nextStatus;
+    }
+
+    if (nextAssigneeUserId !== undefined) {
+      patch.assignee_user_id = nextAssigneeUserId;
+    }
+
+    const [updatedTask] = await updateRows<TaskRow>("tasks", patch, {
+      id: `eq.${taskId}`,
+      project_id: `eq.${projectId}`,
+    });
 
     if (!updatedTask) {
       return jsonError(404, "TASK_NOT_FOUND", "Task was not found.");
