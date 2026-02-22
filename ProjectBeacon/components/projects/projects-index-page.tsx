@@ -46,15 +46,6 @@ function daysUntil(value: string): number | null {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
-function courseTag(projectName: string): string {
-  const match = projectName.match(/\b([A-Za-z]{2,4})\s?(\d{2,3})\b/);
-  if (match) {
-    return `${match[1].toUpperCase()} ${match[2]}`;
-  }
-
-  return "CS 301";
-}
-
 function initialsFromName(projectName: string): string[] {
   const tokens = projectName
     .split(/[\s-]+/)
@@ -84,7 +75,9 @@ export function ProjectsIndexPage({ projects }: ProjectsIndexPageProps) {
 
   const classOptions = useMemo(() => {
     const tags = Array.from(
-      new Set(projects.map((project) => courseTag(project.name))),
+      new Set(
+        projects.map((project) => project.name.split(" ")[0] ?? "Project"),
+      ),
     );
     return ["all", ...tags];
   }, [projects]);
@@ -94,7 +87,10 @@ export function ProjectsIndexPage({ projects }: ProjectsIndexPageProps) {
 
     return projects
       .filter((project) => {
-        if (classFilter !== "all" && courseTag(project.name) !== classFilter) {
+        if (
+          classFilter !== "all" &&
+          (project.name.split(" ")[0] ?? "Project") !== classFilter
+        ) {
           return false;
         }
 
@@ -193,24 +189,12 @@ export function ProjectsIndexPage({ projects }: ProjectsIndexPageProps) {
           const remaining = daysUntil(project.deadline);
 
           return (
-            <article
+            <Link
               key={project.id}
-              className="rounded-xl border border-violet-900/45 bg-[#0f1127]/80 p-5 shadow-[inset_0_0_0_1px_rgba(76,29,149,0.18)]"
+              className="block rounded-xl border border-violet-900/45 bg-[#0f1127]/80 p-5 shadow-[inset_0_0_0_1px_rgba(76,29,149,0.18)] transition hover:border-violet-700/70 hover:bg-[#141632]/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0718]"
+              href={`/projects/${project.id}`}
             >
-              <div className="flex items-start justify-between">
-                <span className="rounded-full bg-violet-800/35 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-violet-300">
-                  {courseTag(project.name)}
-                </span>
-                <button
-                  aria-label={`More options for ${project.name}`}
-                  className="text-xl font-bold tracking-widest text-slate-500 transition hover:text-slate-300"
-                  type="button"
-                >
-                  ...
-                </button>
-              </div>
-
-              <h3 className="mt-5 text-xl font-semibold leading-tight text-slate-100 sm:text-2xl">
+              <h3 className="text-xl font-semibold leading-tight text-slate-100 sm:text-2xl">
                 {project.name}
               </h3>
 
@@ -231,7 +215,7 @@ export function ProjectsIndexPage({ projects }: ProjectsIndexPageProps) {
                 {formatDueDate(project.deadline)}
               </p>
 
-              <div className="mt-6 flex items-center justify-between">
+              <div className="mt-6 flex items-center">
                 <div className="flex -space-x-2">
                   {avatars.map((label, index) => (
                     <span
@@ -244,16 +228,8 @@ export function ProjectsIndexPage({ projects }: ProjectsIndexPageProps) {
                     </span>
                   ))}
                 </div>
-
-                <Link
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-violet-400 transition hover:text-violet-300"
-                  href={`/projects/${project.id}`}
-                >
-                  Details
-                  <span className="text-sm">›</span>
-                </Link>
               </div>
-            </article>
+            </Link>
           );
         })}
 
