@@ -32,7 +32,7 @@ const SUGGESTED_GROUPS: SuggestedSkillGroup[] = [
   },
 ];
 
-const SOFT_SKILLS = new Set([
+const SOFT_SKILL_SUGGESTIONS = [
   "Communication",
   "Collaboration",
   "Leadership",
@@ -40,7 +40,37 @@ const SOFT_SKILLS = new Set([
   "Team Leadership",
   "Project Management",
   "Mentoring",
-]);
+  "Problem Solving",
+  "Adaptability",
+  "Time Management",
+  "Conflict Resolution",
+];
+
+const SOFT_SKILLS = new Set(
+  SOFT_SKILL_SUGGESTIONS.map((skillName) => skillName.trim().toLowerCase()),
+);
+
+const SOFT_SKILL_KEYWORDS = [
+  "communication",
+  "collaboration",
+  "lead",
+  "mentor",
+  "coach",
+  "facilitat",
+  "project management",
+  "time management",
+  "conflict",
+  "adapt",
+  "problem solving",
+  "critical thinking",
+  "decision making",
+  "stakeholder",
+  "interpersonal",
+  "empathy",
+  "negotiat",
+  "presentation",
+  "teamwork",
+];
 
 function normalizeSkillName(value: string): string {
   return value.trim().toLowerCase();
@@ -62,7 +92,15 @@ function levelToLabel(level: number): string {
 }
 
 function isSoftSkill(skillName: string): boolean {
-  return SOFT_SKILLS.has(skillName.trim());
+  const normalizedSkillName = normalizeSkillName(skillName);
+
+  if (SOFT_SKILLS.has(normalizedSkillName)) {
+    return true;
+  }
+
+  return SOFT_SKILL_KEYWORDS.some((keyword) =>
+    normalizedSkillName.includes(keyword),
+  );
 }
 
 function SkillLevelBar({
@@ -291,7 +329,7 @@ export function SkillsEditor({
             />
             <div className="flex gap-2">
               <select
-                className="rounded-lg border border-violet-500/30 bg-[#120f1b] px-3 py-2 text-sm text-slate-100"
+                className="cursor-pointer rounded-lg border border-violet-500/30 bg-[#120f1b] px-3 py-2 text-sm text-slate-100 hover:cursor-pointer active:cursor-pointer"
                 value={manualLevel}
                 onChange={(event) => setManualLevel(Number(event.target.value))}
               >
@@ -302,7 +340,7 @@ export function SkillsEditor({
                 ))}
               </select>
               <button
-                className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:opacity-50"
+                className="cursor-pointer rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:cursor-pointer hover:bg-violet-500 active:cursor-pointer disabled:cursor-default disabled:opacity-50"
                 type="submit"
                 disabled={isSaving}
               >
@@ -323,13 +361,18 @@ export function SkillsEditor({
                     const isAdded = normalizedSkillNames.has(
                       normalizeSkillName(skillName),
                     );
+                    const isDisabled = isSaving || isAdded;
                     return (
                       <li key={skillName}>
                         <button
                           type="button"
-                          className="flex w-full items-center justify-between rounded-lg border border-violet-500/20 bg-violet-500/5 px-3 py-2 text-left text-sm text-slate-100 transition hover:border-violet-400/50 hover:bg-violet-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+                          className={`flex w-full cursor-pointer items-center justify-between rounded-lg border border-violet-500/20 bg-violet-500/5 px-3 py-2 text-left text-sm text-slate-100 transition hover:border-violet-400/50 hover:bg-violet-500/15 disabled:opacity-50 ${
+                            isAdded
+                              ? "disabled:cursor-not-allowed"
+                              : "disabled:cursor-default"
+                          }`}
                           onClick={() => void addSuggestedSkill(skillName)}
-                          disabled={isSaving || isAdded}
+                          disabled={isDisabled}
                         >
                           <span>{skillName}</span>
                           <span className="text-violet-300">
@@ -342,6 +385,38 @@ export function SkillsEditor({
                 </ul>
               </div>
             ))}
+            <div className="space-y-2 border-t border-violet-500/20 pt-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Soft Skills
+              </p>
+              <ul className="space-y-2">
+                {SOFT_SKILL_SUGGESTIONS.map((skillName) => {
+                  const isAdded = normalizedSkillNames.has(
+                    normalizeSkillName(skillName),
+                  );
+                  const isDisabled = isSaving || isAdded;
+                  return (
+                    <li key={skillName}>
+                      <button
+                        type="button"
+                        className={`flex w-full cursor-pointer items-center justify-between rounded-lg border border-violet-500/20 bg-violet-500/5 px-3 py-2 text-left text-sm text-slate-100 transition hover:border-violet-400/50 hover:bg-violet-500/15 disabled:opacity-50 ${
+                          isAdded
+                            ? "disabled:cursor-not-allowed"
+                            : "disabled:cursor-default"
+                        }`}
+                        onClick={() => void addSuggestedSkill(skillName)}
+                        disabled={isDisabled}
+                      >
+                        <span>{skillName}</span>
+                        <span className="text-violet-300">
+                          {isAdded ? "Added" : "+"}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </div>
         </section>
 
@@ -394,7 +469,7 @@ export function SkillsEditor({
                       />
                       <div className="mt-2 flex items-center gap-2">
                         <select
-                          className="rounded border border-violet-500/30 bg-[#1b1629] px-2 py-1 text-xs text-slate-100"
+                          className="cursor-pointer rounded border border-violet-500/30 bg-[#1b1629] px-2 py-1 text-xs text-slate-100 hover:cursor-pointer active:cursor-pointer"
                           value={skill.level}
                           onChange={(event) =>
                             void updateSkillLevel(
@@ -411,7 +486,7 @@ export function SkillsEditor({
                         </select>
                         <button
                           type="button"
-                          className="text-xs text-red-300 hover:text-red-200"
+                          className="cursor-pointer text-xs text-red-300 hover:cursor-pointer hover:text-red-200 active:cursor-pointer"
                           onClick={() => void removeSkill(skill.id)}
                         >
                           Remove
@@ -453,7 +528,7 @@ export function SkillsEditor({
                         />
                         <div className="mt-2 flex items-center gap-2">
                           <select
-                            className="rounded border border-violet-500/30 bg-[#1b1629] px-2 py-1 text-xs text-slate-100"
+                            className="cursor-pointer rounded border border-violet-500/30 bg-[#1b1629] px-2 py-1 text-xs text-slate-100 hover:cursor-pointer active:cursor-pointer"
                             value={skill.level}
                             onChange={(event) =>
                               void updateSkillLevel(
@@ -470,7 +545,7 @@ export function SkillsEditor({
                           </select>
                           <button
                             type="button"
-                            className="text-xs text-red-300 hover:text-red-200"
+                            className="cursor-pointer text-xs text-red-300 hover:cursor-pointer hover:text-red-200 active:cursor-pointer"
                             onClick={() => void removeSkill(skill.id)}
                           >
                             Remove
@@ -508,7 +583,7 @@ export function SkillsEditor({
             <div className="mt-4 flex justify-end">
               <button
                 type="button"
-                className="rounded-xl bg-violet-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:bg-violet-900/60 disabled:text-violet-200/70"
+                className="cursor-pointer rounded-xl bg-violet-600 px-6 py-3 text-sm font-semibold text-white transition hover:cursor-pointer hover:bg-violet-500 active:cursor-pointer disabled:cursor-default disabled:bg-violet-900/60 disabled:text-violet-200/70"
                 disabled={!isReadyToContinue || isSaving}
                 onClick={() => router.push(continueHref)}
               >

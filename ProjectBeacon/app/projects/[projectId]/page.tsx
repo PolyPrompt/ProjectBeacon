@@ -42,33 +42,54 @@ export default async function ProjectDashboardPage({
     redirect(`/projects/${projectId}/skills`);
   }
 
-  // Fetch dashboard data from API endpoint
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/projects/${projectId}/dashboard`,
-    {
-      headers: {
-        "x-user-id": sessionUser.userId,
+  let data: unknown;
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/projects/${projectId}/dashboard`,
+      {
+        headers: {
+          "x-user-id": sessionUser.userId,
+        },
+        cache: "no-store",
       },
-      cache: "no-store",
-    },
-  );
+    );
 
-  if (!response.ok) {
-    if (response.status === 404 || response.status === 403) {
-      notFound();
+    if (!response.ok) {
+      if (response.status === 404) {
+        notFound();
+      }
+
+      redirect(`/projects/${projectId}/skills`);
     }
-    throw new Error(`Failed to fetch dashboard data: ${response.statusText}`);
+
+    data = await response.json();
+  } catch {
+    redirect(`/projects/${projectId}/skills`);
   }
 
-  const data = await response.json();
+  const payload = data as {
+    members?: DashboardMember[];
+    project?: DashboardProject;
+    tasks?: DashboardTask[];
+    role?: ProjectRole;
+  };
+
+  if (
+    !Array.isArray(payload.members) ||
+    !payload.project ||
+    !Array.isArray(payload.tasks) ||
+    !payload.role
+  ) {
+    redirect(`/projects/${projectId}/skills`);
+  }
 
   return (
     <ProjectDashboardShell
-      members={data.members as DashboardMember[]}
-      project={data.project as DashboardProject}
+      members={payload.members}
+      project={payload.project}
       projectId={projectId}
-      tasks={data.tasks as DashboardTask[]}
-      viewerRole={data.role as ProjectRole}
+      tasks={payload.tasks}
+      viewerRole={payload.role}
       viewerUserId={sessionUser.userId}
     />
   );
