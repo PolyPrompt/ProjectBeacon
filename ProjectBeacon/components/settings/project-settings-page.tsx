@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type ProjectSettingsPageProps = {
   projectId: string;
@@ -41,8 +41,8 @@ export function ProjectSettingsPage({
   const [loadingMetadata, setLoadingMetadata] = useState(isAdmin);
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const deadlineInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -106,11 +106,6 @@ export function ProjectSettingsPage({
       controller.abort();
     };
   }, [isAdmin, projectId]);
-
-  const canDelete = useMemo(
-    () => deleteConfirmText === "DELETE",
-    [deleteConfirmText],
-  );
 
   async function handleShare() {
     try {
@@ -198,7 +193,7 @@ export function ProjectSettingsPage({
   }
 
   async function handleDeleteProject() {
-    if (!canDelete || deleting) {
+    if (deleting) {
       return;
     }
 
@@ -227,64 +222,50 @@ export function ProjectSettingsPage({
     }
   }
 
+  function openDeadlinePicker() {
+    if (loadingMetadata || !deadlineInputRef.current) {
+      return;
+    }
+
+    const input = deadlineInputRef.current as HTMLInputElement & {
+      showPicker?: () => void;
+    };
+    input.focus();
+    input.showPicker?.();
+  }
+
   return (
-    <section className="space-y-5">
-      <header className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h1 className="text-2xl font-semibold text-slate-900">Settings</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Share project access, leave the workspace, and manage admin controls
-          safely.
+    <section className="min-h-[calc(100vh-120px)] space-y-6 rounded-3xl border border-violet-500/20 bg-[#120d1c] p-6 shadow-[0_24px_90px_rgba(8,4,20,0.5)]">
+      <header className="space-y-2">
+        <h1 className="text-4xl font-black tracking-tight text-slate-100">
+          {isAdmin ? "Admin Project Settings" : "Project Settings"}
+        </h1>
+        <p className="text-lg text-slate-400">
+          Manage your distributed systems project details and team roster.
         </p>
       </header>
 
       {status ? (
-        <p className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-800">
+        <p className="rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-sm text-violet-100">
           {status}
         </p>
       ) : null}
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Member Actions</h2>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <button
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100"
-            onClick={() => void handleShare()}
-            type="button"
-          >
-            Generate Share Link
-          </button>
-          <button
-            className="rounded-lg border border-rose-300 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
-            onClick={() => void handleLeaveProject()}
-            type="button"
-          >
-            Leave Project
-          </button>
-        </div>
-
-        {shareLink ? (
-          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Share Link
-            </p>
-            <p className="mt-1 break-all text-sm text-slate-800">{shareLink}</p>
-          </div>
-        ) : null}
-      </section>
-
       {isAdmin ? (
-        <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Admin Project Controls
+        <section className="rounded-2xl border border-violet-500/20 bg-[#1a1228]/90 p-5 shadow-lg shadow-black/20">
+          <h2 className="text-3xl font-semibold text-slate-100">
+            Project Overview
           </h2>
-
-          <form className="space-y-4" onSubmit={handleSaveAdminSettings}>
+          <form
+            className="mt-5 grid gap-4 md:grid-cols-2"
+            onSubmit={handleSaveAdminSettings}
+          >
             <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                 Project Name
               </span>
               <input
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-violet-500/20 bg-[#150f23] px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-violet-400"
                 disabled={loadingMetadata}
                 onChange={(event) =>
                   setMetadata((current) => ({
@@ -298,61 +279,120 @@ export function ProjectSettingsPage({
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">
-                Deadline
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Submission Deadline
               </span>
-              <input
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                disabled={loadingMetadata}
-                onChange={(event) =>
-                  setMetadata((current) => ({
-                    ...current,
-                    deadline: event.target.value,
-                  }))
-                }
-                type="date"
-                value={metadata.deadline}
-              />
+              <div className="relative">
+                <input
+                  ref={deadlineInputRef}
+                  className="w-full rounded-lg border border-violet-500/20 bg-[#150f23] px-3 py-3 pr-12 text-sm text-slate-100 outline-none transition [color-scheme:dark] focus:border-violet-400 focus:ring-2 focus:ring-violet-500/30"
+                  disabled={loadingMetadata}
+                  onChange={(event) =>
+                    setMetadata((current) => ({
+                      ...current,
+                      deadline: event.target.value,
+                    }))
+                  }
+                  type="date"
+                  value={metadata.deadline}
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md border border-violet-500/20 bg-violet-500/10 px-2 py-1 text-xs text-violet-200 transition hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={openDeadlinePicker}
+                  disabled={loadingMetadata}
+                  aria-label="Open calendar"
+                >
+                  📅
+                </button>
+              </div>
             </label>
 
-            <button
-              className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700"
-              disabled={loadingMetadata}
-              type="submit"
-            >
-              Save Project Settings
-            </button>
+            <div className="md:col-span-2">
+              <button
+                className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={loadingMetadata}
+                type="submit"
+              >
+                Save Project Settings
+              </button>
+            </div>
           </form>
-
-          <section className="rounded-xl border border-rose-300 bg-rose-50 p-4">
-            <h3 className="text-sm font-semibold text-rose-800">
-              Delete Project
-            </h3>
-            <p className="mt-2 text-sm text-rose-700">
-              This is permanent. Type <code>DELETE</code> to confirm.
-            </p>
-            <input
-              className="mt-3 w-full rounded-lg border border-rose-300 px-3 py-2 text-sm"
-              onChange={(event) => setDeleteConfirmText(event.target.value)}
-              placeholder="Type DELETE"
-              type="text"
-              value={deleteConfirmText}
-            />
-            <button
-              className="mt-3 rounded-lg border border-rose-400 px-3 py-2 text-sm font-semibold text-rose-800 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={!canDelete || deleting}
-              onClick={() => void handleDeleteProject()}
-              type="button"
-            >
-              {deleting ? "Deleting..." : "Delete Project"}
-            </button>
-          </section>
         </section>
       ) : (
-        <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-600 shadow-sm">
+        <section className="rounded-2xl border border-dashed border-violet-500/30 bg-[#1a1228]/70 p-5 text-sm text-slate-300">
           Admin-only project controls are hidden for users.
         </section>
       )}
+
+      <section className="rounded-2xl border border-violet-500/20 bg-[#1a1228]/90 p-5 shadow-lg shadow-black/20">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-3xl font-semibold text-slate-100">Team Roster</h2>
+          <button
+            className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:bg-violet-500"
+            onClick={() => void handleShare()}
+            type="button"
+          >
+            Add Member
+          </button>
+        </div>
+
+        <p className="mt-2 text-sm text-slate-400">
+          Generate a secure invite link and share it with teammates.
+        </p>
+
+        {shareLink ? (
+          <div className="mt-4 rounded-lg border border-violet-500/20 bg-[#150f23] p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Share Link
+            </p>
+            <p className="mt-1 break-all text-sm text-violet-100">
+              {shareLink}
+            </p>
+          </div>
+        ) : null}
+
+        <div className="mt-6 border-t border-violet-500/15 pt-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+            Add New Member
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <input
+              className="min-w-[260px] flex-1 rounded-lg border border-violet-500/20 bg-[#150f23] px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 outline-none"
+              disabled
+              placeholder="Search by name or email..."
+              type="text"
+            />
+            <button
+              className="rounded-lg border border-violet-500/30 bg-violet-500/20 px-5 py-2.5 text-sm font-semibold text-violet-200 transition hover:bg-violet-500/30"
+              onClick={() => void handleShare()}
+              type="button"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <div className="flex flex-wrap gap-3">
+        <button
+          className="rounded-xl border border-red-500/40 px-5 py-3 text-sm font-semibold text-red-300 transition hover:bg-red-500/10"
+          onClick={() => void handleLeaveProject()}
+          type="button"
+        >
+          Leave Project
+        </button>
+        {isAdmin ? (
+          <button
+            className="rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={deleting}
+            onClick={() => void handleDeleteProject()}
+            type="button"
+          >
+            {deleting ? "Deleting..." : "Delete Project"}
+          </button>
+        ) : null}
+      </div>
     </section>
   );
 }
