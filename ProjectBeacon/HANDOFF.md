@@ -754,3 +754,32 @@
   - `set -a; source .env.local; set +a; npm run format:check` -> pass.
   - `set -a; source .env.local; set +a; npm run lint` -> pass.
   - `set -a; source .env.local; set +a; npm run build` -> pass.
+
+## 2026-02-22T03:22:46Z - PB-043 PR Opened (Agent1)
+
+- Issue: `#94` moved to `status:handoff`.
+- PR opened: `#104` https://github.com/PolyPrompt/ProjectBeacon/pull/104
+- Branch: `agent1/pb-043-clerk-session-unify`
+- Issue comment posted with shipped scope + validation summary:
+  - https://github.com/PolyPrompt/ProjectBeacon/issues/94#issuecomment-3940039966
+
+## 2026-02-22T03:22:46Z - PB-045 Blocked (Agent1)
+
+- Issue: `#96` `[PB-045] Add reproducible Supabase storage bucket provisioning for project documents`.
+- Status updated: `status:ready` -> `status:blocked`.
+- Blocker:
+  - Declared dependency `#71` (`PB-030`) remains open (`status:handoff`), so dependency is not complete yet.
+- Issue comment with unblock steps:
+  - https://github.com/PolyPrompt/ProjectBeacon/issues/96#issuecomment-3940041320
+- Next action:
+  - Merge/close `#71` (PR `#100`), then move `#96` back to `status:ready`.
+
+## 2026-02-22T03:22:46Z - Agent1 Queue Final Summary
+
+- Runner executed: `TASKMVP-agent1-runner.md` loop continuation.
+- Final queue check (`agent1` + `status:ready`): `[]`.
+- Outcome:
+  - `PB-043` (`#94`) implemented, validated, and handed off in PR `#104`.
+  - `PB-045` (`#96`) marked blocked with explicit dependency on `#71`.
+- Stop reason:
+  - No actionable `agent1` issues remain in `status:ready`.
