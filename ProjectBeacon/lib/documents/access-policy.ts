@@ -34,7 +34,7 @@ export async function listDocumentsForRole(params: {
   role: "admin" | "user";
   actorUserId: string;
 }) {
-  const { supabase, projectId, role, actorUserId } = params;
+  const { supabase, projectId } = params;
   const { data, error } = await supabase
     .from("project_documents")
     .select(
@@ -47,26 +47,7 @@ export async function listDocumentsForRole(params: {
     throw error;
   }
 
-  if (role === "admin") {
-    return data;
-  }
-
-  const { data: accessRows, error: accessError } = await supabase
-    .from("project_document_access")
-    .select("document_id")
-    .eq("user_id", actorUserId);
-
-  if (accessError) {
-    throw accessError;
-  }
-
-  const assignedDocumentIds = new Set(
-    (accessRows ?? []).map((row) => row.document_id as string),
-  );
-
-  return (data ?? []).filter(
-    (document) => document.is_public || assignedDocumentIds.has(document.id),
-  );
+  return data ?? [];
 }
 
 export async function resolveDocumentAccess(params: {
@@ -120,26 +101,12 @@ export async function resolveDocumentAccess(params: {
     };
   }
 
-  const { data: accessRow, error: accessError } = await supabase
-    .from("project_document_access")
-    .select("id")
-    .eq("document_id", documentId)
-    .eq("user_id", actorUserId)
-    .maybeSingle();
-
-  if (accessError) {
-    throw accessError;
-  }
-
-  const isAssigned = Boolean(accessRow);
-  const canView = Boolean(document.is_public || isAssigned);
-
   return {
     actorUserId,
     role: "user",
     document,
-    isAssigned,
-    canView,
+    isAssigned: true,
+    canView: true,
     canManage: false,
   };
 }

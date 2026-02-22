@@ -48,6 +48,10 @@ export async function GET(
       },
     );
   } catch (error) {
+    if (error instanceof Error && error.message === "UNAUTHENTICATED") {
+      return apiError("UNAUTHENTICATED", "Sign in is required.", 401);
+    }
+
     if (error instanceof Error && error.message === "DOCUMENT_NOT_FOUND") {
       return apiError("NOT_FOUND", "Document not found.", 404);
     }
@@ -64,6 +68,9 @@ export async function GET(
       "INTERNAL_SERVER_ERROR",
       "Failed to create document preview URL.",
       500,
+      {
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
     );
   }
 }
