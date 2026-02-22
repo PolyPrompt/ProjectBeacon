@@ -296,7 +296,7 @@ function dueLabel(value: string | null, nowMs: number | null): string {
 
 function deadlineCountdown(deadlineIso: string, nowMs: number | null): string {
   if (nowMs === null) {
-    return "--d : --h : --m";
+    return "--d : --h : --m : --s";
   }
 
   const target = new Date(deadlineIso).getTime();
@@ -304,12 +304,29 @@ function deadlineCountdown(deadlineIso: string, nowMs: number | null): string {
     return "Unknown";
   }
 
-  const totalMinutes = Math.max(0, Math.floor((target - nowMs) / (1000 * 60)));
-  const days = Math.floor(totalMinutes / (60 * 24));
-  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-  const minutes = totalMinutes % 60;
+  const totalSeconds = Math.max(0, Math.floor((target - nowMs) / 1000));
+  const days = Math.floor(totalSeconds / (60 * 60 * 24));
+  const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / (60 * 60));
+  const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
+  const seconds = totalSeconds % 60;
 
-  return `${String(days).padStart(2, "0")}d : ${String(hours).padStart(2, "0")}h : ${String(minutes).padStart(2, "0")}m`;
+  return `${String(days).padStart(2, "0")}d : ${String(hours).padStart(2, "0")}h : ${String(minutes).padStart(2, "0")}m : ${String(seconds).padStart(2, "0")}s`;
+}
+
+function LiveBoardDeadlineCountdown({ deadlineIso }: { deadlineIso: string }) {
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setNowMs(Date.now());
+    }, 1_000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  return <>{deadlineCountdown(deadlineIso, nowMs)}</>;
 }
 
 function flattenBoard(
@@ -541,6 +558,10 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [draggedTask, setDraggedTask] = useState<DraggedTask | null>(null);
   const [dropLaneId, setDropLaneId] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
+  const [composeLaneId, setComposeLaneId] = useState<string | null>(null);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
 
   useEffect(() => {
     setNowMs(Date.now());
@@ -626,7 +647,7 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
       cancelled = true;
       controller.abort();
     };
-  }, [projectId, role, viewerUserId]);
+  }, [projectId, role, viewerUserId, reloadToken]);
 
   const isDraftPlanning = project.planningStatus === "draft";
   const modeOptions = isDraftPlanning
@@ -725,8 +746,8 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
     [columns, unassigned],
   );
   const totalTasks = tasks.length;
-  const countdown = deadlineCountdown(project.deadline, nowMs);
-  const canRunDelegationActions = capability.canEditWorkflow;
+  const canRunDelegationActions =
+    capability.canEditWorkflow || capability.role === "user";
   const groupedMode =
     !isDraftPlanning && (mode === "categorized" || mode === "finalized");
 
@@ -807,6 +828,52 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
     }
   }
 
+  async function createTaskInLane(laneId: string) {
+    if (isCreatingTask) {
+      return;
+    }
+
+    const title = newTaskTitle.trim();
+    if (title.length === 0) {
+      setError("Task title is required.");
+      return;
+    }
+
+    setIsCreatingTask(true);
+    setError(null);
+    setActionMessage(null);
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}/tasks`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          assigneeUserId: laneId === "unassigned" ? null : laneId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(await readErrorMessage(response));
+      }
+
+      setComposeLaneId(null);
+      setNewTaskTitle("");
+      setActionMessage("Task added.");
+      setReloadToken((current) => current + 1);
+    } catch (createError) {
+      setError(
+        createError instanceof Error
+          ? createError.message
+          : "Failed to create task.",
+      );
+    } finally {
+      setIsCreatingTask(false);
+    }
+  }
+
   return (
     <section className="h-full overflow-hidden bg-[#18131f] text-slate-100">
       <div className="h-full overflow-hidden">
@@ -829,7 +896,6 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                       <p className="text-3xl font-black text-slate-100">
                         {totalTasks}
                       </p>
-                      <p className="text-xs font-bold text-emerald-400">+2%</p>
                     </div>
                   </article>
                   <article className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3">
@@ -837,7 +903,9 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                       Deadline Countdown
                     </p>
                     <p className="mt-1 text-3xl font-black tracking-tight text-rose-200">
-                      {countdown}
+                      <LiveBoardDeadlineCountdown
+                        deadlineIso={project.deadline}
+                      />
                     </p>
                   </article>
                 </div>
@@ -1001,8 +1069,68 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                               {lane.taskCount}
                             </span>
                           </div>
-                          <span className="text-slate-500">...</span>
+                          {lane.id !== "unassigned" ? (
+                            <button
+                              type="button"
+                              className="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-violet-200 hover:bg-violet-500/20"
+                              onClick={() => {
+                                setError(null);
+                                setActionMessage(null);
+                                setComposeLaneId(
+                                  composeLaneId === lane.id ? null : lane.id,
+                                );
+                                setNewTaskTitle("");
+                              }}
+                            >
+                              + Task
+                            </button>
+                          ) : (
+                            <span className="text-slate-500">...</span>
+                          )}
                         </div>
+
+                        {composeLaneId === lane.id ? (
+                          <form
+                            className="mb-3 space-y-2 rounded-lg border border-violet-500/35 bg-[#1a1730] p-2"
+                            onSubmit={(event) => {
+                              event.preventDefault();
+                              void createTaskInLane(lane.id);
+                            }}
+                          >
+                            <label className="block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                              New task title
+                            </label>
+                            <input
+                              autoFocus
+                              className="w-full rounded-md border border-slate-700 bg-[#131126] px-2 py-1.5 text-xs text-slate-100 outline-none ring-violet-400 focus:ring-2"
+                              maxLength={120}
+                              onChange={(event) =>
+                                setNewTaskTitle(event.target.value)
+                              }
+                              placeholder={`Add task for ${lane.title}`}
+                              value={newTaskTitle}
+                            />
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                className="rounded-md border border-slate-600 px-2 py-1 text-[10px] font-semibold text-slate-300 hover:bg-slate-800"
+                                onClick={() => {
+                                  setComposeLaneId(null);
+                                  setNewTaskTitle("");
+                                }}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="submit"
+                                className="rounded-md bg-violet-600 px-2 py-1 text-[10px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-700"
+                                disabled={isCreatingTask}
+                              >
+                                {isCreatingTask ? "Adding..." : "Add"}
+                              </button>
+                            </div>
+                          </form>
+                        ) : null}
 
                         <div className="flex-1 space-y-2 overflow-y-auto pr-1">
                           {groupedMode ? (

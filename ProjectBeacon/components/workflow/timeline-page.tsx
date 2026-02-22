@@ -136,7 +136,7 @@ function formatDateLabel(value: string | null): string {
   });
 }
 
-function formatCountdown(value: string | null): string {
+function formatCountdown(value: string | null, nowMs: number): string {
   if (!value) {
     return "No deadline";
   }
@@ -146,7 +146,7 @@ function formatCountdown(value: string | null): string {
     return "Invalid deadline";
   }
 
-  const diff = target - Date.now();
+  const diff = target - nowMs;
   if (diff <= 0) {
     return "Deadline passed";
   }
@@ -157,6 +157,22 @@ function formatCountdown(value: string | null): string {
   const minutes = totalMinutes % 60;
 
   return `${days}d : ${hours}h : ${minutes}m`;
+}
+
+function LiveTimelineCountdown({ value }: { value: string | null }) {
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setNowMs(Date.now());
+    }, 1_000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  return <>{formatCountdown(value, nowMs)}</>;
 }
 
 function toVisualState(
@@ -469,7 +485,7 @@ export function TimelinePage({
               Countdown To Final Milestone
             </p>
             <p className="mt-1 text-xl font-semibold text-white">
-              {formatCountdown(lastDeadline)}
+              <LiveTimelineCountdown value={lastDeadline} />
             </p>
             <p className="text-xs text-slate-400">
               Final due: {formatDateLabel(lastDeadline)}
