@@ -80,16 +80,21 @@ export async function POST(
       order: "name.asc",
     });
 
-    const generated = await generateTaskPlan({
-      projectName: access.project.name,
-      projectDescription: access.project.description,
-      projectDeadline: access.project.deadline,
-      contextBlocks: contexts.map((entry) => ({
-        contextType: entry.context_type,
-        textContent: entry.text_content,
-      })),
-      availableSkills: existingSkills.map((skill) => skill.name),
-    });
+    const strictMode = process.env.AI_GENERATION_STRICT_MODE === "true";
+    const generatedResult = await generateTaskPlan(
+      {
+        projectName: access.project.name,
+        projectDescription: access.project.description,
+        projectDeadline: access.project.deadline,
+        contextBlocks: contexts.map((entry) => ({
+          contextType: entry.context_type,
+          textContent: entry.text_content,
+        })),
+        availableSkills: existingSkills.map((skill) => skill.name),
+      },
+      { strictMode },
+    );
+    const generated = generatedResult.plan;
 
     const tempIds = generated.tasks.map((task) => task.tempId);
     const dependencyEdges = generated.tasks.flatMap((task) =>
@@ -232,6 +237,7 @@ export async function POST(
       tasks: insertedTasks.map(mapTaskRowToDto),
       taskSkills: insertedTaskSkills.map(mapTaskSkillRowToDto),
       taskDependencies: insertedDependencies.map(mapTaskDependencyRowToDto),
+      generation: generatedResult.generation,
     });
   } catch (error) {
     return mapRouteError(error);
