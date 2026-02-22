@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DocumentPreviewModal } from "@/components/documents/document-preview-modal";
 import {
@@ -109,7 +110,9 @@ export function ProjectDocumentsPage({
   const [selectedDocument, setSelectedDocument] =
     useState<ProjectDocumentDTO | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [reanalyzing, setReanalyzing] = useState(false);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
+  const [showBoardRedirect, setShowBoardRedirect] = useState(false);
   const [pastedSpecs, setPastedSpecs] = useState("");
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -210,10 +213,12 @@ export function ProjectDocumentsPage({
     try {
       setUploading(true);
       setActionStatus(null);
+      setShowBoardRedirect(false);
 
       const uploadFormData = new FormData();
       uploadFormData.set("file", file);
-      if (options?.usedForPlanning) {
+      const usedForPlanning = options?.usedForPlanning ?? true;
+      if (usedForPlanning) {
         uploadFormData.set("usedForPlanning", "true");
       }
 
@@ -274,6 +279,7 @@ export function ProjectDocumentsPage({
   async function handleRemove(documentId: string) {
     try {
       setActionStatus(null);
+      setShowBoardRedirect(false);
       const response = await fetch(`/api/projects/${projectId}/documents`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -292,6 +298,74 @@ export function ProjectDocumentsPage({
           ? removeError.message
           : "Failed to remove document.",
       );
+    }
+  }
+
+  async function handleReAnalyze() {
+    if (!isAdmin) {
+      setActionStatus("Only admins can re-analyze project documents.");
+      setShowBoardRedirect(false);
+      return;
+    }
+
+    try {
+      setReanalyzing(true);
+      setActionStatus(null);
+      setShowBoardRedirect(false);
+
+      const response = await fetch(
+        `/api/projects/${projectId}/ai/reanalyze-tasks`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const message = await resolveApiErrorMessage(
+          response,
+          "Failed to re-analyze tasks from project documents.",
+        );
+        throw new Error(message);
+      }
+
+      const payload = (await response.json()) as {
+        insertedCount?: number;
+        skippedCount?: number;
+        tasks?: Array<{ id: string }>;
+      };
+      const insertedCount =
+        typeof payload.insertedCount === "number"
+          ? payload.insertedCount
+          : Array.isArray(payload.tasks)
+            ? payload.tasks.length
+            : 0;
+      const skippedCount =
+        typeof payload.skippedCount === "number" ? payload.skippedCount : 0;
+
+      if (insertedCount === 0) {
+        setActionStatus(
+          `Re-analysis complete. No new tasks were added. ${skippedCount} generated candidates were already covered by existing tasks.`,
+        );
+        setShowBoardRedirect(true);
+        return;
+      }
+
+      setActionStatus(
+        `Re-analysis complete. Added ${insertedCount} new task${insertedCount === 1 ? "" : "s"} from project documents. Skipped ${skippedCount} overlapping candidate${skippedCount === 1 ? "" : "s"}.`,
+      );
+      setShowBoardRedirect(true);
+    } catch (error) {
+      setActionStatus(
+        error instanceof Error
+          ? error.message
+          : "Failed to re-analyze tasks from project documents.",
+      );
+      setShowBoardRedirect(false);
+    } finally {
+      setReanalyzing(false);
     }
   }
 
@@ -318,6 +392,18 @@ export function ProjectDocumentsPage({
         <p className="max-w-2xl text-lg leading-relaxed text-slate-400">
           Save your project requirements here!
         </p>
+        {isAdmin ? (
+          <button
+            className="inline-flex rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-cyan-900/40 transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={uploading || reanalyzing}
+            onClick={() => {
+              void handleReAnalyze();
+            }}
+            type="button"
+          >
+            {reanalyzing ? "ReAnalyzing..." : "ReAnalyze"}
+          </button>
+        ) : null}
         {!isAdmin ? (
           <span className="inline-flex rounded-full border border-violet-300/30 bg-violet-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-violet-100">
             Read-only user mode
@@ -332,9 +418,22 @@ export function ProjectDocumentsPage({
       ) : null}
 
       {actionStatus ? (
-        <p className="rounded-xl border border-slate-700 bg-[#11131d] px-3 py-2 text-sm text-slate-200">
-          {actionStatus}
-        </p>
+        <div className="rounded-xl border border-slate-700 bg-[#11131d] px-3 py-2 text-sm text-slate-200">
+          <p>{actionStatus}</p>
+          {showBoardRedirect ? (
+            <div className="mt-2 flex items-center gap-2">
+              <p className="text-xs text-slate-300">
+                To view new tasks, go to "Board".
+              </p>
+              <Link
+                className="rounded-md border border-cyan-400/50 bg-cyan-500/15 px-2.5 py-1 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-500/25"
+                href={`/projects/${projectId}/userflow/board`}
+              >
+                Board
+              </Link>
+            </div>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:auto-rows-[minmax(180px,auto)]">
