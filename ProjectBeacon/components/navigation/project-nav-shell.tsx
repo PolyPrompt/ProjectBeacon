@@ -23,12 +23,18 @@ export function ProjectNavShell({
   const isStandaloneInventoryRoute = pathname.endsWith("/inventory");
   const isDocumentsRoute = pathname.includes("/documents");
   const isSettingsRoute = pathname.includes("/settings");
+  const routeNotice =
+    role === "user" && isDocumentsRoute
+      ? "Documents are in read-only mode for users."
+      : role === "user" && isSettingsRoute
+        ? "Settings are in user mode; admin-only controls are hidden."
+        : null;
 
   if (isStandaloneInventoryRoute) {
     return <>{children}</>;
   }
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#18131F]">
       <NavBar
         mode="project"
         onSignOut={onSignOut}
@@ -37,18 +43,13 @@ export function ProjectNavShell({
         role={role}
         userId={userId}
       />
-      <div className="border-b border-slate-200 bg-white/95 backdrop-blur">
-        {isDocumentsRoute && role === "user" ? (
+      {routeNotice ? (
+        <div className="border-b border-slate-200 bg-white/95 backdrop-blur">
           <p className="mx-auto w-full max-w-7xl px-4 pb-3 text-xs font-medium text-slate-500 sm:px-6">
-            Documents are in read-only mode for users.
+            {routeNotice}
           </p>
-        ) : null}
-        {isSettingsRoute && role === "user" ? (
-          <p className="mx-auto w-full max-w-7xl px-4 pb-3 text-xs font-medium text-slate-500 sm:px-6">
-            Settings are in user mode; admin-only controls are hidden.
-          </p>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
         {children}
