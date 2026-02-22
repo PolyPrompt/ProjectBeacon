@@ -197,6 +197,7 @@ export function ProjectForm() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [deadlineDate, setDeadlineDate] = useState("");
+  const deadlineInputRef = useRef<HTMLInputElement | null>(null);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [isAddingMilestone, setIsAddingMilestone] = useState(false);
   const [newMilestoneTitle, setNewMilestoneTitle] = useState("");
@@ -527,6 +528,20 @@ export function ProjectForm() {
       current.filter((memberId) => memberId !== id),
     );
     setTeamMembers((current) => current.filter((member) => member.id !== id));
+  }
+
+  function openMainDeadlinePicker() {
+    const input = deadlineInputRef.current;
+    if (!input) {
+      return;
+    }
+
+    try {
+      input.showPicker?.();
+    } catch {
+      input.focus();
+      input.click();
+    }
   }
 
   const canAddMilestone = !isPastDate(newMilestoneDate);

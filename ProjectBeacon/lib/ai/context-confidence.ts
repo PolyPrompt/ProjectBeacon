@@ -214,9 +214,11 @@ async function callOpenAIConfidence(
   input: BuildClarificationStateInput,
 ): Promise<AIConfidenceOutput | null> {
   const env = getServerEnv();
-  if (!env.OPENAI_API_KEY) {
+  const openAIApiKey = env.OPENAI_API_KEY;
+  if (!openAIApiKey) {
     return null;
   }
+  const requiredOpenAIApiKey: string = openAIApiKey;
 
   const maxQuestions = getEffectiveClarificationQuestionLimit();
   const promptBase = buildClarificationPromptBase(input);
@@ -231,7 +233,7 @@ async function callOpenAIConfidence(
 
   async function requestConfidence(selectedModel: string): Promise<Response> {
     const result = await requestOpenAIChatCompletions({
-      apiKey: env.OPENAI_API_KEY,
+      apiKey: requiredOpenAIApiKey,
       body: {
         model: selectedModel,
         ...getOpenAIChatRequestTuning(selectedModel),
@@ -456,9 +458,11 @@ async function callOpenAIClarifyingQuestions(
   input: GenerateClarifyingQuestionsInput,
 ): Promise<AIClarifyingQuestionsOutput | null> {
   const env = getServerEnv();
-  if (!env.OPENAI_API_KEY) {
+  const openAIApiKey = env.OPENAI_API_KEY;
+  if (!openAIApiKey) {
     return null;
   }
+  const requiredOpenAIApiKey: string = openAIApiKey;
 
   const model = resolveOpenAIModelForOperation(env, "confidence");
   const systemPrompt = getClarifyingQuestionsSystemPrompt();
@@ -478,7 +482,7 @@ async function callOpenAIClarifyingQuestions(
     selectedModel: string,
   ): Promise<Response> {
     const result = await requestOpenAIChatCompletions({
-      apiKey: env.OPENAI_API_KEY,
+      apiKey: requiredOpenAIApiKey,
       body: {
         model: selectedModel,
         ...getOpenAIChatRequestTuning(selectedModel),
