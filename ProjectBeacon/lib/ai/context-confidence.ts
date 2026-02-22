@@ -5,6 +5,7 @@ import {
 } from "@/lib/server/env";
 import { resolveOpenAIModelForOperation } from "@/lib/ai/model-selection";
 import { getOpenAIChatRequestTuning } from "@/lib/ai/openai-chat-options";
+import { requestOpenAIChatCompletions } from "@/lib/ai/openai-chat-request";
 import {
   getClarifyingQuestionsSystemPrompt,
   getConfidenceSystemPrompt,
@@ -42,6 +43,100 @@ type GenerateClarifyingQuestionsInput = BuildClarificationStateInput & {
   confidence: number;
   fallbackQuestions: string[];
 };
+
+const CLARIFICATION_TURN_LIMIT = 1;
+const CLARIFICATION_CONTEXT_ITEM_LIMIT = 6;
+const CLARIFICATION_CONTEXT_TEXT_LIMIT = 320;
+const CLARIFICATION_PROJECT_DESCRIPTION_LIMIT = 700;
+
+function getEffectiveClarificationQuestionLimit(): number {
+  return Math.max(
+    1,
+    Math.min(MAX_CLARIFICATION_QUESTIONS, CLARIFICATION_TURN_LIMIT),
+  );
+}
+
+function getRemainingQuestionBudget(askedCount: number): number {
+  return Math.max(0, getEffectiveClarificationQuestionLimit() - askedCount);
+}
+
+function compactTextForPrompt(text: string, maxChars: number): string {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxChars) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, Math.max(0, maxChars - 3))}...`;
+}
+
+function buildCompactContextSlice(contexts: ProjectContextRow[]): Array<{
+  contextType: ProjectContextRow["context_type"];
+  textContent: string;
+}> {
+  const indexed = contexts.map((context, index) => ({ context, index }));
+  const pickLast = (type: ProjectContextRow["context_type"], count: number) =>
+    indexed
+      .filter((entry) => entry.context.context_type === type)
+      .slice(-count);
+
+  const selected = [
+    ...pickLast("initial", 1),
+    ...pickLast("document_extract", 2),
+    ...pickLast("clarification_qa", 2),
+    ...pickLast("assumption", 1),
+  ];
+
+  const dedupedByIndex = new Map<number, (typeof indexed)[number]>();
+  for (const entry of selected) {
+    dedupedByIndex.set(entry.index, entry);
+  }
+
+  if (dedupedByIndex.size === 0) {
+    for (const entry of indexed.slice(-Math.min(3, indexed.length))) {
+      dedupedByIndex.set(entry.index, entry);
+    }
+  }
+
+  return [...dedupedByIndex.values()]
+    .sort((a, b) => a.index - b.index)
+    .slice(-CLARIFICATION_CONTEXT_ITEM_LIMIT)
+    .map((entry) => ({
+      contextType: entry.context.context_type,
+      textContent: compactTextForPrompt(
+        entry.context.text_content,
+        CLARIFICATION_CONTEXT_TEXT_LIMIT,
+      ),
+    }));
+}
+
+function buildClarificationPromptBase(input: BuildClarificationStateInput): {
+  projectName: string;
+  projectDescription: string;
+  projectDeadline: string;
+  askedCount: number;
+  contextSlice: Array<{
+    contextType: ProjectContextRow["context_type"];
+    textContent: string;
+  }>;
+  omittedContextCount: number;
+} {
+  const contextSlice = buildCompactContextSlice(input.contexts);
+
+  return {
+    projectName: compactTextForPrompt(input.projectName, 120),
+    projectDescription: compactTextForPrompt(
+      input.projectDescription,
+      CLARIFICATION_PROJECT_DESCRIPTION_LIMIT,
+    ),
+    projectDeadline: input.projectDeadline,
+    askedCount: input.askedCount,
+    contextSlice,
+    omittedContextCount: Math.max(
+      0,
+      input.contexts.length - contextSlice.length,
+    ),
+  };
+}
 
 function extractMissingAreas(fullText: string): string[] {
   const checks: Array<{ key: string; patterns: RegExp[] }> = [
@@ -123,27 +218,21 @@ async function callOpenAIConfidence(
     return null;
   }
 
+  const maxQuestions = getEffectiveClarificationQuestionLimit();
+  const promptBase = buildClarificationPromptBase(input);
   const userPrompt = JSON.stringify({
-    projectName: input.projectName,
-    projectDescription: input.projectDescription,
-    projectDeadline: input.projectDeadline,
-    askedCount: input.askedCount,
-    contexts: input.contexts,
+    ...promptBase,
     threshold: CLARIFICATION_CONFIDENCE_THRESHOLD,
-    maxQuestions: MAX_CLARIFICATION_QUESTIONS,
+    maxQuestions,
   });
 
   const model = resolveOpenAIModelForOperation(env, "confidence");
   const systemPrompt = getConfidenceSystemPrompt();
 
   async function requestConfidence(selectedModel: string): Promise<Response> {
-    return fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    const result = await requestOpenAIChatCompletions({
+      apiKey: env.OPENAI_API_KEY,
+      body: {
         model: selectedModel,
         ...getOpenAIChatRequestTuning(selectedModel),
         messages: [
@@ -167,7 +256,7 @@ async function callOpenAIConfidence(
                     minLength: CLARIFICATION_QUESTION_MIN_LENGTH,
                     maxLength: CLARIFICATION_QUESTION_MAX_LENGTH,
                   },
-                  maxItems: 3,
+                  maxItems: 1,
                 },
                 assumptions: {
                   type: "array",
@@ -179,8 +268,10 @@ async function callOpenAIConfidence(
             },
           },
         },
-      }),
+      },
     });
+
+    return result.response;
   }
 
   let requestedModel = model;
@@ -253,6 +344,8 @@ export async function buildClarificationState(
 ): Promise<ClarificationState> {
   const heuristicOutput = buildHeuristicConfidence(input);
   const modelOutput = (await callOpenAIConfidence(input)) ?? heuristicOutput;
+  const maxQuestions = getEffectiveClarificationQuestionLimit();
+  const remainingBudget = getRemainingQuestionBudget(input.askedCount);
   const followUpQuestions =
     modelOutput.followUpQuestions.length > 0
       ? modelOutput.followUpQuestions
@@ -262,7 +355,7 @@ export async function buildClarificationState(
       ? modelOutput.assumptions
       : heuristicOutput.assumptions;
 
-  const reachedQuestionLimit = input.askedCount >= MAX_CLARIFICATION_QUESTIONS;
+  const reachedQuestionLimit = input.askedCount >= maxQuestions;
   const belowThreshold =
     modelOutput.confidence < CLARIFICATION_CONFIDENCE_THRESHOLD;
 
@@ -270,8 +363,11 @@ export async function buildClarificationState(
     confidence: modelOutput.confidence,
     threshold: CLARIFICATION_CONFIDENCE_THRESHOLD,
     askedCount: input.askedCount,
-    maxQuestions: MAX_CLARIFICATION_QUESTIONS,
-    questions: reachedQuestionLimit || !belowThreshold ? [] : followUpQuestions,
+    maxQuestions,
+    questions:
+      reachedQuestionLimit || !belowThreshold
+        ? []
+        : dedupeQuestions(followUpQuestions, remainingBudget),
     assumptions:
       reachedQuestionLimit && belowThreshold ? assumptions : undefined,
     readyForGeneration: !belowThreshold || reachedQuestionLimit,
@@ -307,11 +403,11 @@ function dedupeQuestions(questions: string[], maxItems: number): string[] {
 function buildClarifyingQuestionsFallback(
   input: GenerateClarifyingQuestionsInput,
 ): string[] {
-  const remainingBudget = Math.max(
-    0,
-    MAX_CLARIFICATION_QUESTIONS - input.askedCount,
+  const remainingBudget = getRemainingQuestionBudget(input.askedCount);
+  const maxItems = Math.min(
+    getEffectiveClarificationQuestionLimit(),
+    remainingBudget,
   );
-  const maxItems = Math.min(5, remainingBudget);
   if (maxItems === 0) {
     return [];
   }
@@ -366,34 +462,24 @@ async function callOpenAIClarifyingQuestions(
 
   const model = resolveOpenAIModelForOperation(env, "confidence");
   const systemPrompt = getClarifyingQuestionsSystemPrompt();
-  const remainingBudget = Math.max(
-    0,
-    MAX_CLARIFICATION_QUESTIONS - input.askedCount,
-  );
+  const remainingBudget = getRemainingQuestionBudget(input.askedCount);
   if (remainingBudget === 0) {
     return null;
   }
 
+  const promptBase = buildClarificationPromptBase(input);
   const userPrompt = JSON.stringify({
-    projectName: input.projectName,
-    projectDescription: input.projectDescription,
-    projectDeadline: input.projectDeadline,
+    ...promptBase,
     confidence: input.confidence,
-    askedCount: input.askedCount,
     maxQuestionsAllowed: remainingBudget,
-    contexts: input.contexts,
   });
 
   async function requestClarifyingQuestions(
     selectedModel: string,
   ): Promise<Response> {
-    return fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    const result = await requestOpenAIChatCompletions({
+      apiKey: env.OPENAI_API_KEY,
+      body: {
         model: selectedModel,
         ...getOpenAIChatRequestTuning(selectedModel),
         messages: [
@@ -416,7 +502,7 @@ async function callOpenAIClarifyingQuestions(
                     minLength: CLARIFICATION_QUESTION_MIN_LENGTH,
                     maxLength: CLARIFICATION_QUESTION_MAX_LENGTH,
                   },
-                  maxItems: 5,
+                  maxItems: 1,
                 },
                 reasoning: { type: "string", minLength: 1, maxLength: 600 },
               },
@@ -424,8 +510,10 @@ async function callOpenAIClarifyingQuestions(
             },
           },
         },
-      }),
+      },
     });
+
+    return result.response;
   }
 
   let requestedModel = model;
@@ -493,7 +581,8 @@ async function callOpenAIClarifyingQuestions(
 export async function generateClarificationQuestions(
   input: GenerateClarifyingQuestionsInput,
 ): Promise<string[]> {
-  if (input.askedCount >= MAX_CLARIFICATION_QUESTIONS) {
+  const maxQuestions = getEffectiveClarificationQuestionLimit();
+  if (input.askedCount >= maxQuestions) {
     return [];
   }
 
@@ -501,23 +590,26 @@ export async function generateClarificationQuestions(
     return [];
   }
 
-  const remainingBudget = Math.max(
-    0,
-    MAX_CLARIFICATION_QUESTIONS - input.askedCount,
-  );
+  const remainingBudget = getRemainingQuestionBudget(input.askedCount);
   const fallbackQuestions = buildClarifyingQuestionsFallback(input);
   const modelOutput = await callOpenAIClarifyingQuestions(input);
   if (!modelOutput) {
-    return dedupeQuestions(fallbackQuestions, Math.min(5, remainingBudget));
+    return dedupeQuestions(
+      fallbackQuestions,
+      Math.min(maxQuestions, remainingBudget),
+    );
   }
 
   const fromModel = dedupeQuestions(
     modelOutput.clarification_questions,
-    Math.min(5, remainingBudget),
+    Math.min(maxQuestions, remainingBudget),
   );
   if (fromModel.length > 0) {
     return fromModel;
   }
 
-  return dedupeQuestions(fallbackQuestions, Math.min(5, remainingBudget));
+  return dedupeQuestions(
+    fallbackQuestions,
+    Math.min(maxQuestions, remainingBudget),
+  );
 }
