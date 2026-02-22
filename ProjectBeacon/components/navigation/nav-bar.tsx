@@ -23,7 +23,7 @@ type PublicNavBarProps = {
 type NavBarProps = ProjectNavBarProps | PublicNavBarProps;
 
 type NavItem = {
-  label: "Dashboard" | "Documents" | "Workflow" | "Settings";
+  label: "Dashboard" | "Documents" | "Board" | "Settings";
   href: string;
   match: (pathname: string) => boolean;
 };
@@ -61,7 +61,7 @@ export function NavBar(props: NavBarProps) {
       match: () => false,
     },
     {
-      label: "Workflow",
+      label: "Board",
       href: "/projects/new",
       match: () => false,
     },
@@ -88,12 +88,10 @@ export function NavBar(props: NavBarProps) {
         match: (path) => path.includes("/documents"),
       },
       {
-        label: "Workflow",
-        href: `/projects/${props.projectId}/userflow/board`,
+        label: "Board",
+        href: `/projects/${props.projectId}/board`,
         match: (path) =>
-          path.includes("/userflow") ||
-          path.includes("/board") ||
-          path.includes("/timeline"),
+          path.includes("/userflow/board") || path.includes("/board"),
       },
       {
         label: "Settings",

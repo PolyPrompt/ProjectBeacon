@@ -25,11 +25,29 @@ const updateTaskSchema = z
   .object({
     status: z.enum(["todo", "in_progress", "blocked", "done"]).optional(),
     assigneeUserId: z.string().uuid().nullable().optional(),
+    title: z.string().trim().min(1).max(200).optional(),
+    description: z.string().max(5000).optional(),
+    difficultyPoints: z
+      .union([
+        z.literal(1),
+        z.literal(2),
+        z.literal(3),
+        z.literal(5),
+        z.literal(8),
+      ])
+      .optional(),
+    softDeadline: z.string().datetime({ offset: true }).nullable().optional(),
   })
   .refine(
-    (value) => value.status !== undefined || value.assigneeUserId !== undefined,
+    (value) =>
+      value.status !== undefined ||
+      value.assigneeUserId !== undefined ||
+      value.title !== undefined ||
+      value.description !== undefined ||
+      value.difficultyPoints !== undefined ||
+      value.softDeadline !== undefined,
     {
-      message: "At least one of status or assigneeUserId must be provided.",
+      message: "At least one updatable task field must be provided.",
       path: ["status"],
     },
   );
@@ -106,6 +124,15 @@ export async function PATCH(
     const payload = parsed.data;
     const nextStatus = payload.status;
     const nextAssigneeUserId = payload.assigneeUserId;
+    const nextTitle = payload.title;
+    const nextDescription = payload.description;
+    const nextDifficultyPoints = payload.difficultyPoints;
+    const nextSoftDeadline = payload.softDeadline;
+    const updatingTaskContent =
+      nextTitle !== undefined ||
+      nextDescription !== undefined ||
+      nextDifficultyPoints !== undefined ||
+      nextSoftDeadline !== undefined;
 
     if (nextStatus !== undefined) {
       if (!canUpdateTaskByRole(actorRole, access.userId, task)) {
@@ -130,12 +157,12 @@ export async function PATCH(
       }
     }
 
-    if (nextAssigneeUserId !== undefined) {
-      if (!canReassignTaskByRole(actorRole)) {
+    if (updatingTaskContent) {
+      if (!canUpdateTaskByRole(actorRole, access.userId, task)) {
         return jsonError(
           403,
           "FORBIDDEN",
-          "You do not have permission to reassign this task.",
+          "You do not have permission to edit this task.",
         );
       }
     }
@@ -164,14 +191,33 @@ export async function PATCH(
     const assigneeUnchanged =
       nextAssigneeUserId === undefined ||
       !isAssignmentChanged(task.assignee_user_id, nextAssigneeUserId);
+    const titleUnchanged = nextTitle === undefined || task.title === nextTitle;
+    const descriptionUnchanged =
+      nextDescription === undefined || task.description === nextDescription;
+    const difficultyUnchanged =
+      nextDifficultyPoints === undefined ||
+      task.difficulty_points === nextDifficultyPoints;
+    const softDeadlineUnchanged =
+      nextSoftDeadline === undefined || task.due_at === nextSoftDeadline;
 
-    if (statusUnchanged && assigneeUnchanged) {
+    if (
+      statusUnchanged &&
+      assigneeUnchanged &&
+      titleUnchanged &&
+      descriptionUnchanged &&
+      difficultyUnchanged &&
+      softDeadlineUnchanged
+    ) {
       return NextResponse.json({ task: mapTaskRowToDto(task) });
     }
 
     const patch: Partial<{
       status: TaskStatus;
       assignee_user_id: string | null;
+      title: string;
+      description: string;
+      difficulty_points: 1 | 2 | 3 | 5 | 8;
+      due_at: string | null;
     }> = {};
 
     if (nextStatus !== undefined) {
@@ -180,6 +226,18 @@ export async function PATCH(
 
     if (nextAssigneeUserId !== undefined) {
       patch.assignee_user_id = nextAssigneeUserId;
+    }
+    if (nextTitle !== undefined) {
+      patch.title = nextTitle;
+    }
+    if (nextDescription !== undefined) {
+      patch.description = nextDescription;
+    }
+    if (nextDifficultyPoints !== undefined) {
+      patch.difficulty_points = nextDifficultyPoints;
+    }
+    if (nextSoftDeadline !== undefined) {
+      patch.due_at = nextSoftDeadline;
     }
 
     const [updatedTask] = await updateRows<TaskRow>("tasks", patch, {

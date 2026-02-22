@@ -1,10 +1,11 @@
 import type { MyTaskDTO, TaskStatus } from "@/types/dashboard";
+import Link from "next/link";
 
 type MyTasksPanelProps = {
   tasks: MyTaskDTO[];
   selectedTaskId: string | null;
   onTaskSelect: (task: MyTaskDTO) => void;
-  viewerRole: "admin" | "user";
+  boardHref: string;
 };
 
 function toPriority(task: MyTaskDTO): "High" | "Medium" | "Low" {
@@ -63,24 +64,35 @@ export function MyTasksPanel({
   tasks,
   selectedTaskId,
   onTaskSelect,
-  viewerRole,
+  boardHref,
 }: MyTasksPanelProps) {
+  const visibleTasks = tasks.slice(0, 2);
+
   return (
     <section>
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="text-base font-semibold text-white">
           My Delegated Tasks
         </h2>
-        <p className="text-xs text-slate-300">Role: {viewerRole}</p>
+        <div className="flex items-center gap-4">
+          {tasks.length > 2 ? (
+            <Link
+              className="text-xs font-semibold text-violet-300 transition hover:text-violet-200"
+              href={boardHref}
+            >
+              View all
+            </Link>
+          ) : null}
+        </div>
       </div>
 
-      {tasks.length === 0 ? (
+      {visibleTasks.length === 0 ? (
         <p className="rounded-xl border border-dashed border-violet-700/70 bg-violet-900/10 p-4 text-sm text-slate-300">
           No delegated tasks are assigned to you yet.
         </p>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {tasks.map((task) => {
+          {visibleTasks.map((task) => {
             const priority = toPriority(task);
             const isSelected = task.id === selectedTaskId;
 

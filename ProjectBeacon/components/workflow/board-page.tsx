@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { TaskDetailModal } from "@/components/dashboard/task-detail-modal";
+import type { MyTaskDTO } from "@/types/dashboard";
 import type { ProjectRole } from "@/types/roles";
 import type {
   WorkflowBoardColumnDTO,
@@ -247,28 +248,28 @@ function statusChipClass(status: WorkflowBoardTaskDTO["status"]): string {
   return "bg-slate-500/15 text-slate-200 border border-slate-400/40";
 }
 
-function priorityTone(task: WorkflowBoardTaskDTO): {
-  accentDot: string;
-  borderTone: string;
-} {
+function difficultyDotCount(task: WorkflowBoardTaskDTO): number {
   if (task.difficultyPoints >= 5) {
-    return {
-      accentDot: "bg-violet-400",
-      borderTone: "border-violet-500/30",
-    };
+    return 3;
   }
 
   if (task.difficultyPoints >= 3) {
-    return {
-      accentDot: "bg-amber-400",
-      borderTone: "border-amber-500/30",
-    };
+    return 2;
   }
 
-  return {
-    accentDot: "bg-emerald-400",
-    borderTone: "border-emerald-500/30",
-  };
+  return 1;
+}
+
+function difficultyDotColorClass(dotCount: number): string {
+  if (dotCount >= 3) {
+    return "bg-violet-700";
+  }
+
+  if (dotCount === 2) {
+    return "bg-violet-500";
+  }
+
+  return "bg-violet-300";
 }
 
 function dueLabel(value: string | null, nowMs: number | null): string {
@@ -471,19 +472,13 @@ function boardCard(
   nowMs: number | null,
   dense = false,
   draggable = false,
+  onOpenTask?: (taskId: string) => void,
   onDragStart?: (taskId: string) => void,
   onDragEnd?: () => void,
 ) {
-  const tone = priorityTone(task);
   const cardLabel = `${task.title}. ${statusLabel(task.status)}. ${dueLabel(task.softDeadline, nowMs)}`;
-  const completedDots =
-    task.status === "done"
-      ? 3
-      : task.status === "in_progress"
-        ? 2
-        : task.status === "blocked"
-          ? 2
-          : 1;
+  const difficultyDots = difficultyDotCount(task);
+  const activeDifficultyDotClass = difficultyDotColorClass(difficultyDots);
 
   return (
     <article
@@ -491,7 +486,7 @@ function boardCard(
       draggable={draggable}
       tabIndex={0}
       aria-label={cardLabel}
-      className={`rounded-lg border ${tone.borderTone} bg-[#241d2f] p-3 shadow-sm transition hover:border-violet-400/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`}
+      className={`rounded-lg border border-slate-700 bg-[#241d2f] p-3 shadow-sm transition hover:border-violet-400/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`}
       onDragStart={() => onDragStart?.(task.id)}
       onDragEnd={onDragEnd}
     >
@@ -510,7 +505,9 @@ function boardCard(
             <span
               key={`${task.id}-dot-${index}`}
               className={`h-2 w-2 rounded-full ${
-                index < completedDots ? tone.accentDot : "bg-slate-600"
+                index < difficultyDots
+                  ? activeDifficultyDotClass
+                  : "bg-slate-600"
               }`}
             />
           ))}
@@ -540,6 +537,18 @@ function boardCard(
           {dueLabel(task.softDeadline, nowMs)}
         </p>
       ) : null}
+      <div className="mt-3 flex justify-end">
+        <button
+          type="button"
+          className="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-violet-200 hover:bg-violet-500/20"
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenTask?.(task.id);
+          }}
+        >
+          Open Task
+        </button>
+      </div>
     </article>
   );
 }
@@ -560,9 +569,9 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [draggedTask, setDraggedTask] = useState<DraggedTask | null>(null);
   const [dropLaneId, setDropLaneId] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
-  const [composeLaneId, setComposeLaneId] = useState<string | null>(null);
-  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [createTaskLaneId, setCreateTaskLaneId] = useState<string | null>(null);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
 
   useEffect(() => {
@@ -747,11 +756,36 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
     () => flattenBoard(columns, unassigned),
     [columns, unassigned],
   );
+  const selectedTask = useMemo(
+    () => tasks.find((task) => task.id === selectedTaskId) ?? null,
+    [selectedTaskId, tasks],
+  );
   const totalTasks = tasks.length;
   const canRunDelegationActions =
     capability.canEditWorkflow || capability.role === "user";
   const groupedMode =
     !isDraftPlanning && (mode === "categorized" || mode === "finalized");
+  const activeCreateLane =
+    createTaskLaneId === null
+      ? null
+      : (lanes.find((lane) => lane.id === createTaskLaneId) ?? null);
+  function openCreateTaskModal(preferredLaneId?: string): void {
+    const selectedLaneId =
+      preferredLaneId && lanes.some((lane) => lane.id === preferredLaneId)
+        ? preferredLaneId
+        : (lanes.find((lane) => lane.id === viewerUserId)?.id ??
+          lanes.find((lane) => lane.id !== "unassigned")?.id ??
+          lanes[0]?.id ??
+          null);
+
+    if (!selectedLaneId) {
+      return;
+    }
+
+    setError(null);
+    setActionMessage(null);
+    setCreateTaskLaneId(selectedLaneId);
+  }
 
   async function readErrorMessage(response: Response): Promise<string> {
     try {
@@ -830,12 +864,21 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
     }
   }
 
-  async function createTaskInLane(laneId: string) {
+  async function createTaskFromModal(
+    draft: Pick<
+      MyTaskDTO,
+      "title" | "description" | "status" | "difficultyPoints" | "softDeadline"
+    >,
+  ): Promise<void> {
+    if (!activeCreateLane) {
+      return;
+    }
+
     if (isCreatingTask) {
       return;
     }
 
-    const title = newTaskTitle.trim();
+    const title = draft.title.trim();
     if (title.length === 0) {
       setError("Task title is required.");
       return;
@@ -853,7 +896,11 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
         },
         body: JSON.stringify({
           title,
-          assigneeUserId: laneId === "unassigned" ? null : laneId,
+          description: draft.description,
+          difficultyPoints: draft.difficultyPoints,
+          dueAt: draft.softDeadline,
+          assigneeUserId:
+            activeCreateLane.id === "unassigned" ? null : activeCreateLane.id,
         }),
       });
 
@@ -861,8 +908,31 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
         throw new Error(await readErrorMessage(response));
       }
 
-      setComposeLaneId(null);
-      setNewTaskTitle("");
+      const payload = (await response.json()) as {
+        task?: { id?: string };
+      };
+      const createdTaskId = payload.task?.id ?? null;
+
+      if (draft.status !== "todo" && createdTaskId) {
+        const statusResponse = await fetch(
+          `/api/projects/${projectId}/tasks/${createdTaskId}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              status: draft.status,
+            }),
+          },
+        );
+
+        if (!statusResponse.ok) {
+          throw new Error(await readErrorMessage(statusResponse));
+        }
+      }
+
+      setCreateTaskLaneId(null);
       setActionMessage("Task added.");
       setReloadToken((current) => current + 1);
     } catch (createError) {
@@ -877,10 +947,10 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
   }
 
   return (
-    <section className="h-full overflow-hidden bg-[#18131f] text-slate-100">
-      <div className="h-full overflow-hidden">
-        <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <section className="h-full overflow-auto bg-[#18131f] text-slate-100">
+      <div className="h-full">
+        <main className="flex min-w-0 flex-1 flex-col">
+          <div className="flex min-h-0 flex-1 flex-col">
             <div className="space-y-4 px-6 pb-4 pt-6 lg:px-8">
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
@@ -947,19 +1017,14 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                   </div>
                 )}
 
-                <div className="flex rounded-lg border border-slate-700 bg-[#17141f] p-1">
-                  <Link
-                    href={`/projects/${projectId}/userflow/board`}
-                    className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white"
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="rounded-lg border border-violet-500/40 bg-violet-500/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-violet-200 hover:bg-violet-500/20"
+                    onClick={() => openCreateTaskModal()}
                   >
-                    Board
-                  </Link>
-                  <Link
-                    href={`/projects/${projectId}/userflow/timeline`}
-                    className="rounded-md px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-800"
-                  >
-                    Timeline
-                  </Link>
+                    New Task
+                  </button>
                 </div>
               </div>
 
@@ -1076,12 +1141,7 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                               type="button"
                               className="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-violet-200 hover:bg-violet-500/20"
                               onClick={() => {
-                                setError(null);
-                                setActionMessage(null);
-                                setComposeLaneId(
-                                  composeLaneId === lane.id ? null : lane.id,
-                                );
-                                setNewTaskTitle("");
+                                openCreateTaskModal(lane.id);
                               }}
                             >
                               + Task
@@ -1090,49 +1150,6 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                             <span className="text-slate-500">...</span>
                           )}
                         </div>
-
-                        {composeLaneId === lane.id ? (
-                          <form
-                            className="mb-3 space-y-2 rounded-lg border border-violet-500/35 bg-[#1a1730] p-2"
-                            onSubmit={(event) => {
-                              event.preventDefault();
-                              void createTaskInLane(lane.id);
-                            }}
-                          >
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                              New task title
-                            </label>
-                            <input
-                              autoFocus
-                              className="w-full rounded-md border border-slate-700 bg-[#131126] px-2 py-1.5 text-xs text-slate-100 outline-none ring-violet-400 focus:ring-2"
-                              maxLength={120}
-                              onChange={(event) =>
-                                setNewTaskTitle(event.target.value)
-                              }
-                              placeholder={`Add task for ${lane.title}`}
-                              value={newTaskTitle}
-                            />
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                type="button"
-                                className="rounded-md border border-slate-600 px-2 py-1 text-[10px] font-semibold text-slate-300 hover:bg-slate-800"
-                                onClick={() => {
-                                  setComposeLaneId(null);
-                                  setNewTaskTitle("");
-                                }}
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="submit"
-                                className="rounded-md bg-violet-600 px-2 py-1 text-[10px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-700"
-                                disabled={isCreatingTask}
-                              >
-                                {isCreatingTask ? "Adding..." : "Add"}
-                              </button>
-                            </div>
-                          </form>
-                        ) : null}
 
                         <div className="flex-1 space-y-2 overflow-y-auto pr-1">
                           {groupedMode ? (
@@ -1162,6 +1179,10 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                                           nowMs,
                                           mode === "categorized",
                                           canRunDelegationActions,
+                                          (taskId) => {
+                                            setCreateTaskLaneId(null);
+                                            setSelectedTaskId(taskId);
+                                          },
                                           (taskId) =>
                                             setDraggedTask({
                                               taskId,
@@ -1195,6 +1216,10 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                                 nowMs,
                                 false,
                                 canRunDelegationActions,
+                                (taskId) => {
+                                  setCreateTaskLaneId(null);
+                                  setSelectedTaskId(taskId);
+                                },
                                 (taskId) =>
                                   setDraggedTask({
                                     taskId,
@@ -1217,6 +1242,77 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
           </div>
         </main>
       </div>
+      {activeCreateLane ? (
+        <TaskDetailModal
+          createAssigneeLabel={activeCreateLane.title}
+          mode="create"
+          onClose={() => {
+            if (isCreatingTask) {
+              return;
+            }
+            setCreateTaskLaneId(null);
+          }}
+          onTaskCreate={createTaskFromModal}
+          projectId={projectId}
+          userIdHeaderValue={viewerUserId}
+        />
+      ) : null}
+      {selectedTask ? (
+        <TaskDetailModal
+          onClose={() => setSelectedTaskId(null)}
+          onTaskUpdate={(taskId, patch) => {
+            setColumns((currentColumns) =>
+              currentColumns.map((column) => ({
+                ...column,
+                tasks: column.tasks.map((task) =>
+                  task.id === taskId
+                    ? {
+                        ...task,
+                        title: patch.title ?? task.title,
+                        status: patch.status ?? task.status,
+                        softDeadline:
+                          patch.softDeadline === undefined
+                            ? task.softDeadline
+                            : patch.softDeadline,
+                        difficultyPoints:
+                          patch.difficultyPoints ?? task.difficultyPoints,
+                      }
+                    : task,
+                ),
+              })),
+            );
+            setUnassigned((currentUnassigned) =>
+              currentUnassigned.map((task) =>
+                task.id === taskId
+                  ? {
+                      ...task,
+                      title: patch.title ?? task.title,
+                      status: patch.status ?? task.status,
+                      softDeadline:
+                        patch.softDeadline === undefined
+                          ? task.softDeadline
+                          : patch.softDeadline,
+                      difficultyPoints:
+                        patch.difficultyPoints ?? task.difficultyPoints,
+                    }
+                  : task,
+              ),
+            );
+          }}
+          projectId={projectId}
+          task={{
+            id: selectedTask.id,
+            title: selectedTask.title,
+            description: "",
+            status: selectedTask.status,
+            softDeadline: selectedTask.softDeadline,
+            difficultyPoints: selectedTask.difficultyPoints,
+            assigneeUserId: selectedTask.assigneeUserId,
+            createdAt: null,
+          }}
+          userIdHeaderValue={viewerUserId}
+        />
+      ) : null}
     </section>
   );
 }

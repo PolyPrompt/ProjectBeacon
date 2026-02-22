@@ -29,7 +29,7 @@ export function ProjectNavShell({
     ? "min-h-screen bg-[#120d1c]"
     : "min-h-screen bg-[#18131F]";
   const mainClassName = isBoardRoute
-    ? "h-[calc(100vh-73px)]"
+    ? "h-[calc(100vh-73px)] overflow-auto"
     : isSettingsRoute
       ? "min-h-[calc(100vh-73px)]"
       : "mx-auto w-full max-w-7xl px-4 py-6 sm:px-6";
