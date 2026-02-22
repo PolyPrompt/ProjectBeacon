@@ -37,9 +37,11 @@ Hard constraints:
 Assignment strategy:
 
 - Prefer stronger skill match for required skills and weights.
-- Use workload balancing as a tiebreaker and fairness guardrail.
+- Use workload balancing as a fairness guardrail, not just a tiebreaker.
 - Respect growth-vs-familiar preferences when available.
 - Avoid concentrating most high-difficulty tasks on one person when alternatives exist.
+- Compare projected post-assignment load, and avoid decisions that materially widen max-vs-min team load when another qualified member exists.
+- Aim to distribute newly assigned difficulty points so one member does not receive a disproportionate share of new work.
 - Do not over-rely on self-reported skill/confidence alone; use available delivery evidence when present.
 - Be deterministic and consistent.
 

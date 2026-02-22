@@ -48,6 +48,66 @@ function toSkillEntries(skills: Record<string, number>) {
   }));
 }
 
+function computeLoadSpread(loads: number[]): number {
+  if (loads.length === 0) {
+    return 0;
+  }
+
+  const maxLoad = Math.max(...loads);
+  const minLoad = Math.min(...loads);
+  return maxLoad - minLoad;
+}
+
+function hasBalancedLoadDistribution(
+  assignments: AssignmentOutput["assignments"],
+  input: GenerateTaskAssignmentsInput,
+): boolean {
+  if (assignments.length <= 1 || input.members.length <= 1) {
+    return true;
+  }
+
+  const eligibleTasks = new Map(
+    input.tasks
+      .filter((task) => task.status === "todo" && task.assigneeUserId === null)
+      .map((task) => [task.id, task.difficultyPoints] as const),
+  );
+
+  const projectedLoadByUser = new Map<string, number>(
+    input.members.map((member) => [member.userId, member.currentLoad]),
+  );
+
+  let assignedLoad = 0;
+  let maxAssignedDifficulty = 0;
+
+  for (const assignment of assignments) {
+    const difficultyPoints = eligibleTasks.get(assignment.taskId);
+    if (difficultyPoints === undefined) {
+      return false;
+    }
+
+    assignedLoad += difficultyPoints;
+    maxAssignedDifficulty = Math.max(maxAssignedDifficulty, difficultyPoints);
+
+    const currentProjectedLoad =
+      projectedLoadByUser.get(assignment.assigneeUserId) ?? 0;
+    projectedLoadByUser.set(
+      assignment.assigneeUserId,
+      currentProjectedLoad + difficultyPoints,
+    );
+  }
+
+  const baselineSpread = computeLoadSpread(
+    input.members.map((member) => member.currentLoad),
+  );
+  const projectedSpread = computeLoadSpread([...projectedLoadByUser.values()]);
+  const allowedSpreadIncrease = Math.max(
+    maxAssignedDifficulty,
+    Math.ceil(assignedLoad / input.members.length) + 1,
+  );
+
+  return projectedSpread <= baselineSpread + allowedSpreadIncrease;
+}
+
 function validateAssignments(
   assignments: AssignmentOutput["assignments"],
   input: GenerateTaskAssignmentsInput,
@@ -74,6 +134,10 @@ function validateAssignments(
     }
 
     seenTaskIds.add(assignment.taskId);
+  }
+
+  if (!hasBalancedLoadDistribution(assignments, input)) {
+    return null;
   }
 
   return assignments;
