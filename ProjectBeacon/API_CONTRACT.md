@@ -537,6 +537,11 @@ Response `200`:
 
 Behavior: generates draft task graph only; leaves assignees null.
 
+Config flag:
+
+- `AI_GENERATION_STRICT_MODE=true` enforces OpenAI-only generation and rejects when OpenAI generation is unavailable.
+- When strict mode is off (default), generation falls back to deterministic template output when OpenAI generation fails.
+
 Response `200`:
 
 ```json
@@ -570,7 +575,49 @@ Response `200`:
       "taskId": "t_123",
       "dependsOnTaskId": "t_001"
     }
-  ]
+  ],
+  "generation": {
+    "mode": "openai",
+    "reason": null,
+    "strictMode": false
+  }
+}
+```
+
+Fallback example (`200` when strict mode is disabled):
+
+```json
+{
+  "tasks": [],
+  "taskSkills": [],
+  "taskDependencies": [],
+  "generation": {
+    "mode": "fallback",
+    "reason": "openai_http_error",
+    "strictMode": false,
+    "diagnostics": {
+      "message": "OpenAI returned HTTP 503.",
+      "status": 503
+    }
+  }
+}
+```
+
+Strict-mode failure example (`503`):
+
+```json
+{
+  "error": {
+    "code": "AI_GENERATION_UNAVAILABLE",
+    "message": "AI generation strict mode is enabled and OpenAI generation is unavailable.",
+    "details": {
+      "mode": "openai",
+      "reason": "missing_api_key",
+      "diagnostics": {
+        "message": "OPENAI_API_KEY is not configured."
+      }
+    }
+  }
 }
 ```
 

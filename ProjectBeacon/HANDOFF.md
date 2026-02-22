@@ -685,3 +685,30 @@
   - `components/dashboard/task-detail-modal.tsx`
   - `types/dashboard.ts`
   - `API_CONTRACT.md`
+
+## 2026-02-22T02:45:25Z - PB-047 Milestone (Agent2)
+
+- Issue: `#98` `[PB-047] Enforce explicit AI generation mode and observability for task breakdown`.
+- Completed:
+  - Added generation metadata to `POST /api/projects/:projectId/ai/generate-tasks` response:
+    - `generation.mode`: `openai | fallback`
+    - `generation.reason`: fallback reason when applicable
+    - `generation.strictMode`: whether strict mode was active
+    - `generation.diagnostics`: non-sensitive actionable diagnostics
+  - Added strict-mode support via env flag `AI_GENERATION_STRICT_MODE=true`:
+    - when enabled, OpenAI failure returns `503` (`AI_GENERATION_UNAVAILABLE`) instead of silent fallback.
+  - Improved observability in `lib/ai/generate-task-plan.ts`:
+    - explicit failure reason classification
+    - diagnostics surfaced in response metadata
+    - server warning log emitted when fallback is used
+  - Updated planning workspace generation UX to render generation mode feedback and fallback reason/diagnostics without breaking existing flow.
+  - Updated `API_CONTRACT.md` with generation metadata and strict-mode behavior examples.
+- Verification:
+  - `npm run format:check` => pass.
+  - `npm run lint` => pass.
+  - `npm run build` => pass.
+- Files changed:
+  - `lib/ai/generate-task-plan.ts`
+  - `app/api/projects/[projectId]/ai/generate-tasks/route.ts`
+  - `components/projects/planning-workspace.tsx`
+  - `API_CONTRACT.md`

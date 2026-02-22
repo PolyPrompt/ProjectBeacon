@@ -225,3 +225,18 @@
   - Task detail route includes `status` and now shares session-based project access guard.
   - Dashboard modal contract/runtime checks now include `status`.
   - `API_CONTRACT.md` documents the new patch endpoint and `401/403/404/409/422` semantics.
+
+## 2026-02-22T02:45:25Z
+
+- Decision summary:
+  - Make AI generation mode explicit in API responses and gate fallback behavior behind an optional strict-mode flag.
+- Rationale:
+  - Silent fallback made it impossible for users and maintainers to verify whether OpenAI generated the task graph; strict environments need a fail-fast mode instead of template fallback.
+- Alternatives considered:
+  - Keep existing silent fallback behavior.
+  - Always fail when OpenAI is unavailable (no fallback mode).
+- Impact on files or behavior:
+  - `lib/ai/generate-task-plan.ts` now returns mode metadata, fallback reason classification, diagnostics, and supports strict-mode rejection.
+  - `app/api/projects/[projectId]/ai/generate-tasks/route.ts` now includes `generation` metadata in success response and propagates strict-mode failures.
+  - `components/projects/planning-workspace.tsx` renders generation mode/reason diagnostics after generation.
+  - `API_CONTRACT.md` documents mode metadata and strict-mode semantics.

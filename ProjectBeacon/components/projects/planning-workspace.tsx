@@ -41,6 +41,16 @@ type PlanningWorkspaceProps = {
   userIdHeaderValue: string;
 };
 
+type GenerationMetadata = {
+  mode: "openai" | "fallback";
+  reason: string | null;
+  strictMode: boolean;
+  diagnostics?: {
+    message?: string;
+    status?: number;
+  };
+};
+
 const DEFAULT_CLARIFICATION: PlanningWorkspaceState["clarification"] = {
   confidence: 0,
   readyForGeneration: false,
@@ -216,6 +226,8 @@ export default function PlanningWorkspace({
   const [isAssigning, setIsAssigning] = useState(false);
   const [taskCount, setTaskCount] = useState(0);
   const [assignedCount, setAssignedCount] = useState<number | null>(null);
+  const [generationMetadata, setGenerationMetadata] =
+    useState<GenerationMetadata | null>(null);
 
   const requiresLocalUserHeader = userIdHeaderValue.trim().length === 0;
   const canLock = planningStatus === "draft" && taskCount > 0;
@@ -228,6 +240,7 @@ export default function PlanningWorkspace({
     setDocumentsError(null);
     setActionError(null);
     setActionStatus(null);
+    setGenerationMetadata(null);
 
     try {
       const headers = requiresLocalUserHeader
@@ -551,6 +564,7 @@ export default function PlanningWorkspace({
     setIsGenerating(true);
     setActionError(null);
     setActionStatus(null);
+    setGenerationMetadata(null);
 
     try {
       const response = await fetch(
@@ -566,6 +580,15 @@ export default function PlanningWorkspace({
 
       const payload = (await response.json()) as {
         error?: { message?: string };
+        generation?: {
+          diagnostics?: {
+            message?: string;
+            status?: number;
+          };
+          mode?: "openai" | "fallback";
+          reason?: string | null;
+          strictMode?: boolean;
+        };
         tasks?: Array<{ id: string }>;
       };
       if (!response.ok) {
@@ -577,8 +600,42 @@ export default function PlanningWorkspace({
       const generatedCount = Array.isArray(payload.tasks)
         ? payload.tasks.length
         : 0;
+      const mode =
+        payload.generation?.mode === "openai" ||
+        payload.generation?.mode === "fallback"
+          ? payload.generation.mode
+          : null;
+
+      if (mode) {
+        setGenerationMetadata({
+          mode,
+          reason:
+            typeof payload.generation?.reason === "string"
+              ? payload.generation.reason
+              : null,
+          strictMode: payload.generation?.strictMode === true,
+          diagnostics: payload.generation?.diagnostics,
+        });
+      } else {
+        setGenerationMetadata(null);
+      }
+
       setTaskCount(generatedCount);
-      setActionStatus(`Generated ${generatedCount} draft tasks.`);
+      if (mode === "fallback") {
+        const reason =
+          typeof payload.generation?.reason === "string"
+            ? payload.generation.reason
+            : "unknown";
+        setActionStatus(
+          `Generated ${generatedCount} draft tasks using fallback mode (${reason}).`,
+        );
+      } else if (mode === "openai") {
+        setActionStatus(
+          `Generated ${generatedCount} draft tasks using OpenAI.`,
+        );
+      } else {
+        setActionStatus(`Generated ${generatedCount} draft tasks.`);
+      }
     } catch (error) {
       setActionError(
         error instanceof Error ? error.message : "Failed to generate tasks.",
@@ -869,6 +926,19 @@ export default function PlanningWorkspace({
             {isAssigning ? "Assigning..." : "Run final assignment"}
           </button>
         </div>
+        {generationMetadata ? (
+          <p className="rounded-lg border border-slate-700 bg-[#11121a] px-3 py-2 text-xs text-slate-300">
+            Mode:{" "}
+            <span className="font-semibold">{generationMetadata.mode}</span>
+            {generationMetadata.mode === "fallback" &&
+            generationMetadata.reason ? (
+              <> · Reason: {generationMetadata.reason}</>
+            ) : null}
+            {generationMetadata.diagnostics?.message ? (
+              <> · {generationMetadata.diagnostics.message}</>
+            ) : null}
+          </p>
+        ) : null}
         {assignedCount !== null ? (
           <p className="text-xs text-slate-400">
             Assigned {assignedCount} tasks in the latest run.
