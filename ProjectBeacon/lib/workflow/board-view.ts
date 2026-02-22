@@ -14,6 +14,7 @@ import {
 export type WorkflowBoardTaskDTO = {
   id: string;
   title: string;
+  description?: string;
   status: "todo" | "in_progress" | "blocked" | "done";
   softDeadline: string | null;
   difficultyPoints: 1 | 2 | 3 | 5 | 8;
@@ -46,6 +47,7 @@ type UserRow = {
 type TaskRow = {
   id: string;
   title: string;
+  description: string;
   status: string;
   due_at: string | null;
   difficulty_points: number | null;
@@ -131,6 +133,7 @@ function mapBoardTask(
   return {
     id: task.id,
     title: task.title,
+    description: task.description,
     status: normalizeStatus(task.status),
     softDeadline: task.due_at,
     difficultyPoints: normalizeDifficulty(task.difficulty_points),
@@ -159,7 +162,7 @@ async function getUsers(userIds: string[]): Promise<Map<string, UserRow>> {
 
 async function getTasks(projectId: string): Promise<TaskRow[]> {
   return supabaseRestGet<TaskRow[]>(
-    `tasks?select=id,title,status,due_at,difficulty_points,assignee_user_id,created_at&project_id=eq.${encodeURIComponent(projectId)}`,
+    `tasks?select=id,title,description,status,due_at,difficulty_points,assignee_user_id,created_at&project_id=eq.${encodeURIComponent(projectId)}`,
   );
 }
 

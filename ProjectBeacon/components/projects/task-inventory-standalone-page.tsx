@@ -3,16 +3,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import {
+  INVENTORY_CATEGORY_ORDER,
+  inferInventoryCategories,
+  type InventoryCategory,
+} from "@/lib/tasks/inventory-categories";
 import type { WorkflowBoardDTO, WorkflowBoardTaskDTO } from "@/types/workflow";
 
 type InventoryMode = "review" | "edit";
-type InventoryCategory = "Frontend" | "Backend" | "DevOps" | "QA & Testing";
 type InventoryPriority = "low" | "medium" | "high";
 
 type InventoryTask = {
-  category: InventoryCategory;
+  categories: InventoryCategory[];
   id: string;
   priority: InventoryPriority;
+  sourceTaskId: string | null;
   title: string;
 };
 
@@ -20,21 +25,22 @@ type TaskInventoryStandalonePageProps = {
   projectId: string;
 };
 
-const CATEGORY_ORDER: InventoryCategory[] = [
-  "Frontend",
-  "Backend",
-  "DevOps",
-  "QA & Testing",
-];
-
 const CATEGORY_META: Record<
   InventoryCategory,
   { icon: string; title: InventoryCategory }
 > = {
-  Frontend: { icon: "◧", title: "Frontend" },
-  Backend: { icon: "⛁", title: "Backend" },
-  DevOps: { icon: "⌘", title: "DevOps" },
-  "QA & Testing": { icon: "✓", title: "QA & Testing" },
+  "Research & Discovery": { icon: "R", title: "Research & Discovery" },
+  "Planning & Coordination": { icon: "P", title: "Planning & Coordination" },
+  "Implementation & Production": {
+    icon: "I",
+    title: "Implementation & Production",
+  },
+  "Analysis & Validation": { icon: "A", title: "Analysis & Validation" },
+  "Writing & Documentation": { icon: "W", title: "Writing & Documentation" },
+  "Presentation & Submission": {
+    icon: "S",
+    title: "Presentation & Submission",
+  },
 };
 
 const PRIORITY_DOT: Record<InventoryPriority, string> = {
@@ -42,57 +48,6 @@ const PRIORITY_DOT: Record<InventoryPriority, string> = {
   medium: "bg-amber-500",
   high: "bg-violet-500",
 };
-
-const FALLBACK_TASKS: InventoryTask[] = [
-  {
-    category: "Frontend",
-    id: "fallback-front-1",
-    priority: "low",
-    title: "Implement Design System Provider",
-  },
-  {
-    category: "Frontend",
-    id: "fallback-front-2",
-    priority: "medium",
-    title: "Navigation Refactor & Breadcrumbs",
-  },
-  {
-    category: "Frontend",
-    id: "fallback-front-3",
-    priority: "high",
-    title: "Dynamic Dashboard Bento-Box Grid",
-  },
-  {
-    category: "Frontend",
-    id: "fallback-front-4",
-    priority: "low",
-    title: "Dark Mode Theme Toggle Logic",
-  },
-  {
-    category: "Backend",
-    id: "fallback-back-1",
-    priority: "high",
-    title: "OAuth2 Authentication Flow Setup",
-  },
-  {
-    category: "Backend",
-    id: "fallback-back-2",
-    priority: "medium",
-    title: "User Profile CRUD Endpoints",
-  },
-  {
-    category: "Backend",
-    id: "fallback-back-3",
-    priority: "low",
-    title: "PostgreSQL Schema Migrations",
-  },
-  {
-    category: "QA & Testing",
-    id: "fallback-qa-1",
-    priority: "medium",
-    title: "Cypress E2E Smoke Tests",
-  },
-];
 
 function createDraftId(): string {
   if (
@@ -117,47 +72,6 @@ function mapDifficultyToPriority(
   }
 
   return "high";
-}
-
-function inferCategory(task: WorkflowBoardTaskDTO): InventoryCategory {
-  const normalized = task.title.toLowerCase();
-
-  if (
-    /(ui|frontend|component|design|layout|dashboard|theme|css|tailwind|react)/.test(
-      normalized,
-    )
-  ) {
-    return "Frontend";
-  }
-
-  if (
-    /(api|backend|database|auth|schema|service|migration|endpoint|server|oauth|redis)/.test(
-      normalized,
-    )
-  ) {
-    return "Backend";
-  }
-
-  if (
-    /(devops|pipeline|deploy|docker|infra|infrastructure|ci\/cd|kubernetes|build)/.test(
-      normalized,
-    )
-  ) {
-    return "DevOps";
-  }
-
-  if (/(test|qa|quality|cypress|smoke|e2e|validation)/.test(normalized)) {
-    return "QA & Testing";
-  }
-
-  if (task.phase === "beginning") {
-    return "Frontend";
-  }
-  if (task.phase === "middle") {
-    return "Backend";
-  }
-
-  return "DevOps";
 }
 
 function parseBoardPayload(payload: unknown): WorkflowBoardDTO | null {
@@ -187,17 +101,19 @@ function parseBoardPayload(payload: unknown): WorkflowBoardDTO | null {
 function toInventoryTasks(board: WorkflowBoardDTO): InventoryTask[] {
   const assigned = board.columns.flatMap((column) =>
     column.tasks.map((task) => ({
-      category: inferCategory(task),
+      categories: inferInventoryCategories(task),
       id: task.id,
       priority: mapDifficultyToPriority(task.difficultyPoints),
+      sourceTaskId: task.id,
       title: task.title,
     })),
   );
 
   const unassigned = board.unassigned.map((task) => ({
-    category: inferCategory(task),
+    categories: inferInventoryCategories(task),
     id: task.id,
     priority: mapDifficultyToPriority(task.difficultyPoints),
+    sourceTaskId: task.id,
     title: task.title,
   }));
 
@@ -244,14 +160,31 @@ async function loadInitialTasks(projectId: string): Promise<InventoryTask[]> {
 
     const payload = parseBoardPayload((await response.json()) as unknown);
     if (!response.ok || !payload) {
-      return FALLBACK_TASKS;
+      return [];
     }
 
-    const mapped = toInventoryTasks(payload);
-    return mapped.length > 0 ? mapped : FALLBACK_TASKS;
+    return toInventoryTasks(payload);
   } catch {
-    return FALLBACK_TASKS;
+    return [];
   }
+}
+
+function resolveMessage(payload: unknown, fallback: string): string {
+  if (!payload || typeof payload !== "object") {
+    return fallback;
+  }
+
+  const candidate = payload as {
+    error?: {
+      message?: string;
+    };
+  };
+
+  if (typeof candidate.error?.message === "string") {
+    return candidate.error.message;
+  }
+
+  return fallback;
 }
 
 export default function TaskInventoryStandalonePage({
@@ -260,6 +193,7 @@ export default function TaskInventoryStandalonePage({
   const router = useRouter();
   const [mode, setMode] = useState<InventoryMode>("review");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [committedTasks, setCommittedTasks] = useState<InventoryTask[]>([]);
   const [draftTasks, setDraftTasks] = useState<InventoryTask[]>([]);
@@ -267,7 +201,9 @@ export default function TaskInventoryStandalonePage({
   useEffect(() => {
     void loadInitialTasks(projectId).then((tasks) => {
       setCommittedTasks(tasks);
-      setDraftTasks(tasks.map((task) => ({ ...task })));
+      setDraftTasks(
+        tasks.map((task) => ({ ...task, categories: [...task.categories] })),
+      );
       setIsLoading(false);
     });
   }, [projectId]);
@@ -275,35 +211,52 @@ export default function TaskInventoryStandalonePage({
   const activeTasks = mode === "edit" ? draftTasks : committedTasks;
   const groupedTasks = useMemo(
     () =>
-      CATEGORY_ORDER.map((category) => ({
+      INVENTORY_CATEGORY_ORDER.map((category) => ({
         category,
-        tasks: activeTasks.filter((task) => task.category === category),
+        tasks: activeTasks.filter((task) => task.categories.includes(category)),
       })),
     [activeTasks],
   );
 
   function switchToEditMode() {
-    setDraftTasks(committedTasks.map((task) => ({ ...task })));
+    setDraftTasks(
+      committedTasks.map((task) => ({
+        ...task,
+        categories: [...task.categories],
+      })),
+    );
     setMode("edit");
     setStatusMessage(null);
   }
 
   function exitEditMode() {
-    setDraftTasks(committedTasks.map((task) => ({ ...task })));
+    setDraftTasks(
+      committedTasks.map((task) => ({
+        ...task,
+        categories: [...task.categories],
+      })),
+    );
     setMode("review");
     setStatusMessage("Unsaved edits were discarded.");
   }
 
   function addTask(category: InventoryCategory) {
     const nextTask: InventoryTask = {
-      category,
+      categories: [category],
       id: createDraftId(),
       priority: "medium",
+      sourceTaskId: null,
       title: "",
     };
 
     if (mode === "review") {
-      setDraftTasks([...committedTasks.map((task) => ({ ...task })), nextTask]);
+      setDraftTasks([
+        ...committedTasks.map((task) => ({
+          ...task,
+          categories: [...task.categories],
+        })),
+        nextTask,
+      ]);
       setMode("edit");
       return;
     }
@@ -313,6 +266,25 @@ export default function TaskInventoryStandalonePage({
 
   function removeDraftTask(taskId: string) {
     setDraftTasks((current) => current.filter((task) => task.id !== taskId));
+  }
+
+  function clearAllDraftTasks() {
+    if (draftTasks.length === 0) {
+      return;
+    }
+
+    const confirmed =
+      typeof window === "undefined" ||
+      window.confirm(
+        "Clear all draft tasks? This only affects the current edit session until saved.",
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDraftTasks([]);
+    setStatusMessage("Cleared all draft tasks in this edit session.");
   }
 
   function updateDraftTitle(taskId: string, title: string) {
@@ -331,19 +303,104 @@ export default function TaskInventoryStandalonePage({
     );
   }
 
-  function saveChanges() {
+  function toggleDraftCategory(taskId: string, category: InventoryCategory) {
+    setDraftTasks((current) =>
+      current.map((task) => {
+        if (task.id !== taskId) {
+          return task;
+        }
+
+        const nextCategories = task.categories.includes(category)
+          ? task.categories.filter((value) => value !== category)
+          : [...task.categories, category];
+
+        return {
+          ...task,
+          categories: nextCategories,
+        };
+      }),
+    );
+  }
+
+  async function saveChanges() {
+    if (isSaving) {
+      return;
+    }
+
+    setIsSaving(true);
+    setStatusMessage(null);
+
     const normalized = draftTasks.map((task) => ({
       ...task,
+      categories:
+        task.categories.length > 0
+          ? [...new Set<InventoryCategory>(task.categories)]
+          : (["Planning & Coordination"] as InventoryCategory[]),
       title:
         task.title.trim().length > 0
           ? task.title.trim()
           : "Untitled inventory task",
     }));
 
-    setCommittedTasks(normalized);
-    setDraftTasks(normalized.map((task) => ({ ...task })));
-    setMode("review");
-    setStatusMessage("Blueprint edits saved locally.");
+    try {
+      const response = await fetch(`/api/projects/${projectId}/tasks/sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tasks: normalized.map((task) => ({
+            id: task.sourceTaskId ?? undefined,
+            priority: task.priority,
+            title: task.title,
+          })),
+        }),
+      });
+
+      const payload = (await response.json()) as {
+        error?: {
+          message?: string;
+        };
+        syncedTasks?: Array<{ id: string }>;
+      };
+
+      if (!response.ok) {
+        throw new Error(resolveMessage(payload, "Failed to save inventory."));
+      }
+
+      const syncedTasks = Array.isArray(payload.syncedTasks)
+        ? payload.syncedTasks
+        : [];
+
+      const persisted = normalized.map((task, index) => {
+        const syncedTask = syncedTasks[index];
+        if (!syncedTask?.id) {
+          return task;
+        }
+
+        return {
+          ...task,
+          id: syncedTask.id,
+          sourceTaskId: syncedTask.id,
+        };
+      });
+
+      setCommittedTasks(persisted);
+      setDraftTasks(
+        persisted.map((task) => ({
+          ...task,
+          categories: [...task.categories],
+        })),
+      );
+      setMode("review");
+      setStatusMessage("Blueprint edits saved.");
+    } catch (error) {
+      setStatusMessage(
+        error instanceof Error ? error.message : "Failed to save inventory.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   if (isLoading) {
@@ -388,6 +445,16 @@ export default function TaskInventoryStandalonePage({
                 Exit Edit Mode
               </button>
             ) : null}
+            {mode === "edit" ? (
+              <button
+                type="button"
+                className="flex items-center gap-2 rounded-lg border border-red-500/50 px-4 py-2 text-sm font-semibold text-red-200 transition-all hover:border-red-400 hover:text-red-100 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500"
+                onClick={clearAllDraftTasks}
+                disabled={draftTasks.length === 0}
+              >
+                Clear All Tasks
+              </button>
+            ) : null}
             <button
               type="button"
               className="flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold transition-all hover:border-[#622faf]"
@@ -421,11 +488,10 @@ export default function TaskInventoryStandalonePage({
               </div>
 
               <div className="mb-6 space-y-3">
-                {tasks.length === 0 && category === "DevOps" ? (
+                {tasks.length === 0 ? (
                   <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-800 p-4 opacity-40">
-                    <span className="mb-1 text-lg">☁</span>
                     <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                      No Infrastructure Tasks
+                      No Tasks Yet
                     </span>
                   </div>
                 ) : null}
@@ -433,13 +499,25 @@ export default function TaskInventoryStandalonePage({
                 {tasks.map((task) =>
                   mode === "review" ? (
                     <article
-                      key={task.id}
+                      key={`${category}-${task.id}`}
                       className="group cursor-pointer rounded-lg border border-white/5 bg-white/5 p-3 transition-all hover:border-[#622faf]/40"
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <span className="text-sm font-medium leading-tight text-slate-100">
-                          {task.title}
-                        </span>
+                        <div>
+                          <span className="text-sm font-medium leading-tight text-slate-100">
+                            {task.title}
+                          </span>
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {task.categories.map((taskCategory) => (
+                              <span
+                                key={`${task.id}-${taskCategory}`}
+                                className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-slate-300"
+                              >
+                                {taskCategory}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                         <span
                           className={`mt-1 h-2 w-2 rounded-full ${PRIORITY_DOT[task.priority]}`}
                         />
@@ -447,10 +525,10 @@ export default function TaskInventoryStandalonePage({
                     </article>
                   ) : (
                     <article
-                      key={task.id}
+                      key={`${category}-${task.id}`}
                       className="group cursor-pointer rounded-lg border border-white/5 bg-white/5 p-3 transition-all hover:border-[#622faf]/40"
                     >
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start justify-between gap-3 pb-2">
                         <div className="flex flex-1 items-center gap-2">
                           <button
                             type="button"
@@ -482,6 +560,27 @@ export default function TaskInventoryStandalonePage({
                             ˅
                           </span>
                         </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {INVENTORY_CATEGORY_ORDER.map((option) => {
+                          const selected = task.categories.includes(option);
+                          return (
+                            <button
+                              key={`${task.id}-${option}`}
+                              type="button"
+                              className={`rounded-full border px-2 py-0.5 text-[10px] ${
+                                selected
+                                  ? "border-[#622faf]/70 bg-[#622faf]/20 text-[#d4b3ff]"
+                                  : "border-white/10 text-slate-400 hover:border-white/20 hover:text-slate-200"
+                              }`}
+                              onClick={() =>
+                                toggleDraftCategory(task.id, option)
+                              }
+                            >
+                              {option}
+                            </button>
+                          );
+                        })}
                       </div>
                     </article>
                   ),
@@ -567,9 +666,12 @@ export default function TaskInventoryStandalonePage({
               <button
                 type="button"
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#622faf] px-8 py-3 text-sm font-bold text-white shadow-lg shadow-[#622faf]/30 transition-all hover:bg-[#622faf]/90 md:flex-none"
-                onClick={saveChanges}
+                onClick={() => {
+                  void saveChanges();
+                }}
+                disabled={isSaving}
               >
-                Save Changes
+                {isSaving ? "Saving..." : "Save Changes"}
                 <span>✓</span>
               </button>
             ) : (

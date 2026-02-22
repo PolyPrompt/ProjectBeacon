@@ -5,6 +5,7 @@ import {
   MAX_CLARIFICATION_QUESTIONS,
   CLARIFICATION_CONFIDENCE_THRESHOLD,
 } from "@/lib/server/env";
+import { CLARIFICATION_QUESTION_MAX_LENGTH } from "@/types/ai-output";
 import {
   appendProjectContextEntry,
   countClarificationEntries,
@@ -18,7 +19,7 @@ import {
 import { jsonError } from "@/lib/server/errors";
 
 const clarifyResponseSchema = z.object({
-  question: z.string().min(3).max(200),
+  question: z.string().min(3).max(CLARIFICATION_QUESTION_MAX_LENGTH),
   answer: z.string().min(3).max(2000),
 });
 

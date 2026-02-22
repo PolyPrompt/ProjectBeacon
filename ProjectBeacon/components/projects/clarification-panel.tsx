@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type ClarificationPanelProps = {
+  autoProceedWhenTerminal?: boolean;
   disabled?: boolean;
   refreshToken?: number;
   onAnswerSubmitted?: (payload: {
@@ -114,6 +115,7 @@ function deriveSuggestions(question: string): string[] {
 }
 
 export default function ClarificationPanel({
+  autoProceedWhenTerminal = false,
   disabled = false,
   refreshToken,
   onAnswerSubmitted,
@@ -134,6 +136,7 @@ export default function ClarificationPanel({
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const lastRefreshTokenRef = useRef<number | undefined>(refreshToken);
+  const lastAutoProceedKeyRef = useRef<string | null>(null);
 
   const canSubmit = useMemo(
     () =>
@@ -176,6 +179,8 @@ export default function ClarificationPanel({
     state.readyForGeneration &&
     state.confidence < state.threshold &&
     state.askedCount >= state.maxQuestions;
+  const shouldAutoProceedTerminal =
+    autoProceedWhenTerminal && Boolean(onProceedToDelegation);
 
   const isHighConfidenceReady =
     state !== null &&
@@ -184,6 +189,29 @@ export default function ClarificationPanel({
 
   const showQuestionComposer =
     state !== null && !state.readyForGeneration && questions.length > 0;
+  const canSkipClarification =
+    state !== null &&
+    !state.readyForGeneration &&
+    !isLowConfidenceTerminal &&
+    Boolean(onProceedToDelegation);
+  const confidenceActivityMessage = isSubmitting
+    ? "Saving answer and recomputing confidence..."
+    : isBootstrapping
+      ? "Analyzing project context and preparing clarifying prompts..."
+      : isRefreshingQuestions
+        ? "Generating follow-up clarification question..."
+        : null;
+
+  const showAnalysisLoader = isBootstrapping;
+  const showQuestionLoader =
+    isRefreshingQuestions && !showQuestionComposer && !showAnalysisLoader;
+
+  const loaderMessage = showAnalysisLoader
+    ? "This can take up to about 30 seconds for large specs."
+    : "Fetching updated clarifying prompts.";
+  const loaderTitle = showAnalysisLoader
+    ? "AI context analysis in progress"
+    : "Loading clarifying questions";
 
   const applyQuestions = useCallback(
     (nextQuestions: string[]) => {
@@ -194,30 +222,6 @@ export default function ClarificationPanel({
     [onQuestionsChange],
   );
 
-  const fetchConfidenceState = useCallback(async () => {
-    const response = await fetch(
-      `/api/projects/${projectId}/context/confidence`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      },
-    );
-
-    const payload = (await response.json()) as unknown;
-    if (!response.ok) {
-      throw new Error(
-        resolveMessage(payload, "Failed to compute clarification confidence."),
-      );
-    }
-
-    const nextState = normalizeState(payload);
-    setState(nextState);
-    onStateChange?.(nextState);
-    return nextState;
-  }, [onStateChange, projectId]);
-
   const fetchQuestions = useCallback(async () => {
     const response = await fetch(`/api/projects/${projectId}/context/clarify`, {
       method: "POST",
@@ -226,34 +230,51 @@ export default function ClarificationPanel({
       },
     });
 
-    const payload = (await response.json()) as {
-      questions?: string[];
-      error?: { message?: string };
-    };
+    const payload = (await response.json()) as unknown;
     if (!response.ok) {
       throw new Error(
         resolveMessage(payload, "Failed to get clarification questions."),
       );
     }
 
-    applyQuestions(Array.isArray(payload.questions) ? payload.questions : []);
-  }, [applyQuestions, projectId]);
+    const responseBody =
+      payload && typeof payload === "object"
+        ? (payload as {
+            state?: unknown;
+            questions?: unknown;
+          })
+        : {};
+
+    const nextState = normalizeState(responseBody.state ?? payload);
+    const nextQuestions = Array.isArray(responseBody.questions)
+      ? responseBody.questions.filter(
+          (question): question is string => typeof question === "string",
+        )
+      : [];
+
+    setState(nextState);
+    onStateChange?.(nextState);
+    applyQuestions(nextQuestions);
+
+    return {
+      nextState,
+      nextQuestions,
+    };
+  }, [applyQuestions, onStateChange, projectId]);
 
   const refreshFlow = useCallback(async () => {
     setIsBootstrapping(true);
     setError(null);
     setStatusMessage(null);
     try {
-      const nextState = await fetchConfidenceState();
+      const { nextState, nextQuestions } = await fetchQuestions();
       if (
-        nextState.readyForGeneration ||
-        nextState.askedCount >= nextState.maxQuestions
+        (nextState.readyForGeneration ||
+          nextState.askedCount >= nextState.maxQuestions) &&
+        nextQuestions.length > 0
       ) {
         applyQuestions([]);
-        return;
       }
-
-      await fetchQuestions();
     } catch (unknownError) {
       setError(
         unknownError instanceof Error
@@ -263,7 +284,7 @@ export default function ClarificationPanel({
     } finally {
       setIsBootstrapping(false);
     }
-  }, [applyQuestions, fetchConfidenceState, fetchQuestions]);
+  }, [applyQuestions, fetchQuestions]);
 
   useEffect(() => {
     if (disabled) {
@@ -384,7 +405,7 @@ export default function ClarificationPanel({
     }
   }
 
-  async function handleProceedToDelegation() {
+  const handleProceedToDelegation = useCallback(async () => {
     if (!state || !onProceedToDelegation) {
       return;
     }
@@ -403,7 +424,33 @@ export default function ClarificationPanel({
     } finally {
       setIsProceeding(false);
     }
-  }
+  }, [onProceedToDelegation, state]);
+
+  useEffect(() => {
+    if (!shouldAutoProceedTerminal || disabled || !state) {
+      return;
+    }
+
+    if (!isLowConfidenceTerminal) {
+      return;
+    }
+
+    const autoProceedKey = `${state.askedCount}:${state.confidence}`;
+    if (lastAutoProceedKeyRef.current === autoProceedKey) {
+      return;
+    }
+    lastAutoProceedKeyRef.current = autoProceedKey;
+    setStatusMessage(
+      "Clarification limit reached. Continuing to delegation automatically.",
+    );
+    void handleProceedToDelegation();
+  }, [
+    disabled,
+    handleProceedToDelegation,
+    isLowConfidenceTerminal,
+    shouldAutoProceedTerminal,
+    state,
+  ]);
 
   return (
     <section className="space-y-5 rounded-2xl border border-violet-500/20 bg-[#111321] p-5 shadow-[0_24px_60px_rgba(6,8,20,0.45)]">
@@ -453,6 +500,12 @@ export default function ClarificationPanel({
             Question {questionPosition} of {progressState.maxQuestions}
           </p>
         </div>
+        {confidenceActivityMessage ? (
+          <p className="flex items-center gap-2 text-xs font-medium text-violet-200">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-violet-300" />
+            {confidenceActivityMessage}
+          </p>
+        ) : null}
       </header>
 
       <section className="rounded-2xl border border-violet-500/20 bg-violet-500/10 p-4">
@@ -463,7 +516,19 @@ export default function ClarificationPanel({
         </p>
       </section>
 
-      {isLowConfidenceTerminal ? (
+      {showAnalysisLoader || showQuestionLoader ? (
+        <section className="rounded-2xl border border-violet-400/35 bg-violet-950/35 p-4">
+          <div className="flex items-center gap-3">
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-violet-300" />
+            <p className="text-sm font-semibold text-violet-100">
+              {loaderTitle}
+            </p>
+          </div>
+          <p className="mt-2 text-xs text-violet-200/80">{loaderMessage}</p>
+        </section>
+      ) : null}
+
+      {isLowConfidenceTerminal && !shouldAutoProceedTerminal ? (
         <section className="space-y-5 rounded-2xl border border-violet-400/30 bg-[#181329] p-5">
           <div className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">
@@ -580,14 +645,26 @@ export default function ClarificationPanel({
             >
               Refresh Question
             </button>
-            <button
-              type="button"
-              className="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/40 transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:bg-slate-700"
-              onClick={submitAnswer}
-              disabled={!canSubmit || disabled || isBusy}
-            >
-              Submit Answer
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {canSkipClarification ? (
+                <button
+                  type="button"
+                  className="rounded-xl border border-violet-400/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-violet-200 transition hover:border-violet-300 hover:text-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={handleProceedToDelegation}
+                  disabled={disabled || isBusy}
+                >
+                  Skip Questions
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/40 transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:bg-slate-700"
+                onClick={submitAnswer}
+                disabled={!canSubmit || disabled || isBusy}
+              >
+                {isSubmitting ? "Submitting..." : "Submit Answer"}
+              </button>
+            </div>
           </div>
         </section>
       ) : null}
@@ -619,7 +696,7 @@ export default function ClarificationPanel({
           onClick={refreshFlow}
           disabled={disabled || isBusy}
         >
-          Recompute Confidence
+          {isBootstrapping ? "Computing..." : "Recompute Confidence"}
         </button>
         <button
           type="button"
@@ -631,6 +708,16 @@ export default function ClarificationPanel({
         >
           Fetch Clarifying Questions
         </button>
+        {canSkipClarification ? (
+          <button
+            type="button"
+            className="rounded-xl border border-violet-400/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-violet-200 transition hover:border-violet-300 hover:text-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={handleProceedToDelegation}
+            disabled={disabled || isBusy}
+          >
+            Skip to Provisional Plan
+          </button>
+        ) : null}
       </div>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}

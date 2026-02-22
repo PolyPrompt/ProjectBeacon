@@ -77,14 +77,17 @@ async function stubWorkspaceApis(page: Page): Promise<void> {
   );
 
   await page.route(
-    `**/api/projects/${E2E_PROJECT_ID}/context/confidence`,
+    `**/api/projects/${E2E_PROJECT_ID}/context/clarify`,
     async (route) => {
       await fulfillJson(route, {
-        confidence: 90,
-        threshold: 85,
-        askedCount: 2,
-        maxQuestions: 5,
-        readyForGeneration: true,
+        state: {
+          confidence: 90,
+          threshold: 85,
+          askedCount: 2,
+          maxQuestions: 5,
+          readyForGeneration: true,
+        },
+        questions: [],
       });
     },
   );

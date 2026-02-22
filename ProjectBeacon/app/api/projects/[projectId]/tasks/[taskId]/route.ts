@@ -27,7 +27,15 @@ const updateTaskSchema = z
     assigneeUserId: z.string().uuid().nullable().optional(),
     title: z.string().trim().min(1).max(200).optional(),
     description: z.string().max(5000).optional(),
-    difficultyPoints: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(5), z.literal(8)]).optional(),
+    difficultyPoints: z
+      .union([
+        z.literal(1),
+        z.literal(2),
+        z.literal(3),
+        z.literal(5),
+        z.literal(8),
+      ])
+      .optional(),
     softDeadline: z.string().datetime({ offset: true }).nullable().optional(),
   })
   .refine(
@@ -39,8 +47,7 @@ const updateTaskSchema = z
       value.difficultyPoints !== undefined ||
       value.softDeadline !== undefined,
     {
-      message:
-        "At least one updatable task field must be provided.",
+      message: "At least one updatable task field must be provided.",
       path: ["status"],
     },
   );
@@ -70,6 +77,10 @@ function canUpdateTaskByRole(
   }
 
   return task.assignee_user_id === actorUserId;
+}
+
+function canReassignTaskByRole(role: ProjectRole): boolean {
+  return role === "admin";
 }
 
 function isAssignmentChanged(

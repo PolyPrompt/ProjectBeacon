@@ -7,6 +7,7 @@ import { getEnv } from "@/lib/env";
 import { requireUser } from "@/lib/auth/require-user";
 import { requireProjectMember } from "@/lib/projects/membership";
 import { createProjectJoinToken } from "@/lib/projects/share-token";
+import { getServiceSupabaseClient } from "@/lib/supabase/server";
 
 const paramsSchema = z.object({
   projectId: z.uuid(),
@@ -27,8 +28,27 @@ export async function POST(
   try {
     const user = await requireUser();
     const params = paramsSchema.parse(await context.params);
+    const supabase = getServiceSupabaseClient();
 
     await requireProjectMember(params.projectId, user.userId);
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("name")
+      .eq("id", params.projectId)
+      .maybeSingle();
+
+    if (projectError) {
+      return jsonError(
+        500,
+        "DB_ERROR",
+        "Failed loading project details",
+        projectError.message,
+      );
+    }
+
+    if (!project) {
+      return jsonError(404, "NOT_FOUND", "Project not found");
+    }
 
     const payload = requestSchema.parse(await request.json());
     const { token, expiresAt } = await createProjectJoinToken({
@@ -59,7 +79,7 @@ export async function POST(
         const result = await sendProjectShareEmail({
           to: email,
           projectUrl: inviteUrl,
-          projectId: params.projectId,
+          projectName: project.name,
         });
 
         sent.push(result);
