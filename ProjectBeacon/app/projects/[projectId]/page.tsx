@@ -6,7 +6,7 @@ import {
   type DashboardProject,
   type DashboardTask,
 } from "@/components/dashboard/project-dashboard-shell";
-import { requireSessionUser } from "@/lib/auth/session";
+import { requireSessionUser, type ProjectRole } from "@/lib/auth/session";
 import { getServiceSupabaseClient } from "@/lib/supabase/server";
 import type { TaskStatus } from "@/types/dashboard";
 
@@ -249,108 +249,22 @@ export default async function ProjectDashboardPage({
     redirect(`/projects/${projectId}/skills`);
   }
 
-  const [projectResult, membersResult, tasksResult] = await Promise.all([
-    supabase
-      .from("projects")
-      .select("id,name,description,deadline,planning_status")
-      .eq("id", projectId)
-      .maybeSingle(),
-    supabase
-      .from("project_members")
-      .select("user_id,role")
-      .eq("project_id", projectId),
-    supabase
-      .from("tasks")
-      .select(
-        "id,title,description,status,due_at,difficulty_points,assignee_user_id,created_at",
-      )
-      .eq("project_id", projectId),
-  ]);
+  const dashboardData = await getProjectDashboardData(
+    projectId,
+    sessionUser.userId,
+  );
 
-  if (projectResult.error) {
-    throw new Error(
-      `Failed loading dashboard project details: ${projectResult.error.message}`,
-    );
-  }
-  if (!projectResult.data) {
+  if (!dashboardData) {
     notFound();
   }
 
-  if (membersResult.error) {
-    throw new Error(
-      `Failed loading dashboard members: ${membersResult.error.message}`,
-    );
-  }
-
-  if (tasksResult.error) {
-    throw new Error(
-      `Failed loading dashboard tasks: ${tasksResult.error.message}`,
-    );
-  }
-
-  const userIds = membersResult.data.map((member) => member.user_id);
-  const { data: users, error: usersError } =
-    userIds.length > 0
-      ? await supabase.from("users").select("id,name,email").in("id", userIds)
-      : { data: [], error: null };
-
-  if (usersError) {
-    throw new Error(`Failed loading dashboard users: ${usersError.message}`);
-  }
-
-  const usersById = new Map(users.map((user) => [user.id, user]));
-  const members: DashboardMember[] = membersResult.data.map((member) => {
-    const profile = usersById.get(member.user_id);
-    return {
-      userId: member.user_id,
-      name: profile?.name ?? "Unknown",
-      email: profile?.email ?? "",
-      role: member.role === "owner" ? "owner" : "member",
-      inviteStatus: "accepted",
-    };
-  });
-
-  const tasks: DashboardTask[] = tasksResult.data.map((task) => ({
-    id: task.id,
-    title: task.title ?? "Untitled task",
-    description: task.description ?? "",
-    status:
-      task.status === "in_progress" ||
-      task.status === "blocked" ||
-      task.status === "done"
-        ? task.status
-        : "todo",
-    softDeadline: task.due_at,
-    difficultyPoints:
-      task.difficulty_points === 1 ||
-      task.difficulty_points === 2 ||
-      task.difficulty_points === 3 ||
-      task.difficulty_points === 5 ||
-      task.difficulty_points === 8
-        ? task.difficulty_points
-        : 3,
-    assigneeUserId: task.assignee_user_id,
-    createdAt: task.created_at,
-  }));
-
-  const project: DashboardProject = {
-    id: projectResult.data.id,
-    name: projectResult.data.name,
-    description: projectResult.data.description ?? "",
-    deadline: projectResult.data.deadline,
-    planningStatus:
-      projectResult.data.planning_status === "assigned" ||
-      projectResult.data.planning_status === "locked"
-        ? projectResult.data.planning_status
-        : "draft",
-  };
-
   return (
     <ProjectDashboardShell
-      members={members}
-      project={project}
+      members={dashboardData.members}
+      project={dashboardData.project}
       projectId={projectId}
-      tasks={tasks}
+      tasks={dashboardData.tasks}
+      viewerRole={dashboardData.role}
       viewerUserId={sessionUser.userId}
     />
   );
