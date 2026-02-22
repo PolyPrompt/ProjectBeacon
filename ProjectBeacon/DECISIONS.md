@@ -281,3 +281,15 @@
 - Impact on files or behavior:
   - New `components/projects/task-inventory-blueprint.tsx` handles grouped review/edit, validation, and export/proceed actions.
   - `components/projects/planning-workspace.tsx` now routes delegation progression through the blueprint stage and keeps lock/assign APIs intact.
+
+## 2026-02-22T06:36:11Z
+
+- Decision summary:
+  - Use an explicit post-create workspace-intake CTA panel instead of forced auto-redirect after project creation.
+- Rationale:
+  - `PB-044` requires deterministic handoff while preserving share-link/share-email actions and project context on `/projects/new`.
+- Alternatives considered:
+  - Auto-redirect immediately to `/projects/:projectId/workspace` after successful create.
+  - Keep current behavior with no explicit workspace handoff affordance.
+- Impact on files or behavior:
+  - `components/projects/project-form.tsx` now keeps context visible and provides direct workspace + dashboard transitions after create.

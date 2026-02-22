@@ -876,3 +876,18 @@
   - `components/dashboard/my-tasks-panel.tsx`
   - `components/dashboard/team-status-overview.tsx`
   - `components/dashboard/task-detail-modal.tsx`
+
+## 2026-02-22T06:36:11Z - PB-044 Milestone (Agent3)
+
+- Issue: `#95` `[PB-044] Wire project creation handoff into workspace upload flow and preserve context`.
+- Completed:
+  - Added explicit post-create handoff panel on `/projects/new` with stable active project context (`id`, `name`, `deadline`, `planningStatus`).
+  - Added direct transition CTA to workspace intake (`/projects/:projectId/workspace`) plus dashboard link.
+  - Preserved share-link/share-email flow in-place without clearing active project state.
+  - Kept workspace route rendering the existing planning upload workspace.
+- Verification:
+  - `set -a; source .env.local; set +a; npm run format:check` -> pass
+  - `set -a; source .env.local; set +a; npm run lint` -> pass
+  - `set -a; source .env.local; set +a; npm run build` -> pass
+- Files changed:
+  - `components/projects/project-form.tsx`
