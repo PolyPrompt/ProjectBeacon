@@ -14,6 +14,7 @@ const serverEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default("gpt-4o-mini"),
+  OPENAI_STRICT_GENERATION: z.coerce.boolean().default(false),
 });
 
 export type ServerEnv = {
@@ -22,6 +23,7 @@ export type ServerEnv = {
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY?: string;
   OPENAI_API_KEY?: string;
   OPENAI_MODEL: string;
+  OPENAI_STRICT_GENERATION: boolean;
   SUPABASE_URL?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   SUPABASE_SECRET_KEY?: string;
@@ -30,7 +32,7 @@ export type ServerEnv = {
 let cachedEnv: ServerEnv | null = null;
 
 function getFirstNonEmpty(
-  source: Record<string, string | undefined>,
+  source: Record<string, unknown>,
   keys: string[],
 ): string | null {
   for (const key of keys) {
@@ -44,7 +46,7 @@ function getFirstNonEmpty(
 }
 
 function resolveSupabaseConfig(
-  source: Record<string, string | undefined>,
+  source: Record<string, unknown>,
 ): SupabaseConfig | null {
   const url = getFirstNonEmpty(source, [
     "NEXT_PUBLIC_SUPABASE_URL",

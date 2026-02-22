@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { generateTaskPlan } from "@/lib/ai/generate-task-plan";
+import {
+  AIGenerationUnavailableError,
+  generateTaskPlan,
+} from "@/lib/ai/generate-task-plan";
 import {
   countClarificationEntries,
   fetchActiveProjectContexts,
@@ -91,8 +94,8 @@ export async function POST(
       availableSkills: existingSkills.map((skill) => skill.name),
     });
 
-    const tempIds = generated.tasks.map((task) => task.tempId);
-    const dependencyEdges = generated.tasks.flatMap((task) =>
+    const tempIds = generated.plan.tasks.map((task) => task.tempId);
+    const dependencyEdges = generated.plan.tasks.flatMap((task) =>
       task.dependsOnTempIds.map((dependsOnTempId) => ({
         taskId: task.tempId,
         dependsOnTaskId: dependsOnTempId,
@@ -115,7 +118,7 @@ export async function POST(
       );
     }
 
-    const rowsToInsert: TaskInsertRow[] = generated.tasks.map((task) => ({
+    const rowsToInsert: TaskInsertRow[] = generated.plan.tasks.map((task) => ({
       project_id: projectId,
       assignee_user_id: null,
       title: task.title,
@@ -139,14 +142,14 @@ export async function POST(
     }
 
     const taskIdByTempId = new Map<string, string>();
-    generated.tasks.forEach((task, index) => {
+    generated.plan.tasks.forEach((task, index) => {
       const inserted = insertedTasks[index];
       if (inserted) {
         taskIdByTempId.set(task.tempId, inserted.id);
       }
     });
 
-    const requiredSkillNames = generated.tasks
+    const requiredSkillNames = generated.plan.tasks
       .flatMap((task) =>
         task.requiredSkills.map((skill) => skill.skillName.trim()),
       )
@@ -177,7 +180,7 @@ export async function POST(
       ]),
     );
 
-    const taskSkillRows = generated.tasks.flatMap((task) => {
+    const taskSkillRows = generated.plan.tasks.flatMap((task) => {
       const taskId = taskIdByTempId.get(task.tempId);
       if (!taskId) {
         return [];
@@ -232,8 +235,18 @@ export async function POST(
       tasks: insertedTasks.map(mapTaskRowToDto),
       taskSkills: insertedTaskSkills.map(mapTaskSkillRowToDto),
       taskDependencies: insertedDependencies.map(mapTaskDependencyRowToDto),
+      generation: generated.generation,
     });
   } catch (error) {
+    if (error instanceof AIGenerationUnavailableError) {
+      return jsonError(
+        503,
+        error.code,
+        "Task generation requires OpenAI and strict mode is enabled.",
+        error.details,
+      );
+    }
+
     return mapRouteError(error);
   }
 }

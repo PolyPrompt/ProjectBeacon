@@ -539,3 +539,46 @@
   - `npx prettier --check app/page.tsx app/projects/[projectId]/page.tsx components/dashboard/project-summary-card.tsx components/dashboard/project-members-list.tsx components/dashboard/project-task-list.tsx components/dashboard/dependency-preview.tsx` -> pass
   - `npx eslint app/page.tsx app/projects/[projectId]/page.tsx components/dashboard/project-summary-card.tsx components/dashboard/project-members-list.tsx components/dashboard/project-task-list.tsx components/dashboard/dependency-preview.tsx` -> pass
   - `npm run build` -> pass
+
+## 2026-02-22T01:36:44Z - PB-047 Milestone (Agent2)
+
+- Issue: `#98` `[PB-047] Enforce explicit AI generation mode and observability for task breakdown`.
+- Completed:
+  - Added explicit generation metadata to task generation responses: `mode`, `model`, `strictMode`, and `fallbackReason`.
+  - Added strict-mode enforcement via `OPENAI_STRICT_GENERATION` with `503 AI_PROVIDER_UNAVAILABLE` on provider failure.
+  - Preserved deterministic fallback for non-strict mode and added fallback diagnostics logging.
+  - Updated planning workspace status messaging to show generation mode details.
+  - Updated `API_CONTRACT.md` with generation metadata and strict-mode failure envelope.
+- Verification:
+  - `npm run format:check` => pass.
+  - `npm run lint` => pass.
+  - `npm run build` => pass.
+- Files changed:
+  - `lib/ai/generate-task-plan.ts`
+  - `app/api/projects/[projectId]/ai/generate-tasks/route.ts`
+  - `components/projects/planning-workspace.tsx`
+  - `lib/server/env.ts`
+  - `API_CONTRACT.md`
+  - `DECISIONS.md`
+
+## 2026-02-22T01:40:30Z - PB-046 Milestone (Agent2)
+
+- Issue: `#97` `[PB-046] Add task status update API + contract support for dashboard/modal controls`.
+- Completed:
+  - Added `PATCH /api/projects/:projectId/tasks/:taskId` for task status updates.
+  - Enforced permissions: admins can update any task; users can update only tasks assigned to themselves.
+  - Added explicit transition validation with `409 INVALID_STATUS_TRANSITION` for invalid status changes.
+  - Added `status` to task detail payload for modal controls.
+  - Updated dashboard detail DTO + modal parsing/rendering for status handling.
+  - Updated `API_CONTRACT.md` with new endpoint request/response/failure envelopes.
+- Verification:
+  - `npm run format:check` => pass.
+  - `npm run lint` => pass.
+  - `npm run build` => pass.
+- Files changed:
+  - `app/api/projects/[projectId]/tasks/[taskId]/route.ts`
+  - `app/api/projects/[projectId]/tasks/[taskId]/detail/route.ts`
+  - `types/dashboard.ts`
+  - `components/dashboard/task-detail-modal.tsx`
+  - `API_CONTRACT.md`
+  - `DECISIONS.md`

@@ -536,6 +536,12 @@ Response `200`:
 ## `POST /api/projects/:projectId/ai/generate-tasks`
 
 Behavior: generates draft task graph only; leaves assignees null.
+Generation metadata:
+
+- `generation.mode` is `openai` when provider output is used.
+- `generation.mode` is `fallback` when deterministic local template fallback is used.
+- `generation.fallbackReason` is only populated in fallback mode.
+- When `OPENAI_STRICT_GENERATION=true`, provider failures return `503 AI_PROVIDER_UNAVAILABLE` instead of fallback.
 
 Response `200`:
 
@@ -570,7 +576,28 @@ Response `200`:
       "taskId": "t_123",
       "dependsOnTaskId": "t_001"
     }
-  ]
+  ],
+  "generation": {
+    "mode": "openai",
+    "model": "gpt-4o-mini",
+    "strictMode": false,
+    "fallbackReason": null
+  }
+}
+```
+
+Failure `503` when strict mode is enabled and provider generation is unavailable:
+
+```json
+{
+  "error": {
+    "code": "AI_PROVIDER_UNAVAILABLE",
+    "message": "Task generation requires OpenAI and strict mode is enabled.",
+    "details": {
+      "reason": "missing_api_key",
+      "model": "gpt-4o-mini"
+    }
+  }
 }
 ```
 
@@ -718,6 +745,7 @@ Response `200`:
   "id": "t_123",
   "title": "Build Auth Middleware",
   "description": "Implement protected route checks",
+  "status": "in_progress",
   "softDeadline": "2026-03-01T00:00:00.000Z",
   "assignmentReasoning": "Ada Lovelace was assigned due to strongest skill coverage in React (4/5), Auth (5/5).",
   "dependencyTaskIds": ["t_001", "t_004"],
@@ -734,6 +762,54 @@ Notes:
 
 - `dependencyTaskIds` are direct prerequisites (`task_dependencies.depends_on_task_id`) for the selected task.
 - `timelinePlacement` uses dependency-aware deterministic ordering (tie-break by due date, then created time, then id).
+
+## `PATCH /api/projects/:projectId/tasks/:taskId`
+
+Request:
+
+```json
+{
+  "status": "blocked"
+}
+```
+
+Response `200`:
+
+```json
+{
+  "task": {
+    "id": "t_123",
+    "projectId": "p_123",
+    "assigneeUserId": "u_200",
+    "title": "Build Auth Middleware",
+    "description": "Implement protected route checks",
+    "status": "blocked",
+    "softDeadline": "2026-03-01T00:00:00.000Z",
+    "difficultyPoints": 3,
+    "updatedAt": "2026-02-22T02:10:00.000Z"
+  }
+}
+```
+
+Failure `409` for invalid transitions:
+
+```json
+{
+  "error": {
+    "code": "INVALID_STATUS_TRANSITION",
+    "message": "Cannot transition task status from done to blocked.",
+    "details": {
+      "fromStatus": "done",
+      "toStatus": "blocked"
+    }
+  }
+}
+```
+
+Notes:
+
+- `admin` users can update any project task status.
+- `user` role can update status only for tasks currently assigned to themselves.
 
 ## `GET /api/projects/:projectId/workflow/timeline/:taskId`
 

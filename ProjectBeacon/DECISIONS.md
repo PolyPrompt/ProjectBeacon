@@ -182,3 +182,35 @@
   - Added `components/projects/planning-workspace.tsx` and `components/projects/context-editor.tsx`.
   - Updated `components/projects/clarification-panel.tsx` with submit/answer state hooks.
   - Updated `app/projects/[projectId]/page.tsx` to include a unified workspace section.
+
+## 2026-02-22T01:00:00Z
+
+- Decision summary:
+  - Make AI generation mode explicit in API responses (`openai` vs `fallback`) and add strict-mode enforcement via `OPENAI_STRICT_GENERATION`.
+- Rationale:
+  - Silent fallback made it impossible for users/UI to verify whether real provider-backed planning ran. Exposing metadata and optional strict rejection keeps behavior auditable while preserving deterministic fallback for non-strict environments.
+- Alternatives considered:
+  - Keep silent fallback and rely only on server logs.
+  - Remove fallback entirely and fail all generation requests when OpenAI is unavailable.
+- Impact on files or behavior:
+  - `lib/ai/generate-task-plan.ts`
+  - `app/api/projects/[projectId]/ai/generate-tasks/route.ts`
+  - `components/projects/planning-workspace.tsx`
+  - `lib/server/env.ts`
+  - `API_CONTRACT.md`
+
+## 2026-02-22T01:45:00Z
+
+- Decision summary:
+  - Add a dedicated task status write endpoint (`PATCH /api/projects/:projectId/tasks/:taskId`) with explicit transition rules and role-aware authorization.
+- Rationale:
+  - Dashboard task-detail parity requires status controls, and existing API surface was read-only. Explicit transition validation prevents accidental state drift and keeps behavior deterministic.
+- Alternatives considered:
+  - Allow free-form status updates without transition validation.
+  - Reuse existing detail endpoint as a mixed read/write route.
+- Impact on files or behavior:
+  - `app/api/projects/[projectId]/tasks/[taskId]/route.ts`
+  - `app/api/projects/[projectId]/tasks/[taskId]/detail/route.ts`
+  - `types/dashboard.ts`
+  - `components/dashboard/task-detail-modal.tsx`
+  - `API_CONTRACT.md`

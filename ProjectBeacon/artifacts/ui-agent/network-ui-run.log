@@ -1,0 +1,6 @@
+[POST] http://localhost:3000/projects/new => [200] OK
+[POST] http://localhost:3000/projects/new => [200] OK
+[POST] https://dashing-walleye-65.clerk.accounts.dev/v1/environment?__clerk_api_version=2025-11-10&_clerk_js_version=5.124.0&_method=PATCH&__clerk_db_jwt=dvb_39zxlyLVtqd4TSNL8mRVprxgQ8p => [200] 
+[GET] https://dashing-walleye-65.clerk.accounts.dev/v1/client?__clerk_api_version=2025-11-10&_clerk_js_version=5.124.0&__clerk_db_jwt=dvb_39zxlyLVtqd4TSNL8mRVprxgQ8p => [200] 
+[POST] http://localhost:3000/api/users/bootstrap => [500] Internal Server Error
+[POST] https://dashing-walleye-65.clerk.accounts.dev/v1/client/sessions/sess_39zyktpXHPmAxe1kpc40sxGgFja/tokens?__clerk_api_version=2025-11-10&_clerk_js_version=5.124.0&__clerk_db_jwt=dvb_39zxlyLVtqd4TSNL8mRVprxgQ8p => [200] 

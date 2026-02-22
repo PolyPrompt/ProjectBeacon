@@ -21,6 +21,7 @@ type TaskRow = {
   id: string;
   title: string;
   description: string | null;
+  status: "todo" | "in_progress" | "blocked" | "done";
   due_at: string | null;
   difficulty_points: number | null;
   assignee_user_id: string | null;
@@ -62,7 +63,7 @@ function buildInFilter(values: string[]): string {
 
 async function getProjectTaskRows(projectId: string): Promise<TaskRow[]> {
   return supabaseRestGet<TaskRow[]>(
-    `tasks?select=id,title,description,due_at,difficulty_points,assignee_user_id,created_at&project_id=eq.${encodeURIComponent(projectId)}`,
+    `tasks?select=id,title,description,status,due_at,difficulty_points,assignee_user_id,created_at&project_id=eq.${encodeURIComponent(projectId)}`,
   );
 }
 
@@ -231,6 +232,7 @@ export async function GET(
       id: selectedTask.id,
       title: selectedTask.title,
       description: selectedTask.description ?? "",
+      status: selectedTask.status,
       softDeadline: selectedTask.due_at,
       assignmentReasoning,
       dependencyTaskIds,

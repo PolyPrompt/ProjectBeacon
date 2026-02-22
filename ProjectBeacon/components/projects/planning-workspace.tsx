@@ -511,6 +511,12 @@ export default function PlanningWorkspace({
       );
 
       const payload = (await response.json()) as {
+        generation?: {
+          fallbackReason?: string | null;
+          mode?: "fallback" | "openai";
+          model?: string;
+          strictMode?: boolean;
+        };
         error?: { message?: string };
         tasks?: Array<{ id: string }>;
       };
@@ -523,8 +529,15 @@ export default function PlanningWorkspace({
       const generatedCount = Array.isArray(payload.tasks)
         ? payload.tasks.length
         : 0;
+      const generationMode = payload.generation?.mode ?? "fallback";
+      const generationDetails =
+        generationMode === "openai"
+          ? `mode: openai (${payload.generation?.model ?? "unknown model"})`
+          : `mode: fallback (${payload.generation?.fallbackReason ?? "unknown reason"})`;
       setTaskCount(generatedCount);
-      setActionStatus(`Generated ${generatedCount} draft tasks.`);
+      setActionStatus(
+        `Generated ${generatedCount} draft tasks (${generationDetails}).`,
+      );
     } catch (error) {
       setActionError(
         error instanceof Error ? error.message : "Failed to generate tasks.",

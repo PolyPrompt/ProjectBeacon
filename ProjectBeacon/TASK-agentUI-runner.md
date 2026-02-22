@@ -29,7 +29,9 @@ Execution rules:
 
 Mandatory stop-and-file behavior:
 
-- If a blocking defect appears (runtime error, broken flow, or severe visual mismatch), stop and file a GitHub issue for `agent3` immediately.
+- If a blocking defect appears (runtime error, broken flow, or severe visual mismatch):
+  - stop further scenario execution
+  - file a GitHub issue for `agent3` immediately
 - Required labels:
   - `agent3`
   - `status:ready`
