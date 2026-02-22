@@ -23,6 +23,12 @@ export function ProjectNavShell({
   const isStandaloneInventoryRoute = pathname.endsWith("/inventory");
   const isDocumentsRoute = pathname.includes("/documents");
   const isSettingsRoute = pathname.includes("/settings");
+  const rootClassName = isSettingsRoute
+    ? "min-h-screen bg-[#120d1c]"
+    : "min-h-screen bg-[#18131F]";
+  const mainClassName = isSettingsRoute
+    ? "min-h-[calc(100vh-73px)]"
+    : "mx-auto w-full max-w-7xl px-4 py-6 sm:px-6";
   const routeNotice =
     role === "user" && isDocumentsRoute
       ? "Documents are in read-only mode for users."
@@ -34,7 +40,7 @@ export function ProjectNavShell({
     return <>{children}</>;
   }
   return (
-    <div className="min-h-screen bg-[#18131F]">
+    <div className={rootClassName}>
       <NavBar
         mode="project"
         onSignOut={onSignOut}
@@ -51,9 +57,7 @@ export function ProjectNavShell({
         </div>
       ) : null}
 
-      <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
-        {children}
-      </main>
+      <main className={mainClassName}>{children}</main>
     </div>
   );
 }
