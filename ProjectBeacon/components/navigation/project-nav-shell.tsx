@@ -24,42 +24,9 @@ export function ProjectNavShell({
   const isDocumentsRoute = pathname.includes("/documents");
   const isSettingsRoute = pathname.includes("/settings");
 
-<<<<<<< Updated upstream
-=======
-  const navItems: NavItem[] = [
-    {
-      label: "Dashboard",
-      href: `/projects/${projectId}`,
-      match: (path) =>
-        path === `/projects/${projectId}` || path.endsWith("/workspace"),
-    },
-    {
-      label: "Documents",
-      href: `/projects/${projectId}/documents`,
-      match: (path) => path.includes("/documents"),
-    },
-    {
-      label: "Board",
-      href: `/projects/${projectId}/board`,
-      match: (path) => path.includes("/board"),
-    },
-    {
-      label: "Timeline",
-      href: `/projects/${projectId}/timeline`,
-      match: (path) => path.includes("/timeline"),
-    },
-    {
-      label: "Settings",
-      href: `/projects/${projectId}/settings`,
-      match: (path) => path.includes("/settings"),
-    },
-  ];
-
   if (isStandaloneInventoryRoute) {
     return <>{children}</>;
   }
-
->>>>>>> Stashed changes
   return (
     <div className="min-h-screen bg-slate-50">
       <NavBar
