@@ -6,7 +6,7 @@ import {
   type DashboardProject,
   type DashboardTask,
 } from "@/components/dashboard/project-dashboard-shell";
-import { requireSessionUser, type ProjectRole } from "@/lib/auth/session";
+import { requireSessionUser } from "@/lib/auth/session";
 import { getServiceSupabaseClient } from "@/lib/supabase/server";
 import type { TaskStatus } from "@/types/dashboard";
 
