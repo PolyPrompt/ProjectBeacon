@@ -100,6 +100,15 @@ export async function joinProjectWithToken(input: {
   });
 
   if (insertError) {
+    if (insertError.code === "23505") {
+      return {
+        projectId,
+        userId: input.userId,
+        joined: true,
+        alreadyMember: true,
+      };
+    }
+
     throw new ApiHttpError(
       500,
       "DB_ERROR",

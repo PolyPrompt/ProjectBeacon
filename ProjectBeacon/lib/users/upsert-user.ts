@@ -92,7 +92,7 @@ export async function upsertUserFromClerk(
   const existingRow = existingByClerk ?? existingByEmail;
   const created = !existingRow;
 
-  const upserted = existingRow
+  let upserted = existingRow
     ? await supabase
         .from("users")
         .update({
@@ -105,13 +105,43 @@ export async function upsertUserFromClerk(
         .single()
     : await supabase
         .from("users")
-        .insert({
-          clerk_user_id: clerkUserId,
-          email,
-          name,
-        })
+        .upsert(
+          {
+            clerk_user_id: clerkUserId,
+            email,
+            name,
+          },
+          {
+            onConflict: "clerk_user_id",
+          },
+        )
         .select("id")
         .single();
+
+  if (upserted.error && upserted.error.code === "23505") {
+    // Recover from concurrent bootstrap requests by reloading the canonical row.
+    const existingNow = await supabase
+      .from("users")
+      .select("id")
+      .eq("clerk_user_id", clerkUserId)
+      .maybeSingle();
+
+    if (existingNow.error) {
+      throw new ApiHttpError(
+        500,
+        "DB_ERROR",
+        "Failed syncing user profile",
+        existingNow.error.message,
+      );
+    }
+
+    if (existingNow.data) {
+      upserted = {
+        data: existingNow.data,
+        error: null,
+      };
+    }
+  }
 
   if (upserted.error) {
     throw new ApiHttpError(

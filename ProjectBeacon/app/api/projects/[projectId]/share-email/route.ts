@@ -3,8 +3,10 @@ import { z } from "zod";
 
 import { ApiHttpError, handleRouteError, jsonError } from "@/lib/api/errors";
 import { sendProjectShareEmail } from "@/lib/email/send-project-share";
+import { getEnv } from "@/lib/env";
 import { requireUser } from "@/lib/auth/require-user";
 import { requireProjectMember } from "@/lib/projects/membership";
+import { createProjectJoinToken } from "@/lib/projects/share-token";
 
 const paramsSchema = z.object({
   projectId: z.uuid(),
@@ -29,10 +31,12 @@ export async function POST(
     await requireProjectMember(params.projectId, user.userId);
 
     const payload = requestSchema.parse(await request.json());
-    const inviteUrl = new URL(
-      `/projects/${params.projectId}/skills`,
-      request.url,
-    ).toString();
+    const { token, expiresAt } = await createProjectJoinToken({
+      projectId: params.projectId,
+      issuerUserId: user.userId,
+    });
+    const env = getEnv();
+    const inviteUrl = `${env.NEXT_PUBLIC_APP_URL}/join/${encodeURIComponent(token)}`;
 
     if (payload.emails.length > 20) {
       return jsonError(
@@ -73,6 +77,9 @@ export async function POST(
     return NextResponse.json(
       {
         projectId: params.projectId,
+        token,
+        joinUrl: inviteUrl,
+        expiresAt,
         sent,
         failed,
       },

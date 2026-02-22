@@ -171,6 +171,7 @@ async function getProjectDashboardData(
         name: profile?.name?.trim() || profile?.email || "Unknown member",
         email: profile?.email || "",
         role: normalizeMemberRole(member.role),
+        inviteStatus: "accepted",
       };
     }),
     tasks: (tasksResponse.data ?? []).map((task) => ({
