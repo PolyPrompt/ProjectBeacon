@@ -10,9 +10,21 @@ export default async function ProjectSkillsPage({
 }: ProjectSkillsPageProps) {
   const { projectId } = await params;
 
-  await requireSessionUser(`/projects/${projectId}/skills`, {
-    projectId,
-  });
+  const sessionUser = await requireSessionUser(
+    `/projects/${projectId}/skills`,
+    {
+      projectId,
+    },
+  );
+
+  const continueHref =
+    sessionUser.role === "admin"
+      ? `/projects/${projectId}/workspace`
+      : `/projects/${projectId}`;
+  const continueButtonLabel =
+    sessionUser.role === "admin"
+      ? "Continue to adding project documents"
+      : "Continue to project dashboard";
 
   return (
     <section className="space-y-6">
@@ -30,7 +42,8 @@ export default async function ProjectSkillsPage({
 
       <SkillsEditor
         apiBasePath={`/api/projects/${projectId}/skills`}
-        continueHref={`/projects/${projectId}/workspace`}
+        continueHref={continueHref}
+        continueButtonLabel={continueButtonLabel}
       />
     </section>
   );

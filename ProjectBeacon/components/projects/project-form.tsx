@@ -236,6 +236,24 @@ export function ProjectForm() {
     : isSubmitting || !canCreateProject;
   const showShareProjectTooltip = !project && !canCreateProject;
 
+  function resetProjectContextForNewDraft() {
+    setProject(null);
+    setHasPressedShareProject(false);
+    setIsCopyingLink(false);
+    setError(null);
+    setShareStatus(null);
+  }
+
+  function beginDraftEdit() {
+    if (!project) {
+      setError(null);
+      setShareStatus(null);
+      return;
+    }
+
+    resetProjectContextForNewDraft();
+  }
+
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setHasPressedShareProject(true);
@@ -551,7 +569,10 @@ export function ProjectForm() {
                     <input
                       className="w-full rounded-xl border border-violet-950/80 bg-[#11091d] px-4 py-3.5 text-xl text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-violet-500"
                       value={name}
-                      onChange={(event) => setName(event.target.value)}
+                      onChange={(event) => {
+                        beginDraftEdit();
+                        setName(event.target.value);
+                      }}
                       placeholder="e.g. CS302 Distributed Systems Lab"
                       required
                     />
@@ -568,7 +589,10 @@ export function ProjectForm() {
                       className="w-full resize-none rounded-xl border border-violet-950/80 bg-[#11091d] px-4 py-3.5 text-xl text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-violet-500"
                       rows={5}
                       value={description}
-                      onChange={(event) => setDescription(event.target.value)}
+                      onChange={(event) => {
+                        beginDraftEdit();
+                        setDescription(event.target.value);
+                      }}
                       placeholder="Briefly explain the project goals and core milestones..."
                     />
                   </label>
@@ -594,9 +618,10 @@ export function ProjectForm() {
                         className="w-full rounded-xl border border-violet-950/80 bg-[#11091d] px-4 py-3.5 pr-14 text-xl text-slate-100 outline-none transition focus:border-violet-500"
                         type="date"
                         value={deadlineDate}
-                        onChange={(event) =>
-                          setDeadlineDate(event.target.value)
-                        }
+                        onChange={(event) => {
+                          beginDraftEdit();
+                          setDeadlineDate(event.target.value);
+                        }}
                         required
                       />
                       <button
@@ -1026,10 +1051,10 @@ export function ProjectForm() {
 
               {project ? (
                 <Link
-                  href={`/projects/${project.id}/workspace`}
+                  href={`/projects/${project.id}/skills`}
                   className="group flex w-full items-center justify-center gap-2 rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-violet-600"
                 >
-                  <span>Add Project Documents</span>
+                  <span>Add Skills</span>
                   <span className="transition-transform group-hover:translate-x-1">
                     <ArrowRightIcon />
                   </span>
