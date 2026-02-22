@@ -14,6 +14,14 @@ export type GenerateTaskPlanInput = {
   projectDeadline: string;
   contextBlocks: Array<{ contextType: string; textContent: string }>;
   availableSkills: string[];
+  planningMode?: "standard" | "provisional";
+  clarification?: {
+    confidence: number;
+    threshold: number;
+    readyForGeneration: boolean;
+    askedCount: number;
+    maxQuestions: number;
+  };
 };
 
 export type GenerationMode = "openai" | "fallback";
@@ -30,6 +38,7 @@ export type TaskPlanGenerationMetadata = {
   mode: GenerationMode;
   reason: GenerationFallbackReason | null;
   strictMode: boolean;
+  planningMode: "standard" | "provisional";
   diagnostics?: {
     message: string;
     status?: number;
@@ -190,7 +199,61 @@ const DEFAULT_PLAN_TEMPLATES: Array<{
   },
 ];
 
+const PROVISIONAL_PLAN_TEMPLATES: Array<{
+  title: string;
+  description: string;
+  difficultyPoints: 1 | 2 | 3 | 5 | 8;
+  skillHint: string;
+}> = [
+  {
+    title: "Identify ambiguity gaps and research questions",
+    description:
+      "Document open questions, unknown assumptions, and data needed to unblock implementation planning.",
+    difficultyPoints: 2,
+    skillHint: "Product Planning",
+  },
+  {
+    title: "Run technical discovery and feasibility spikes",
+    description:
+      "Evaluate architecture options, integration risks, and tooling constraints for unresolved requirements.",
+    difficultyPoints: 3,
+    skillHint: "Architecture",
+  },
+  {
+    title: "Create provisional architecture and delivery baseline",
+    description:
+      "Draft a first-pass architecture and sequence with explicit assumption markers for later revision.",
+    difficultyPoints: 3,
+    skillHint: "System Design",
+  },
+  {
+    title: "Implement low-risk foundation tasks",
+    description:
+      "Execute setup, scaffolding, and reusable baseline work that remains valid even if requirements evolve.",
+    difficultyPoints: 3,
+    skillHint: "Full Stack Development",
+  },
+  {
+    title: "Validate assumptions with stakeholders",
+    description:
+      "Review discovery findings, confirm priorities, and convert assumptions into explicit acceptance criteria.",
+    difficultyPoints: 2,
+    skillHint: "Communication",
+  },
+  {
+    title: "Replan backlog from validated findings",
+    description:
+      "Recompute confidence and generate refined implementation tasks using updated context and confirmed constraints.",
+    difficultyPoints: 2,
+    skillHint: "Product Planning",
+  },
+];
+
 function buildFallbackTaskPlan(input: GenerateTaskPlanInput): AITaskPlanOutput {
+  const templates =
+    input.planningMode === "provisional"
+      ? PROVISIONAL_PLAN_TEMPLATES
+      : DEFAULT_PLAN_TEMPLATES;
   const chosenSkill = (hint: string) =>
     input.availableSkills.find((skill) =>
       skill.toLowerCase().includes(hint.toLowerCase()),
@@ -199,7 +262,7 @@ function buildFallbackTaskPlan(input: GenerateTaskPlanInput): AITaskPlanOutput {
     "General Engineering";
 
   return {
-    tasks: DEFAULT_PLAN_TEMPLATES.map((template, index) => {
+    tasks: templates.map((template, index) => {
       const tempId = `T${index + 1}`;
       const dependency = index === 0 ? [] : [`T${index}`];
 
@@ -254,6 +317,7 @@ async function callOpenAITaskPlan(
     .join("\n\n");
   const model = resolveOpenAIModelForOperation(env, "task_plan");
   const systemPrompt = getTaskPlanSystemPrompt();
+  const planningMode = input.planningMode ?? "standard";
 
   logTaskPlanSchemaOnce();
 
@@ -281,6 +345,8 @@ async function callOpenAITaskPlan(
               deadline: input.projectDeadline,
               contextText,
               availableSkills: input.availableSkills,
+              planningMode,
+              clarification: input.clarification,
             }),
           },
         ],
@@ -373,6 +439,7 @@ export async function generateTaskPlan(
   input: GenerateTaskPlanInput,
   options: { strictMode?: boolean } = {},
 ): Promise<GenerateTaskPlanResult> {
+  const planningMode = input.planningMode ?? "standard";
   const strictMode = options.strictMode ?? false;
   const modelPlan = await callOpenAITaskPlan(input);
   if (modelPlan.ok) {
@@ -382,6 +449,7 @@ export async function generateTaskPlan(
         mode: "openai",
         reason: null,
         strictMode,
+        planningMode,
       },
     };
   }
@@ -411,6 +479,7 @@ export async function generateTaskPlan(
       mode: "fallback",
       reason: modelPlan.reason,
       strictMode,
+      planningMode,
       diagnostics: modelPlan.diagnostics,
     },
   };

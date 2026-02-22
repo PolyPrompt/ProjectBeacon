@@ -45,6 +45,7 @@ type GenerationMetadata = {
   mode: "openai" | "fallback";
   reason: string | null;
   strictMode: boolean;
+  planningMode: "standard" | "provisional";
   diagnostics?: {
     message?: string;
     status?: number;
@@ -557,22 +558,25 @@ export default function PlanningWorkspace({
       return;
     }
 
-    const readyForGeneration = options?.allowLowConfidenceProceed
-      ? true
-      : workspaceState.clarification.readyForGeneration;
-    const canGenerateNow = computeCanGenerate({
-      hasMinimumInput: workspaceState.hasMinimumInput,
-      planningStatus,
-      readyForGeneration,
-    });
-
-    if (!canGenerateNow) {
+    if (planningStatus !== "draft") {
       setActionError(
-        "Inputs are ready. Complete clarification until confidence reaches the target, then start AI breakdown.",
+        "AI draft generation is only available while planning status is draft.",
       );
       setActionStatus(null);
       return;
     }
+
+    if (!workspaceState.hasMinimumInput) {
+      setActionError(
+        "Upload at least one file or save pasted specs before generating tasks.",
+      );
+      setActionStatus(null);
+      return;
+    }
+
+    const useProvisionalPlanning =
+      options?.allowLowConfidenceProceed === true ||
+      !workspaceState.clarification.readyForGeneration;
 
     setIsGenerating(true);
     setActionError(null);
@@ -587,6 +591,9 @@ export default function PlanningWorkspace({
           headers: {
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({
+            allowLowConfidenceProceed: useProvisionalPlanning,
+          }),
         },
       );
 
@@ -600,6 +607,7 @@ export default function PlanningWorkspace({
           mode?: "openai" | "fallback";
           reason?: string | null;
           strictMode?: boolean;
+          planningMode?: "standard" | "provisional";
         };
         tasks?: Array<{ id: string }>;
       };
@@ -617,6 +625,10 @@ export default function PlanningWorkspace({
         payload.generation?.mode === "fallback"
           ? payload.generation.mode
           : null;
+      const planningMode =
+        payload.generation?.planningMode === "provisional"
+          ? "provisional"
+          : "standard";
 
       if (mode) {
         setGenerationMetadata({
@@ -626,6 +638,7 @@ export default function PlanningWorkspace({
               ? payload.generation.reason
               : null,
           strictMode: payload.generation?.strictMode === true,
+          planningMode,
           diagnostics: payload.generation?.diagnostics,
         });
       } else {
@@ -639,13 +652,25 @@ export default function PlanningWorkspace({
           typeof payload.generation?.reason === "string"
             ? payload.generation.reason
             : "unknown";
-        setActionStatus(
-          `Generated ${generatedCount} draft tasks using fallback mode (${reason}).`,
-        );
+        if (planningMode === "provisional") {
+          setActionStatus(
+            `Generated ${generatedCount} provisional draft tasks using fallback mode (${reason}). Recompute confidence and rerun after adding clearer requirements.`,
+          );
+        } else {
+          setActionStatus(
+            `Generated ${generatedCount} draft tasks using fallback mode (${reason}).`,
+          );
+        }
       } else if (mode === "openai") {
-        setActionStatus(
-          `Generated ${generatedCount} draft tasks using OpenAI.`,
-        );
+        if (planningMode === "provisional") {
+          setActionStatus(
+            `Generated ${generatedCount} provisional draft tasks using OpenAI. Includes discovery and re-planning tasks for vague areas.`,
+          );
+        } else {
+          setActionStatus(
+            `Generated ${generatedCount} draft tasks using OpenAI.`,
+          );
+        }
       } else {
         setActionStatus(`Generated ${generatedCount} draft tasks.`);
       }
@@ -765,7 +790,10 @@ export default function PlanningWorkspace({
     clarificationState: ClarificationState,
   ) {
     handleClarificationState(clarificationState);
-    await runGenerate({ allowLowConfidenceProceed: true });
+    await runGenerate({
+      allowLowConfidenceProceed:
+        clarificationState.confidence < clarificationState.threshold,
+    });
     reviewSectionRef.current?.scrollIntoView({
       behavior: "smooth",
       block: "start",
@@ -834,7 +862,7 @@ export default function PlanningWorkspace({
       return "Upload at least one file or save pasted specs to unlock AI actions.";
     }
     if (!workspaceState.canGenerate) {
-      return "Input is ready. Clarification confidence still needs to reach the generation threshold.";
+      return "Input is ready. You can generate a provisional draft now, then recompute confidence after refining requirements.";
     }
     return "Ready to run AI planning from the uploaded inputs.";
   }, [
@@ -944,6 +972,7 @@ export default function PlanningWorkspace({
           Clarification Checkpoint
         </h3>
         <ClarificationPanel
+          autoProceedWhenTerminal
           disabled={
             planningStatus !== "draft" ||
             isGenerating ||
@@ -991,12 +1020,15 @@ export default function PlanningWorkspace({
         <p className="text-sm text-slate-400">
           {taskCount > 0
             ? `${taskCount} tasks currently loaded in the generated draft set.`
-            : "No generated tasks yet. Start with AI breakdown once ready."}
+            : "No generated tasks yet. Start AI breakdown to generate standard or provisional tasks."}
         </p>
         {generationMetadata ? (
           <p className="rounded-lg border border-slate-700 bg-[#11121a] px-3 py-2 text-xs text-slate-300">
             Mode:{" "}
             <span className="font-semibold">{generationMetadata.mode}</span>
+            {generationMetadata.planningMode === "provisional" ? (
+              <> · Plan: provisional</>
+            ) : null}
             {generationMetadata.mode === "fallback" &&
             generationMetadata.reason ? (
               <> · Reason: {generationMetadata.reason}</>
