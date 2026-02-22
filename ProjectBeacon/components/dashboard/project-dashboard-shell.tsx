@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import { MyTasksPanel } from "@/components/dashboard/my-tasks-panel";
 import { TaskDetailModal } from "@/components/dashboard/task-detail-modal";
 import { TeamStatusOverview } from "@/components/dashboard/team-status-overview";
+import { isProjectComplete } from "@/lib/projects/completion";
 import type { MyTaskDTO, TaskStatus } from "@/types/dashboard";
 
 export type DashboardProject = {
@@ -132,6 +134,7 @@ export function ProjectDashboardShell({
   tasks: initialTasks,
   viewerUserId,
 }: ProjectDashboardShellProps) {
+  const router = useRouter();
   const [tasks, setTasks] = useState<DashboardTask[]>(initialTasks);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
@@ -218,6 +221,19 @@ export function ProjectDashboardShell({
       }),
     [tasks],
   );
+
+  const projectIsComplete = useMemo(
+    () => isProjectComplete(tasks.map((task) => task.status)),
+    [tasks],
+  );
+
+  useEffect(() => {
+    if (!projectIsComplete) {
+      return;
+    }
+
+    router.replace(`/projects/${projectId}/complete`);
+  }, [projectId, projectIsComplete, router]);
 
   return (
     <section className="space-y-6 rounded-3xl border border-violet-950/70 bg-gradient-to-b from-[#150f26] via-[#121127] to-[#160f28] p-5 text-slate-100 shadow-[0_24px_80px_rgba(8,6,18,0.65)] sm:p-6">

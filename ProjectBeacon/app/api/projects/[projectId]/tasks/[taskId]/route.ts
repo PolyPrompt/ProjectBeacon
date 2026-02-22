@@ -56,7 +56,7 @@ const allowedTransitions: Record<TaskStatus, TaskStatus[]> = {
   todo: ["in_progress", "blocked", "done"],
   in_progress: ["blocked", "done"],
   blocked: ["in_progress", "done"],
-  done: [],
+  done: ["todo", "in_progress", "blocked"],
 };
 
 function canTransitionTaskStatus(from: TaskStatus, to: TaskStatus): boolean {
