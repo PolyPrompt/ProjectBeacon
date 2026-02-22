@@ -17,8 +17,15 @@ export default async function NewProjectPage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-73px)] bg-slate-50">
-      <ProjectForm />
-    </main>
+    <>
+      <style>{`
+        body:has(main[data-page="projects-new"]) > header {
+          display: none;
+        }
+      `}</style>
+      <main data-page="projects-new" className="min-h-screen">
+        <ProjectForm />
+      </main>
+    </>
   );
 }

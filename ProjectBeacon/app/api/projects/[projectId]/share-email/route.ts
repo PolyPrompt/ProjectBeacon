@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { handleRouteError, jsonError } from "@/lib/api/errors";
+import { ApiHttpError, handleRouteError, jsonError } from "@/lib/api/errors";
 import { sendProjectShareEmail } from "@/lib/email/send-project-share";
 import { requireUser } from "@/lib/auth/require-user";
 import { requireProjectMember } from "@/lib/projects/membership";
@@ -12,7 +12,8 @@ const paramsSchema = z.object({
 
 const requestSchema = z.object({
   emails: z.array(z.string().trim().min(1)).min(1),
-  joinUrl: z.string().url(),
+  joinUrl: z.string().url().optional(),
+  projectUrl: z.string().url().optional(),
 });
 
 const emailSchema = z.email();
@@ -28,6 +29,15 @@ export async function POST(
     await requireProjectMember(params.projectId, user.userId);
 
     const payload = requestSchema.parse(await request.json());
+    const inviteUrl = payload.projectUrl ?? payload.joinUrl;
+
+    if (!inviteUrl) {
+      return jsonError(
+        400,
+        "VALIDATION_ERROR",
+        "projectUrl or joinUrl is required",
+      );
+    }
 
     if (payload.emails.length > 20) {
       return jsonError(
@@ -49,13 +59,18 @@ export async function POST(
       try {
         const result = await sendProjectShareEmail({
           to: email,
-          joinUrl: payload.joinUrl,
+          projectUrl: inviteUrl,
           projectId: params.projectId,
         });
 
         sent.push(result);
       } catch (error) {
-        const reason = error instanceof Error ? error.message : "Unknown error";
+        const reason =
+          error instanceof ApiHttpError
+            ? `${error.message}${typeof error.details === "string" ? `: ${error.details}` : ""}`
+            : error instanceof Error
+              ? error.message
+              : "Unknown error";
         failed.push({ email, reason });
       }
     }
