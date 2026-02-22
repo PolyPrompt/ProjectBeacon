@@ -293,6 +293,8 @@ export type Database = {
           mime_type: string;
           size_bytes: number;
           uploaded_by_user_id: string;
+          is_public: boolean;
+          used_for_planning: boolean;
           created_at: string;
         };
         Insert: {
@@ -303,6 +305,8 @@ export type Database = {
           mime_type: string;
           size_bytes: number;
           uploaded_by_user_id: string;
+          is_public?: boolean;
+          used_for_planning?: boolean;
           created_at?: string;
         };
         Update: {
@@ -313,6 +317,31 @@ export type Database = {
           mime_type?: string;
           size_bytes?: number;
           uploaded_by_user_id?: string;
+          is_public?: boolean;
+          used_for_planning?: boolean;
+          created_at?: string;
+        };
+      };
+      project_document_access: {
+        Row: {
+          id: string;
+          document_id: string;
+          user_id: string;
+          assigned_by_user_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          document_id: string;
+          user_id: string;
+          assigned_by_user_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          document_id?: string;
+          user_id?: string;
+          assigned_by_user_id?: string;
           created_at?: string;
         };
       };
