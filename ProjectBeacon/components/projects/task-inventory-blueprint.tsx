@@ -316,6 +316,25 @@ export default function TaskInventoryBlueprint({
     setDraftTasks((previous) => previous.filter((task) => task.id !== taskId));
   }
 
+  function clearAllDraftTasks(): void {
+    if (draftTasks.length === 0) {
+      return;
+    }
+
+    const confirmed =
+      typeof window === "undefined" ||
+      window.confirm(
+        "Clear all draft tasks? This only affects the current edit session until saved.",
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDraftTasks([]);
+    setStatusMessage("Cleared all draft tasks in this edit session.");
+  }
+
   function updateDraftTask(
     taskId: string,
     patch: Partial<Pick<InventoryTask, "categories" | "priority" | "title">>,
@@ -415,6 +434,16 @@ export default function TaskInventoryBlueprint({
               onClick={exitEditMode}
             >
               Exit Edit Mode
+            </button>
+          ) : null}
+          {mode === "edit" ? (
+            <button
+              type="button"
+              className="rounded-xl border border-red-500/50 px-4 py-2 text-sm font-semibold text-red-200 transition hover:border-red-400 hover:text-red-100 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500"
+              onClick={clearAllDraftTasks}
+              disabled={draftTasks.length === 0}
+            >
+              Clear All Tasks
             </button>
           ) : null}
           <button
