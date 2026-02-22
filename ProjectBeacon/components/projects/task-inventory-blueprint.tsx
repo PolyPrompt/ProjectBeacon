@@ -122,10 +122,6 @@ function cloneTasks(tasks: InventoryTask[]): InventoryTask[] {
 }
 
 function validateTasks(tasks: InventoryTask[]): string[] {
-  if (tasks.length === 0) {
-    return ["At least one task is required before delegation."];
-  }
-
   return tasks.flatMap((task) => {
     const errors: string[] = [];
 
@@ -173,6 +169,24 @@ function exportTasks(tasks: InventoryTask[], projectId: string): void {
   anchor.remove();
 
   URL.revokeObjectURL(url);
+}
+
+function resolveMessage(payload: unknown, fallback: string): string {
+  if (!payload || typeof payload !== "object") {
+    return fallback;
+  }
+
+  const candidate = payload as {
+    error?: {
+      message?: string;
+    };
+  };
+
+  if (typeof candidate.error?.message === "string") {
+    return candidate.error.message;
+  }
+
+  return fallback;
 }
 
 export default function TaskInventoryBlueprint({
@@ -267,6 +281,7 @@ export default function TaskInventoryBlueprint({
     mode === "review" &&
     !isLoading &&
     !isProceeding &&
+    committedTasks.length > 0 &&
     committedErrors.length === 0 &&
     planningStatus !== "assigned";
 
@@ -362,24 +377,80 @@ export default function TaskInventoryBlueprint({
     updateDraftTask(taskId, { categories: nextCategories });
   }
 
-  function saveChanges(): void {
+  async function saveChanges(): Promise<void> {
     if (!canSave) {
       return;
     }
 
     setIsSaving(true);
     setError(null);
+    setStatusMessage(null);
 
     const normalized = draftTasks.map((task) => ({
       ...task,
       title: task.title.trim(),
     }));
 
-    setCommittedTasks(normalized);
-    setDraftTasks(cloneTasks(normalized));
-    setMode("review");
-    setStatusMessage("Saved local blueprint edits.");
-    setIsSaving(false);
+    try {
+      const response = await fetch(`/api/projects/${projectId}/tasks/sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tasks: normalized.map((task) => ({
+            id: task.sourceTaskId ?? undefined,
+            priority: task.priority,
+            title: task.title,
+          })),
+        }),
+      });
+
+      const payload = (await response.json()) as {
+        error?: { message?: string };
+        syncedTasks?: Array<{ id: string }>;
+        taskCount?: number;
+      };
+
+      if (!response.ok) {
+        throw new Error(resolveMessage(payload, "Failed to save blueprint."));
+      }
+
+      const syncedTasks = Array.isArray(payload.syncedTasks)
+        ? payload.syncedTasks
+        : [];
+
+      const persistedTasks = normalized.map((task, index) => {
+        const syncedTask = syncedTasks[index];
+        if (!syncedTask?.id) {
+          return task;
+        }
+
+        return {
+          ...task,
+          id: syncedTask.id,
+          sourceTaskId: syncedTask.id,
+        };
+      });
+
+      setCommittedTasks(persistedTasks);
+      setDraftTasks(cloneTasks(persistedTasks));
+      setMode("review");
+      onTaskCountChange?.(
+        typeof payload.taskCount === "number"
+          ? payload.taskCount
+          : persistedTasks.length,
+      );
+      setStatusMessage("Blueprint edits saved.");
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Failed to save blueprint.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   async function proceed(): Promise<void> {
@@ -627,7 +698,15 @@ export default function TaskInventoryBlueprint({
         </p>
       ) : null}
 
-      {mode === "review" && committedErrors.length > 0 ? (
+      {mode === "review" && committedTasks.length === 0 ? (
+        <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+          Delegation is blocked until at least one task exists.
+        </p>
+      ) : null}
+
+      {mode === "review" &&
+      committedTasks.length > 0 &&
+      committedErrors.length > 0 ? (
         <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
           Delegation is blocked until validation passes: {committedErrors[0]}
         </p>
@@ -665,7 +744,9 @@ export default function TaskInventoryBlueprint({
               <button
                 type="button"
                 className="flex-1 rounded-xl bg-violet-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:bg-slate-700 sm:flex-none"
-                onClick={saveChanges}
+                onClick={() => {
+                  void saveChanges();
+                }}
                 disabled={!canSave}
               >
                 {isSaving ? "Saving..." : "Save Changes"}

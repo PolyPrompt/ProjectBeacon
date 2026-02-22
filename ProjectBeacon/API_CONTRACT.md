@@ -542,7 +542,7 @@ Response `200`:
 
 ## `POST /api/projects/:projectId/ai/generate-tasks`
 
-Behavior: generates draft task graph only; leaves assignees null.
+Behavior: replaces the current draft task graph for the project; leaves assignees null.
 
 Config flag:
 
@@ -826,6 +826,7 @@ Error semantics:
 - `404` when project/task is not found in project scope.
 - `409` for invalid status transition (for example `done -> todo`).
 - `422` for invalid request payload.
+- `assigneeUserId` updates require `admin` role.
 
 ## `GET /api/projects/:projectId/workflow/timeline/:taskId`
 
