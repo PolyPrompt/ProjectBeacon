@@ -783,3 +783,20 @@
   - `PB-045` (`#96`) marked blocked with explicit dependency on `#71`.
 - Stop reason:
   - No actionable `agent1` issues remain in `status:ready`.
+
+## 2026-02-22T06:12:00Z - PB-039 Milestone (Agent3)
+
+- Issue: `#89` `[PB-039] Redesign timeline dependency view to micro-goal milestone format`.
+- Completed:
+  - Rebuilt timeline UI into a micro-goal milestone layout with a vertical day rail and status-rich cards.
+  - Added distinct visual states: `Completed`, `Support Signal`, `Predicted Shift`, and `Upcoming`.
+  - Added dependency-impact hint card (`+Nh downstream delay`) for blocked tasks with dependents.
+  - Added header countdown context and task-selection affordance while keeping `Timeline <-> Board` route switching.
+  - Kept API contract unchanged and preserved fallback rendering on missing/failed timeline metadata.
+- Verification:
+  - `npm run format:check` -> pass
+  - `npm run lint` -> pass
+  - `npm run build` -> pass
+  - Playwright smoke verification via MCP -> blocked in this environment due persistent Chrome profile launch conflict (`Opening in existing browser session` on launch).
+- Files changed:
+  - `components/workflow/timeline-page.tsx`
