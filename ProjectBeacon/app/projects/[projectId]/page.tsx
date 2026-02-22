@@ -1,44 +1,52 @@
 import { notFound } from "next/navigation";
 
-import { DependencyPreview } from "@/components/dashboard/dependency-preview";
-import { ProjectMembersList } from "@/components/dashboard/project-members-list";
-import { ProjectSummaryCard } from "@/components/dashboard/project-summary-card";
-import { ProjectTaskList } from "@/components/dashboard/project-task-list";
-import PlanningWorkspace from "@/components/projects/planning-workspace";
-import { requireSessionUser } from "@/lib/auth/session";
+import {
+  ProjectDashboardShell,
+  type DashboardMember,
+  type DashboardProject,
+  type DashboardTask,
+} from "@/components/dashboard/project-dashboard-shell";
+import { requireSessionUser, type ProjectRole } from "@/lib/auth/session";
 import { getServiceSupabaseClient } from "@/lib/supabase/server";
+import type { TaskStatus } from "@/types/dashboard";
 
 type ProjectDashboardPageProps = {
   params: Promise<{ projectId: string }>;
 };
 
-type ProjectDashboardViewModel = {
-  project: {
-    id: string;
-    name: string;
-    description: string;
-    deadline: string;
-    planningStatus: "draft" | "locked" | "assigned";
-  };
-  members: Array<{
-    userId: string;
-    name: string;
-    email: string;
-    role: "owner" | "member";
-  }>;
-  tasks: Array<{
-    id: string;
-    title: string;
-    status: string;
-    assigneeUserId: string | null;
-    difficultyPoints: 1 | 2 | 3 | 5 | 8;
-  }>;
-  dependencyEdges: Array<{ taskId: string; dependsOnTaskId: string }>;
+type ProjectRow = {
+  id: string;
+  name: string;
+  description: string;
+  deadline: string | null;
+  planning_status: string;
+};
+
+type MemberRow = {
+  user_id: string;
+  role: string;
+};
+
+type TaskRow = {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  due_at: string | null;
+  difficulty_points: number | null;
+  assignee_user_id: string | null;
+  created_at: string | null;
+};
+
+type UserRow = {
+  id: string;
+  name: string | null;
+  email: string;
 };
 
 function normalizePlanningStatus(
   value: string,
-): "draft" | "locked" | "assigned" {
+): DashboardProject["planningStatus"] {
   if (value === "locked") {
     return "locked";
   }
@@ -55,17 +63,35 @@ function normalizeDifficultyPoints(value: number | null): 1 | 2 | 3 | 5 | 8 {
   return 3;
 }
 
-function normalizeMemberRole(value: string): "owner" | "member" {
+function normalizeMemberRole(value: string): DashboardMember["role"] {
   if (value === "owner" || value === "admin") {
     return "owner";
   }
   return "member";
 }
 
-async function getProjectDashboardViewModel(
+function normalizeTaskStatus(value: string): TaskStatus {
+  if (
+    value === "todo" ||
+    value === "in_progress" ||
+    value === "blocked" ||
+    value === "done"
+  ) {
+    return value;
+  }
+
+  return "todo";
+}
+
+async function getProjectDashboardData(
   projectId: string,
   userId: string,
-): Promise<ProjectDashboardViewModel | null> {
+): Promise<{
+  project: DashboardProject;
+  members: DashboardMember[];
+  tasks: DashboardTask[];
+  role: ProjectRole;
+} | null> {
   const supabase = getServiceSupabaseClient();
 
   const { data: membership, error: membershipError } = await supabase
@@ -79,61 +105,53 @@ async function getProjectDashboardViewModel(
     return null;
   }
 
-  const [
-    projectResponse,
-    membersResponse,
-    tasksResponse,
-    dependenciesResponse,
-  ] = await Promise.all([
+  const [projectResponse, membersResponse, tasksResponse] = await Promise.all([
     supabase
       .from("projects")
       .select("id,name,description,deadline,planning_status")
       .eq("id", projectId)
-      .maybeSingle(),
+      .maybeSingle<ProjectRow>(),
     supabase
       .from("project_members")
       .select("user_id,role")
-      .eq("project_id", projectId),
+      .eq("project_id", projectId)
+      .returns<MemberRow[]>(),
     supabase
       .from("tasks")
-      .select("id,title,status,assignee_user_id,difficulty_points")
-      .eq("project_id", projectId),
-    supabase
-      .from("task_dependencies")
-      .select("task_id,depends_on_task_id")
-      .eq("project_id", projectId),
+      .select(
+        "id,title,description,status,due_at,difficulty_points,assignee_user_id,created_at",
+      )
+      .eq("project_id", projectId)
+      .returns<TaskRow[]>(),
   ]);
 
-  if (projectResponse.error || !projectResponse.data) {
-    return null;
-  }
-
   if (
+    projectResponse.error ||
+    !projectResponse.data ||
     membersResponse.error ||
-    tasksResponse.error ||
-    dependenciesResponse.error
+    tasksResponse.error
   ) {
     return null;
   }
 
-  const memberRows = membersResponse.data ?? [];
-  const memberUserIds = memberRows.map((member) => member.user_id);
+  const members = membersResponse.data ?? [];
 
   const { data: users, error: usersError } = await supabase
     .from("users")
     .select("id,name,email")
     .in(
       "id",
-      memberUserIds.length > 0
-        ? memberUserIds
+      members.length > 0
+        ? members.map((member) => member.user_id)
         : ["00000000-0000-0000-0000-000000000000"],
-    );
+    )
+    .returns<UserRow[]>();
 
   if (usersError) {
     return null;
   }
 
-  const usersById = new Map((users ?? []).map((item) => [item.id, item]));
+  const usersById = new Map((users ?? []).map((entry) => [entry.id, entry]));
 
   return {
     project: {
@@ -145,27 +163,30 @@ async function getProjectDashboardViewModel(
         projectResponse.data.planning_status,
       ),
     },
-    members: memberRows.map((member) => {
+    members: members.map((member) => {
       const profile = usersById.get(member.user_id);
 
       return {
         userId: member.user_id,
-        name: profile?.name ?? profile?.email ?? "Unknown member",
-        email: profile?.email ?? "",
+        name: profile?.name?.trim() || profile?.email || "Unknown member",
+        email: profile?.email || "",
         role: normalizeMemberRole(member.role),
       };
     }),
     tasks: (tasksResponse.data ?? []).map((task) => ({
       id: task.id,
       title: task.title,
-      status: task.status,
-      assigneeUserId: task.assignee_user_id,
+      description: task.description ?? "",
+      status: normalizeTaskStatus(task.status),
+      softDeadline: task.due_at,
       difficultyPoints: normalizeDifficultyPoints(task.difficulty_points),
+      assigneeUserId: task.assignee_user_id,
+      createdAt: task.created_at,
     })),
-    dependencyEdges: (dependenciesResponse.data ?? []).map((edge) => ({
-      taskId: edge.task_id,
-      dependsOnTaskId: edge.depends_on_task_id,
-    })),
+    role:
+      membership.role === "owner" || membership.role === "admin"
+        ? "admin"
+        : "user",
   };
 }
 
@@ -177,33 +198,23 @@ export default async function ProjectDashboardPage({
     projectId,
   });
 
-  const dashboardViewModel = await getProjectDashboardViewModel(
+  const dashboardData = await getProjectDashboardData(
     projectId,
     sessionUser.userId,
   );
 
-  if (!dashboardViewModel) {
+  if (!dashboardData) {
     notFound();
   }
 
   return (
-    <section className="space-y-5">
-      <ProjectSummaryCard
-        project={dashboardViewModel.project}
-        projectId={dashboardViewModel.project.id}
-      />
-      <div className="grid gap-5 lg:grid-cols-2">
-        <ProjectMembersList members={dashboardViewModel.members} />
-        <ProjectTaskList
-          members={dashboardViewModel.members}
-          tasks={dashboardViewModel.tasks}
-        />
-      </div>
-      <DependencyPreview
-        dependencyEdges={dashboardViewModel.dependencyEdges}
-        tasks={dashboardViewModel.tasks}
-      />
-      <PlanningWorkspace projectId={projectId} />
-    </section>
+    <ProjectDashboardShell
+      members={dashboardData.members}
+      project={dashboardData.project}
+      projectId={projectId}
+      tasks={dashboardData.tasks}
+      viewerRole={dashboardData.role}
+      viewerUserId={sessionUser.userId}
+    />
   );
 }

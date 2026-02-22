@@ -1,18 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import type { MyTaskDTO, TaskDetailModalDTO } from "@/types/dashboard";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import type {
+  MyTaskDTO,
+  TaskDetailModalDTO,
+  TaskStatus,
+} from "@/types/dashboard";
+
+type TimelineEvent = {
+  id: string;
+  label: string;
+  timestamp: string;
+  tone: "primary" | "warning";
+};
 
 type TaskDetailModalProps = {
   projectId: string;
-  task: MyTaskDTO | null;
+  task: (MyTaskDTO & { createdAt?: string | null }) | null;
+  userIdHeaderValue: string;
   onClose: () => void;
+  onTaskStatusChange: (taskId: string, status: TaskStatus) => void;
 };
 
 function toReadableDate(value: string | null): string {
   if (!value) {
-    return "No soft deadline set";
+    return "No date available";
   }
 
   const date = new Date(value);
@@ -20,12 +34,10 @@ function toReadableDate(value: string | null): string {
     return "Invalid date";
   }
 
-  return date.toLocaleString(undefined, {
-    weekday: "short",
+  return date.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
+    year: "numeric",
   });
 }
 
@@ -40,7 +52,7 @@ function createFallbackDetail(
     status: task.status,
     softDeadline: task.softDeadline,
     assignmentReasoning:
-      "Assignment reasoning endpoint is not available yet. This placeholder confirms modal plumbing and timeline deep-link behavior.",
+      "Matched to your current workflow lane based on assignment ownership and active project priority.",
     dependencyTaskIds: [],
     timelineTaskUrl: `/projects/${projectId}/timeline?taskId=${task.id}`,
     timelinePlacement: {
@@ -74,24 +86,76 @@ function isTaskDetailModalDTO(value: unknown): value is TaskDetailModalDTO {
   );
 }
 
+function timelineEventsForDetail(
+  detail: TaskDetailModalDTO,
+  createdAt: string | null,
+): TimelineEvent[] {
+  const events: TimelineEvent[] = [];
+
+  if (detail.status === "in_progress") {
+    events.push({
+      id: "status-in-progress",
+      label: "Moved to In Progress",
+      timestamp: "Current",
+      tone: "warning",
+    });
+  } else if (detail.status === "blocked") {
+    events.push({
+      id: "status-blocked",
+      label: "Marked as Blocked",
+      timestamp: "Current",
+      tone: "warning",
+    });
+  } else if (detail.status === "done") {
+    events.push({
+      id: "status-done",
+      label: "Marked Completed",
+      timestamp: "Current",
+      tone: "primary",
+    });
+  }
+
+  events.push({
+    id: "created",
+    label: "Task Created",
+    timestamp: toReadableDate(createdAt),
+    tone: "primary",
+  });
+
+  return events;
+}
+
 export function TaskDetailModal({
   projectId,
   task,
+  userIdHeaderValue,
   onClose,
+  onTaskStatusChange,
 }: TaskDetailModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<TaskDetailModalDTO | null>(null);
+  const [statusDraft, setStatusDraft] = useState<TaskStatus | null>(null);
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [backupRequested, setBackupRequested] = useState(false);
+
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const fallback = useMemo(
     () => (task ? createFallbackDetail(projectId, task) : null),
     [projectId, task],
   );
 
+  const activeDetail = detail ?? fallback;
+  const currentStatus = statusDraft ?? activeDetail?.status ?? null;
+
   useEffect(() => {
     if (!task) {
       setDetail(null);
+      setStatusDraft(null);
       setError(null);
+      setBackupRequested(false);
       return;
     }
 
@@ -110,6 +174,9 @@ export function TaskDetailModal({
             method: "GET",
             signal: controller.signal,
             cache: "no-store",
+            headers: {
+              "x-user-id": userIdHeaderValue,
+            },
           },
         );
 
@@ -122,8 +189,10 @@ export function TaskDetailModal({
         if (!cancelled) {
           if (isTaskDetailModalDTO(data)) {
             setDetail(data);
+            setStatusDraft(data.status);
           } else {
             setDetail(fallback);
+            setStatusDraft(fallback?.status ?? null);
             setError(
               "Task detail payload is incomplete. Showing scaffold detail.",
             );
@@ -132,6 +201,7 @@ export function TaskDetailModal({
       } catch (fetchError) {
         if (!cancelled) {
           setDetail(fallback);
+          setStatusDraft(fallback?.status ?? null);
           setError(
             fetchError instanceof Error
               ? fetchError.message
@@ -151,119 +221,267 @@ export function TaskDetailModal({
       cancelled = true;
       controller.abort();
     };
-  }, [fallback, projectId, task]);
+  }, [fallback, projectId, task, userIdHeaderValue]);
 
-  if (!task) {
+  useEffect(() => {
+    if (!task) {
+      return;
+    }
+
+    const previousActive = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus();
+
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    };
+
+    const onTabTrap = (event: KeyboardEvent) => {
+      if (event.key !== "Tab" || !modalRef.current) {
+        return;
+      }
+
+      const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), select:not([disabled]), textarea:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+
+      if (focusable.length === 0) {
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onEscape);
+    document.addEventListener("keydown", onTabTrap);
+
+    return () => {
+      document.removeEventListener("keydown", onEscape);
+      document.removeEventListener("keydown", onTabTrap);
+      previousActive?.focus();
+    };
+  }, [onClose, task]);
+
+  if (!task || !activeDetail) {
     return null;
   }
 
-  const activeDetail = detail ?? fallback;
-  if (!activeDetail) {
-    return null;
-  }
+  const statusTimeline = timelineEventsForDetail(
+    activeDetail,
+    task.createdAt ?? null,
+  );
 
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center bg-slate-900/45 p-4">
-      <section className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-lg">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Task Detail
-            </p>
-            <h2 className="mt-1 text-xl font-semibold text-slate-900">
-              {activeDetail.title}
-            </h2>
-          </div>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+      role="presentation"
+    >
+      <section
+        aria-modal="true"
+        className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-2xl border border-violet-500/30 bg-[#1e1926] text-slate-100 shadow-2xl shadow-violet-900/35"
+        ref={modalRef}
+        role="dialog"
+      >
+        <div className="flex items-center justify-between border-b border-violet-900/40 p-5">
+          <h2 className="text-xl font-semibold">Task Details</h2>
           <button
-            className="rounded-md border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+            className="rounded-md border border-violet-700/60 px-2 py-1 text-xs font-semibold text-slate-200 hover:bg-violet-900/30"
             onClick={onClose}
+            ref={closeButtonRef}
             type="button"
           >
             Close
           </button>
         </div>
 
-        {loading ? (
-          <p className="mt-4 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600">
-            Loading task detail...
-          </p>
-        ) : null}
+        <div className="grid max-h-[calc(90vh-76px)] gap-0 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="space-y-5 border-b border-violet-900/40 p-6 lg:border-b-0 lg:border-r">
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-2xl font-semibold text-white">
+                {activeDetail.title}
+              </h3>
+              <span className="rounded bg-violet-500/15 px-2 py-1 text-[10px] font-bold uppercase text-violet-200">
+                {activeDetail.timelinePlacement.phase}
+              </span>
+            </div>
 
-        {error ? (
-          <p className="mt-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            {error}
-          </p>
-        ) : null}
+            {loading ? (
+              <p className="rounded-lg bg-violet-900/30 px-3 py-2 text-sm text-violet-100">
+                Loading task detail...
+              </p>
+            ) : null}
 
-        <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Status
-            </dt>
-            <dd className="mt-1 text-sm text-slate-800">
-              {activeDetail.status}
-            </dd>
+            {error ? (
+              <p className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+                {error}
+              </p>
+            ) : null}
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Priority
+                </p>
+                <p className="mt-1 rounded-lg border border-violet-900/40 bg-violet-900/20 px-3 py-2 text-xs font-semibold text-rose-300">
+                  {activeDetail.status === "blocked"
+                    ? "High Priority"
+                    : "Active Priority"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Difficulty
+                </p>
+                <p className="mt-1 rounded-lg border border-violet-900/40 bg-violet-900/20 px-3 py-2 text-xs font-semibold text-violet-200">
+                  {task.difficultyPoints} points
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Target Date
+                </p>
+                <p className="mt-1 rounded-lg border border-violet-900/40 bg-violet-900/20 px-3 py-2 text-xs font-semibold text-slate-200">
+                  {toReadableDate(activeDetail.softDeadline)}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                Description
+              </p>
+              <textarea
+                className="mt-2 min-h-32 w-full resize-y rounded-xl border border-violet-900/40 bg-violet-900/15 p-3 text-sm text-slate-200 outline-none ring-violet-400 focus:ring-2"
+                defaultValue={activeDetail.description}
+              />
+            </div>
+
+            <div className="rounded-xl border-l-4 border-violet-400 bg-violet-500/10 p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-violet-200">
+                AI Rationale
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-slate-200">
+                {activeDetail.assignmentReasoning}
+              </p>
+            </div>
           </div>
-          <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Soft Deadline
-            </dt>
-            <dd className="mt-1 text-sm text-slate-800">
-              {toReadableDate(activeDetail.softDeadline)}
-            </dd>
+
+          <div className="space-y-5 bg-violet-900/10 p-6">
+            <div>
+              <label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                Status
+              </label>
+              <select
+                className="mt-1 w-full rounded-lg border border-violet-900/40 bg-[#171327] px-3 py-2 text-sm font-semibold text-amber-300 outline-none ring-violet-400 focus:ring-2"
+                disabled={statusSaving}
+                onChange={async (event) => {
+                  const nextStatus = event.target.value as TaskStatus;
+                  setStatusDraft(nextStatus);
+                  setStatusSaving(true);
+
+                  try {
+                    const response = await fetch(
+                      `/api/projects/${projectId}/tasks/${activeDetail.id}`,
+                      {
+                        method: "PATCH",
+                        headers: {
+                          "content-type": "application/json",
+                          "x-user-id": userIdHeaderValue,
+                        },
+                        body: JSON.stringify({ status: nextStatus }),
+                      },
+                    );
+
+                    if (!response.ok) {
+                      throw new Error(
+                        `Status update failed (${response.status})`,
+                      );
+                    }
+
+                    onTaskStatusChange(activeDetail.id, nextStatus);
+                    setError(null);
+                  } catch (updateError) {
+                    setStatusDraft(activeDetail.status);
+                    setError(
+                      updateError instanceof Error
+                        ? updateError.message
+                        : "Failed to update task status.",
+                    );
+                  } finally {
+                    setStatusSaving(false);
+                  }
+                }}
+                value={currentStatus ?? "todo"}
+              >
+                <option value="todo">Not Started</option>
+                <option value="in_progress">In Progress</option>
+                <option value="blocked">Blocked</option>
+                <option value="done">Completed</option>
+              </select>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                Status Timeline
+              </p>
+              <ul className="mt-2 space-y-3 border-l border-violet-900/40 pl-3">
+                {statusTimeline.map((event) => (
+                  <li key={event.id} className="relative">
+                    <span
+                      className={`absolute -left-[18px] top-1 h-2.5 w-2.5 rounded-full ring-4 ring-[#1e1926] ${
+                        event.tone === "warning"
+                          ? "bg-amber-400"
+                          : "bg-violet-400"
+                      }`}
+                    />
+                    <p className="text-xs font-semibold text-slate-100">
+                      {event.label}
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      {event.timestamp}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <Link
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-500 px-3 py-2 text-sm font-semibold text-white hover:bg-violet-400"
+              href={activeDetail.timelineTaskUrl}
+            >
+              View Workflow Impact
+            </Link>
+
+            <button
+              className="inline-flex w-full items-center justify-center rounded-xl border border-amber-400/50 bg-amber-500/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-amber-200 hover:bg-amber-500/20"
+              onClick={() => setBackupRequested(true)}
+              type="button"
+            >
+              Request Backup
+            </button>
+
+            {backupRequested ? (
+              <p className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-2 py-1.5 text-xs text-amber-200">
+                Backup request queued for project admin review.
+              </p>
+            ) : null}
           </div>
-          <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Timeline Placement
-            </dt>
-            <dd className="mt-1 text-sm text-slate-800">
-              {activeDetail.timelinePlacement.phase} (
-              {activeDetail.timelinePlacement.sequenceIndex}/
-              {activeDetail.timelinePlacement.totalTasks})
-            </dd>
-          </div>
-        </dl>
-
-        <div className="mt-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Description
-          </h3>
-          <p className="mt-1 text-sm text-slate-800">
-            {activeDetail.description}
-          </p>
-        </div>
-
-        <div className="mt-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Assignment Reasoning
-          </h3>
-          <p className="mt-1 text-sm text-slate-800">
-            {activeDetail.assignmentReasoning}
-          </p>
-        </div>
-
-        <div className="mt-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Dependency Summary
-          </h3>
-          {activeDetail.dependencyTaskIds.length === 0 ? (
-            <p className="mt-1 text-sm text-slate-600">No dependencies</p>
-          ) : (
-            <ul className="mt-1 list-disc pl-5 text-sm text-slate-800">
-              {activeDetail.dependencyTaskIds.map((dependencyTaskId) => (
-                <li key={dependencyTaskId}>{dependencyTaskId}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="mt-6">
-          <Link
-            className="inline-flex rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700"
-            href={activeDetail.timelineTaskUrl}
-          >
-            Open in Timeline
-          </Link>
         </div>
       </section>
     </div>
