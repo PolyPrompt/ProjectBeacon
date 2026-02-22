@@ -173,7 +173,9 @@ export default async function ProjectDashboardPage({
   params,
 }: ProjectDashboardPageProps) {
   const { projectId } = await params;
-  const sessionUser = await requireSessionUser(`/projects/${projectId}`);
+  const sessionUser = await requireSessionUser(`/projects/${projectId}`, {
+    projectId,
+  });
 
   const dashboardViewModel = await getProjectDashboardViewModel(
     projectId,
@@ -201,10 +203,7 @@ export default async function ProjectDashboardPage({
         dependencyEdges={dashboardViewModel.dependencyEdges}
         tasks={dashboardViewModel.tasks}
       />
-      <PlanningWorkspace
-        projectId={projectId}
-        userIdHeaderValue={sessionUser.userId}
-      />
+      <PlanningWorkspace projectId={projectId} />
     </section>
   );
 }

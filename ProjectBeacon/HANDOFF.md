@@ -723,3 +723,34 @@
   - `repo:PolyPrompt/ProjectBeacon is:issue is:open label:agent2 label:status:ready` => no results
 - Stop reason:
   - No actionable open `agent2` issues remain in `status:ready`.
+
+## 2026-02-22T01:28:34Z - PB-043 Milestone (Agent1)
+
+- Issue: `#94` `[PB-043] Fix Clerk vs local-session split breaking post-create project routes`.
+- Completed:
+  - Replaced project-route session resolution in `lib/auth/session.ts` from `pb_*` cookies to Clerk-backed local-user mapping via `requireUser()`.
+  - Added project-aware role resolution (`admin|user`) in session helpers by reading `project_members`.
+  - Updated all `/projects/[projectId]` route entry pages to use the new project-aware session resolution so child routes no longer depend on local cookies.
+  - Updated `lib/auth/clerk-auth.ts` to return mapped `localUserId` directly and aligned route helper lookup to prefer it.
+  - Removed planning workspace dependency on client `x-user-id` header:
+    - removed local-session-missing action blocks
+    - removed header injection from clarification/generate/lock/assign requests
+  - Updated README auth convention to document Clerk + users-table mapping and deprecate runtime local cookie session use.
+- Files changed:
+  - `lib/auth/session.ts`
+  - `lib/auth/clerk-auth.ts`
+  - `lib/server/route-helpers.ts`
+  - `app/projects/[projectId]/layout.tsx`
+  - `app/projects/[projectId]/page.tsx`
+  - `app/projects/[projectId]/board/page.tsx`
+  - `app/projects/[projectId]/timeline/page.tsx`
+  - `app/projects/[projectId]/documents/page.tsx`
+  - `app/projects/[projectId]/settings/page.tsx`
+  - `components/projects/planning-workspace.tsx`
+  - `components/projects/clarification-panel.tsx`
+  - `README.md`
+  - `DECISIONS.md`
+- Commands and results:
+  - `set -a; source .env.local; set +a; npm run format:check` -> pass.
+  - `set -a; source .env.local; set +a; npm run lint` -> pass.
+  - `set -a; source .env.local; set +a; npm run build` -> pass.

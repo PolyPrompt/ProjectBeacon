@@ -14,6 +14,9 @@ export default async function ProjectTimelineRoute({
   const { taskId } = await searchParams;
   const sessionUser = await requireSessionUser(
     `/projects/${projectId}/timeline`,
+    {
+      projectId,
+    },
   );
 
   return (

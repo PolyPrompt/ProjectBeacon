@@ -240,3 +240,18 @@
   - `app/api/projects/[projectId]/ai/generate-tasks/route.ts` now includes `generation` metadata in success response and propagates strict-mode failures.
   - `components/projects/planning-workspace.tsx` renders generation mode/reason diagnostics after generation.
   - `API_CONTRACT.md` documents mode metadata and strict-mode semantics.
+
+## 2026-02-22T01:28:34Z
+
+- Decision summary:
+  - Replace local cookie session dependency (`pb_*`) for project routes with Clerk-backed identity resolution mapped to local `users` records and project-membership role lookup.
+- Rationale:
+  - Project pages were gated by `pb_user_id` cookies that are not set by Clerk sign-in flow, causing post-create/post-join redirect loops and disabled planning actions.
+- Alternatives considered:
+  - Keep local cookie guard and add cookie bootstrap shim after sign-in.
+  - Keep client `x-user-id` header gating as a fallback in planning workspace actions.
+- Impact on files or behavior:
+  - `lib/auth/session.ts` now resolves `SessionUser` via Clerk + `users` mapping (with project-aware role resolution) and marks legacy local-session helpers deprecated.
+  - `lib/auth/clerk-auth.ts` now returns mapped `localUserId` directly.
+  - Project routes under `app/projects/[projectId]/**` no longer depend on local-session cookies for route rendering.
+  - Planning workspace and clarification UI no longer require client-provided `x-user-id` headers to run generate/lock/assign/clarification actions.

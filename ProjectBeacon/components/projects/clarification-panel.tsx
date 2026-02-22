@@ -12,7 +12,6 @@ type ClarificationPanelProps = {
   onQuestionsChange?: (questions: string[]) => void;
   onStateChange?: (state: ClarificationState) => void;
   projectId: string;
-  userIdHeaderValue: string;
 };
 
 export type ClarificationState = {
@@ -29,7 +28,6 @@ export default function ClarificationPanel({
   onQuestionsChange,
   onStateChange,
   projectId,
-  userIdHeaderValue,
 }: ClarificationPanelProps) {
   const [state, setState] = useState<ClarificationState | null>(null);
   const [questions, setQuestions] = useState<string[]>([]);
@@ -53,7 +51,6 @@ export default function ClarificationPanel({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-user-id": userIdHeaderValue,
           },
         },
       );
@@ -92,7 +89,6 @@ export default function ClarificationPanel({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-user-id": userIdHeaderValue,
           },
         },
       );
@@ -130,7 +126,6 @@ export default function ClarificationPanel({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-user-id": userIdHeaderValue,
           },
           body: JSON.stringify({
             question: selectedQuestion,

@@ -1,5 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import { requireUser } from "@/lib/auth/require-user";
 
 export type SessionUser = {
   clerkUserId: string;
@@ -19,11 +20,12 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   }
 
   const user = await currentUser();
+  const mappedUser = await requireUser();
 
   return {
     clerkUserId: userId,
     email: user?.emailAddresses[0]?.emailAddress ?? null,
-    localUserId: null,
+    localUserId: mappedUser.userId,
   };
 }
 

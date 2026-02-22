@@ -9,7 +9,9 @@ export default async function ProjectBoardRoute({
   params,
 }: ProjectBoardRouteProps) {
   const { projectId } = await params;
-  const sessionUser = await requireSessionUser(`/projects/${projectId}/board`);
+  const sessionUser = await requireSessionUser(`/projects/${projectId}/board`, {
+    projectId,
+  });
 
   return <BoardPage projectId={projectId} role={sessionUser.role} />;
 }

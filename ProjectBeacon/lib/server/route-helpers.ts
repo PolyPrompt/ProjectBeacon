@@ -17,6 +17,10 @@ type UserIdRow = {
 async function resolveActorUserIdFromSession(): Promise<string | null> {
   const sessionUser = await requireSessionUser();
 
+  if (sessionUser.localUserId) {
+    return sessionUser.localUserId;
+  }
+
   const userByClerkId = await selectSingle<UserIdRow>("users", {
     select: "id",
     clerk_user_id: `eq.${sessionUser.clerkUserId}`,

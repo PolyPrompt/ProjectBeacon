@@ -1,5 +1,8 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { ApiHttpError } from "@/lib/api/errors";
+import { normalizeProjectRole } from "@/lib/auth/project-role";
+import { requireUser } from "@/lib/auth/require-user";
+import { getServiceSupabaseClient } from "@/lib/supabase/server";
 
 export type ProjectRole = "admin" | "user";
 
@@ -8,32 +11,66 @@ export type SessionUser = {
   role: ProjectRole;
 };
 
-const USER_ID_COOKIE = "pb_user_id";
-const ROLE_COOKIE = "pb_role";
-const LAST_PROJECT_COOKIE = "pb_last_project_id";
+type SessionOptions = {
+  projectId?: string;
+};
 
-function normalizeRole(value: string | undefined): ProjectRole {
-  return value === "admin" ? "admin" : "user";
-}
+type ProjectMembershipRoleRow = {
+  role: string;
+};
 
-export async function getSessionUser(): Promise<SessionUser | null> {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get(USER_ID_COOKIE)?.value;
-
-  if (!userId) {
-    return null;
+async function resolveProjectRole(
+  userId: string,
+  projectId: string | undefined,
+): Promise<ProjectRole> {
+  if (!projectId) {
+    return "user";
   }
 
-  return {
-    userId,
-    role: normalizeRole(cookieStore.get(ROLE_COOKIE)?.value),
-  };
+  const supabase = getServiceSupabaseClient();
+  const { data, error } = await supabase
+    .from("project_members")
+    .select("role")
+    .eq("project_id", projectId)
+    .eq("user_id", userId)
+    .maybeSingle<ProjectMembershipRoleRow>();
+
+  if (error) {
+    throw new ApiHttpError(
+      500,
+      "DB_ERROR",
+      "Failed to resolve project membership role",
+      error.message,
+    );
+  }
+
+  return normalizeProjectRole(data?.role) ?? "user";
+}
+
+export async function getSessionUser(
+  options: SessionOptions = {},
+): Promise<SessionUser | null> {
+  try {
+    const user = await requireUser();
+
+    return {
+      userId: user.userId,
+      role: await resolveProjectRole(user.userId, options.projectId),
+    };
+  } catch (error) {
+    if (error instanceof ApiHttpError && error.status === 401) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 export async function requireSessionUser(
   nextPath: string,
+  options: SessionOptions = {},
 ): Promise<SessionUser> {
-  const sessionUser = await getSessionUser();
+  const sessionUser = await getSessionUser(options);
 
   if (!sessionUser) {
     redirect(`/sign-in?next=${encodeURIComponent(nextPath)}`);
@@ -42,31 +79,27 @@ export async function requireSessionUser(
   return sessionUser;
 }
 
+/**
+ * @deprecated Local cookie-based sessions are no longer used at runtime.
+ */
 export async function getLastProjectId(): Promise<string | null> {
-  const cookieStore = await cookies();
-  return cookieStore.get(LAST_PROJECT_COOKIE)?.value ?? null;
+  return null;
 }
 
+/**
+ * @deprecated Local cookie-based sessions are no longer used at runtime.
+ */
 export async function createLocalSession(input: {
   userId: string;
   role: ProjectRole;
   projectId: string;
 }): Promise<void> {
-  const cookieStore = await cookies();
-  const baseCookie = {
-    httpOnly: true,
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-  };
-
-  cookieStore.set(USER_ID_COOKIE, input.userId, baseCookie);
-  cookieStore.set(ROLE_COOKIE, input.role, baseCookie);
-  cookieStore.set(LAST_PROJECT_COOKIE, input.projectId, baseCookie);
+  void input;
 }
 
+/**
+ * @deprecated Local cookie-based sessions are no longer used at runtime.
+ */
 export async function clearLocalSession(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.delete(USER_ID_COOKIE);
-  cookieStore.delete(ROLE_COOKIE);
+  return;
 }

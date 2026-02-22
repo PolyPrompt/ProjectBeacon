@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { clearLocalSession, requireSessionUser } from "@/lib/auth/session";
+import { requireSessionUser } from "@/lib/auth/session";
 import { ProjectNavShell } from "@/components/navigation/project-nav-shell";
 
 type ProjectLayoutProps = {
@@ -12,12 +12,13 @@ export default async function ProjectLayout({
   params,
 }: ProjectLayoutProps) {
   const { projectId } = await params;
-  const sessionUser = await requireSessionUser(`/projects/${projectId}`);
+  const sessionUser = await requireSessionUser(`/projects/${projectId}`, {
+    projectId,
+  });
 
   async function signOutAction() {
     "use server";
 
-    await clearLocalSession();
     redirect("/sign-in");
   }
 
