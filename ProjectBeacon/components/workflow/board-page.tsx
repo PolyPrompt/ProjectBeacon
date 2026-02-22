@@ -312,6 +312,20 @@ function deadlineCountdown(deadlineIso: string, nowMs: number | null): string {
   return `${String(days).padStart(2, "0")}d : ${String(hours).padStart(2, "0")}h : ${String(minutes).padStart(2, "0")}m`;
 }
 
+function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) {
+    return "U";
+  }
+
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
+}
+
 function flattenBoard(
   columns: WorkflowBoardColumnDTO[],
   unassigned: WorkflowBoardTaskDTO[],
@@ -457,6 +471,14 @@ function boardCard(
 ) {
   const tone = priorityTone(task);
   const cardLabel = `${task.title}. ${statusLabel(task.status)}. ${dueLabel(task.softDeadline, nowMs)}`;
+  const completedDots =
+    task.status === "done"
+      ? 3
+      : task.status === "in_progress"
+        ? 2
+        : task.status === "blocked"
+          ? 2
+          : 1;
 
   return (
     <article
@@ -464,44 +486,52 @@ function boardCard(
       draggable={draggable}
       tabIndex={0}
       aria-label={cardLabel}
-      className={`rounded-xl border ${tone.borderTone} bg-[#241d2f] p-3 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`}
+      className={`rounded-lg border ${tone.borderTone} bg-[#241d2f] p-3 shadow-sm transition hover:border-violet-400/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`}
       onDragStart={() => onDragStart?.(task.id)}
       onDragEnd={onDragEnd}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-2">
-          <span className={`mt-1 h-2.5 w-2.5 rounded-full ${tone.accentDot}`} />
-          <div>
-            <h4
-              className={`text-sm font-bold text-white ${
-                task.status === "done"
-                  ? "decoration-violet-400/70 line-through"
-                  : ""
+      <div className="flex items-start justify-between gap-2">
+        <h4
+          className={`text-sm font-bold leading-tight text-slate-100 ${
+            task.status === "done"
+              ? "line-through decoration-violet-500/70"
+              : ""
+          }`}
+        >
+          {task.title}
+        </h4>
+        <div className="mt-1 flex gap-1">
+          {Array.from({ length: 3 }, (_, index) => (
+            <span
+              key={`${task.id}-dot-${index}`}
+              className={`h-2 w-2 rounded-full ${
+                index < completedDots ? tone.accentDot : "bg-slate-600"
               }`}
-            >
-              {task.title}
-            </h4>
-            <p className="mt-1 text-[11px] text-slate-400">
-              {rationaleForTask(task)}
-            </p>
-          </div>
+            />
+          ))}
         </div>
+      </div>
+      <p className="mt-2 line-clamp-2 text-xs text-slate-400">
+        {rationaleForTask(task)}
+      </p>
+      <div className="mt-3 flex items-center justify-between">
         <span
           className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${statusChipClass(task.status)}`}
         >
           {statusLabel(task.status)}
         </span>
+        {!dense ? (
+          <p className="text-[10px] font-semibold text-slate-500">
+            {dueLabel(task.softDeadline, nowMs)}
+          </p>
+        ) : (
+          <span className="rounded border border-slate-700 px-1.5 py-0.5 text-[9px] font-bold text-slate-400">
+            {task.difficultyPoints} pts
+          </span>
+        )}
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-1">
-        <span className="rounded border border-slate-700 px-1.5 py-0.5 text-[9px] font-bold text-slate-400">
-          {task.phase}
-        </span>
-        <span className="rounded border border-slate-700 px-1.5 py-0.5 text-[9px] font-bold text-slate-400">
-          {task.difficultyPoints} pts
-        </span>
-      </div>
-      {!dense ? (
-        <p className="mt-2 text-[10px] font-bold text-violet-300/80">
+      {dense ? (
+        <p className="mt-2 text-[10px] font-semibold text-violet-300/80">
           {dueLabel(task.softDeadline, nowMs)}
         </p>
       ) : null}
@@ -715,6 +745,10 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
   const canRunDelegationActions = capability.canEditWorkflow;
   const groupedMode =
     !isDraftPlanning && (mode === "categorized" || mode === "finalized");
+  const viewerName =
+    columns.find((column) => column.userId === viewerUserId)?.name ??
+    "Team Member";
+  const viewerInitials = initialsFromName(viewerName);
 
   async function readErrorMessage(response: Response): Promise<string> {
     try {
@@ -847,275 +881,351 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
   }
 
   return (
-    <section className="space-y-6 rounded-2xl border border-slate-800 bg-[#18131f] p-5 shadow-[0_18px_60px_rgba(12,10,25,0.45)] md:p-6">
-      <header className="space-y-4 rounded-2xl border border-violet-500/25 bg-[#1f1a29] p-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">
-              Sprint Board
-            </p>
-            <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-100 md:text-3xl">
-              {project.name}
-            </h1>
-            <p className="mt-1 text-sm text-slate-400">
-              Delegate ownership by member lane, then complete and send
-              assignments to your group.
-            </p>
+    <section className="h-screen overflow-hidden bg-[#18131f] text-slate-100">
+      <div className="flex h-full overflow-hidden">
+        <aside className="hidden w-64 shrink-0 border-r border-violet-500/20 bg-[#161220] px-4 py-6 lg:flex lg:flex-col">
+          <div className="mb-10 flex items-center gap-3 px-2">
+            <div className="grid h-8 w-8 place-items-center rounded-lg bg-violet-600 text-sm font-bold text-white">
+              NU
+            </div>
+            <p className="text-2xl font-extrabold tracking-tight">Nexus UI</p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <div className="rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-violet-200">
-              AI Engine Active
+          <nav className="space-y-2">
+            <div className="flex items-center gap-3 rounded-lg bg-violet-500/20 px-3 py-3 text-violet-200">
+              <span className="text-xs font-bold">TB</span>
+              <span className="font-semibold">Team Board</span>
             </div>
-            <div className="flex rounded-lg border border-slate-700 bg-[#17141f] p-1">
-              <Link
-                href={`/projects/${projectId}/board`}
-                className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white"
-              >
-                Board
-              </Link>
-              <Link
-                href={`/projects/${projectId}/timeline`}
-                className="rounded-md px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-800"
-              >
-                Timeline
-              </Link>
+            <div className="flex items-center gap-3 rounded-lg px-3 py-3 text-slate-400">
+              <span className="text-xs font-bold">IN</span>
+              <span className="font-semibold">Insights</span>
+            </div>
+            <div className="flex items-center gap-3 rounded-lg px-3 py-3 text-slate-400">
+              <span className="text-xs font-bold">DR</span>
+              <span className="font-semibold">Directory</span>
+            </div>
+            <div className="flex items-center gap-3 rounded-lg px-3 py-3 text-slate-400">
+              <span className="text-xs font-bold">DS</span>
+              <span className="font-semibold">Discussions</span>
+            </div>
+          </nav>
+
+          <div className="mt-auto border-t border-violet-500/15 pt-5">
+            <div className="flex items-center gap-3 rounded-lg px-3 py-3 text-slate-400">
+              <span className="text-xs font-bold">ST</span>
+              <span className="font-semibold">Settings</span>
             </div>
           </div>
-        </div>
+        </aside>
 
-        {isDraftPlanning ? (
-          <p className="rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-100">
-            Draft mode: tasks are shown as Not Started and organized by member
-            lanes only.
-          </p>
-        ) : (
-          <div
-            className="flex flex-wrap gap-2"
-            role="tablist"
-            aria-label="Board modes"
-          >
-            {modeOptions.map((option) => (
+        <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <header className="flex h-16 items-center justify-between border-b border-violet-500/20 bg-[#161220]/70 px-6 backdrop-blur lg:px-8">
+            <div className="flex items-center gap-6">
+              <h2 className="text-lg font-bold tracking-tight">
+                {project.name}
+              </h2>
+              <div className="hidden items-center gap-2 rounded-lg border border-violet-500/25 bg-violet-500/10 px-3 py-1.5 md:flex">
+                <span className="text-xs text-slate-400">Search</span>
+                <input
+                  className="w-44 bg-transparent text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none"
+                  placeholder="Find a task..."
+                  type="text"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
               <button
-                key={option.id}
+                aria-label="Notifications"
+                className="relative rounded-lg p-2 text-slate-300 hover:bg-violet-500/10"
                 type="button"
-                id={`board-tab-${option.id}`}
-                role="tab"
-                aria-controls={`board-panel-${option.id}`}
-                aria-selected={mode === option.id}
-                tabIndex={mode === option.id ? 0 : -1}
-                className={
-                  mode === option.id
-                    ? "rounded-lg border border-violet-400 bg-violet-600/20 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-violet-200"
-                    : "rounded-lg border border-slate-700 bg-[#17141f] px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-slate-400 hover:border-violet-500/40 hover:text-slate-200"
-                }
-                onClick={() => setMode(option.id)}
               >
-                {option.label}
+                <span className="text-base font-bold">!</span>
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500" />
               </button>
-            ))}
-          </div>
-        )}
+              <div className="h-8 w-px bg-violet-500/20" />
+              <div className="hidden text-right sm:block">
+                <p className="text-xs font-bold leading-none">{viewerName}</p>
+                <p className="text-[10px] text-slate-500">
+                  {capability.role === "admin" ? "Admin View" : "Member View"}
+                </p>
+              </div>
+              <div className="grid h-9 w-9 place-items-center rounded-full border-2 border-violet-400/40 bg-[#241d2f] text-xs font-bold text-slate-100">
+                {viewerInitials}
+              </div>
+            </div>
+          </header>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-violet-500/25 bg-violet-500/10 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-              Total Tasks
-            </p>
-            <p className="mt-1 text-2xl font-black text-violet-300">
-              {totalTasks}
-            </p>
-          </div>
-          <div className="rounded-xl border border-red-500/25 bg-red-500/10 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-red-300">
-              Deadline Countdown
-            </p>
-            <p className="mt-1 text-xl font-black text-red-200">{countdown}</p>
-          </div>
-          <div className="rounded-xl border border-slate-700 bg-[#17141f] p-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-              Planning Status
-            </p>
-            <p className="mt-1 text-sm font-bold text-slate-100">
-              {project.planningStatus}
-            </p>
-            <p className="mt-1 text-[11px] text-slate-400">
-              Role: {capability.role} · Edit workflow:{" "}
-              {capability.canEditWorkflow ? "yes" : "no"}
-            </p>
-          </div>
-        </div>
-
-        {assigneeSummaries.length > 0 ? (
-          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-            {assigneeSummaries.map((summary) => (
-              <article
-                key={summary.id}
-                className={`rounded-xl border p-3 ${
-                  summary.tone === "viewer"
-                    ? "border-violet-400/45 bg-violet-500/10"
-                    : summary.tone === "unassigned"
-                      ? "border-amber-400/35 bg-amber-500/10"
-                      : "border-slate-700 bg-[#17141f]"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-xs font-bold text-slate-100">
-                    {summary.label}
-                  </h2>
-                  <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-bold text-violet-200">
-                    {summary.taskCount} tasks
-                  </span>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="space-y-4 px-6 pb-4 pt-6 lg:px-8">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <h1 className="text-5xl font-black tracking-tight text-slate-100">
+                    Team Task Overview
+                  </h1>
+                  <p className="mt-1 text-2xl font-medium text-slate-400">
+                    Standard internal view • Updated 5 mins ago
+                  </p>
                 </div>
-                <p className="mt-1 text-[10px] text-slate-400">
-                  {summary.contextLine}
-                </p>
-                <p className="mt-2 text-[10px] font-semibold text-slate-300">
-                  In progress: {summary.inProgressCount} · Blocked:{" "}
-                  {summary.blockedCount}
-                </p>
-              </article>
-            ))}
-          </div>
-        ) : null}
-      </header>
 
-      {error ? (
-        <p className="rounded-xl border border-amber-300/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
-          {error}
-        </p>
-      ) : null}
-
-      {actionMessage ? (
-        <p className="rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
-          {actionMessage}
-        </p>
-      ) : null}
-
-      {mode === "finalized" && !isDraftPlanning ? (
-        <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-500/20 bg-[#1f1a29] p-3">
-          <div className="text-xs text-slate-400">
-            Finalized delegation controls are available to project managers.
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-700"
-              disabled={!canRunDelegationActions}
-              onClick={() =>
-                setActionMessage(
-                  "New task entry is queued for the next board mutation flow.",
-                )
-              }
-            >
-              New Task
-            </button>
-            <button
-              type="button"
-              className="rounded-lg border border-slate-600 px-3 py-2 text-xs font-bold text-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={!canRunDelegationActions}
-              onClick={() =>
-                setActionMessage(
-                  "Re-delegation can be triggered after task edits are finalized.",
-                )
-              }
-            >
-              Re-Delegate
-            </button>
-          </div>
-        </section>
-      ) : null}
-
-      {loading ? (
-        <p className="rounded-xl border border-slate-700 bg-[#17141f] px-4 py-3 text-sm text-slate-300">
-          Loading board...
-        </p>
-      ) : lanes.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-slate-700 bg-[#17141f] px-4 py-3 text-sm text-slate-400">
-          No member lanes available yet.
-        </p>
-      ) : (
-        <div
-          role="tabpanel"
-          id={`board-panel-${mode}`}
-          aria-labelledby={`board-tab-${mode}`}
-          className="overflow-x-auto pb-2"
-        >
-          <div className="flex min-w-max gap-4">
-            {lanes.map((lane) => (
-              <section
-                key={lane.id}
-                className={`w-[260px] rounded-xl border p-3 ${
-                  lane.tone === "viewer"
-                    ? "border-violet-400/50 bg-[#231c31]"
-                    : lane.tone === "unassigned"
-                      ? "border-amber-400/45 bg-[#2a1f2b]"
-                      : "border-slate-700 bg-[#1a1722]"
-                } ${
-                  dropLaneId === lane.id && draggedTask
-                    ? "ring-2 ring-violet-400 ring-offset-1 ring-offset-[#100d19]"
-                    : ""
-                }`}
-                onDragOver={(event) => {
-                  if (!canRunDelegationActions || !draggedTask) {
-                    return;
-                  }
-                  event.preventDefault();
-                  setDropLaneId(lane.id);
-                }}
-                onDragLeave={() => {
-                  if (dropLaneId === lane.id) {
-                    setDropLaneId(null);
-                  }
-                }}
-                onDrop={(event) => {
-                  if (!canRunDelegationActions || !draggedTask) {
-                    return;
-                  }
-                  event.preventDefault();
-                  void handleLaneDrop(lane.id);
-                }}
-              >
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <div>
-                    <h2 className="text-sm font-bold text-slate-100">
-                      {lane.title}
-                    </h2>
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-slate-500">
-                      {lane.taskCount} tasks
+                <div className="flex flex-wrap items-center gap-3">
+                  <article className="rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                      Total Tasks
                     </p>
-                  </div>
-                  <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-bold text-violet-200">
-                    {lane.taskCount}
-                  </span>
-                </div>
-
-                {groupedMode ? (
-                  <div className="space-y-3">
-                    {STATUS_SECTIONS.map((section) => {
-                      const sectionTasks = statusSection(
-                        lane.tasks,
-                        section.bucket,
-                      );
-
-                      if (sectionTasks.length === 0) {
-                        return null;
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <p className="text-3xl font-black text-slate-100">
+                        {totalTasks}
+                      </p>
+                      <p className="text-xs font-bold text-emerald-400">+2%</p>
+                    </div>
+                  </article>
+                  <article className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-rose-300">
+                      Deadline Countdown
+                    </p>
+                    <p className="mt-1 text-3xl font-black tracking-tight text-rose-200">
+                      {countdown}
+                    </p>
+                  </article>
+                  {project.planningStatus !== "assigned" ? (
+                    <button
+                      type="button"
+                      className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-violet-900/40 disabled:cursor-not-allowed disabled:bg-slate-700"
+                      disabled={
+                        !canRunDelegationActions ||
+                        totalTasks === 0 ||
+                        isFinalizing
                       }
+                      onClick={() => void finalizeAndSend()}
+                    >
+                      {isFinalizing ? "Sending..." : "Complete and Send Out"}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
 
-                      return (
-                        <div
-                          key={`${lane.id}-${section.bucket}`}
-                          className="space-y-2"
-                        >
-                          <h3 className="px-1 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-                            {section.heading}
-                          </h3>
-                          <div className="space-y-2">
-                            {sectionTasks.map((task) =>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                {isDraftPlanning ? (
+                  <p className="rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-100">
+                    Draft mode: tasks are shown as Not Started and organized by
+                    member lanes only.
+                  </p>
+                ) : (
+                  <div
+                    className="flex flex-wrap gap-2"
+                    role="tablist"
+                    aria-label="Board modes"
+                  >
+                    {modeOptions.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        id={`board-tab-${option.id}`}
+                        role="tab"
+                        aria-controls={`board-panel-${option.id}`}
+                        aria-selected={mode === option.id}
+                        tabIndex={mode === option.id ? 0 : -1}
+                        className={
+                          mode === option.id
+                            ? "rounded-lg border border-violet-400 bg-violet-600/20 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-violet-200"
+                            : "rounded-lg border border-slate-700 bg-[#17141f] px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-slate-400 hover:border-violet-500/40 hover:text-slate-200"
+                        }
+                        onClick={() => setMode(option.id)}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex rounded-lg border border-slate-700 bg-[#17141f] p-1">
+                  <Link
+                    href={`/projects/${projectId}/board`}
+                    className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white"
+                  >
+                    Board
+                  </Link>
+                  <Link
+                    href={`/projects/${projectId}/timeline`}
+                    className="rounded-md px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-800"
+                  >
+                    Timeline
+                  </Link>
+                </div>
+              </div>
+
+              {assigneeSummaries.length > 0 ? (
+                <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-4">
+                  {assigneeSummaries.map((summary) => (
+                    <article
+                      key={summary.id}
+                      className={`rounded-xl border p-3 ${
+                        summary.tone === "viewer"
+                          ? "border-violet-400/45 bg-violet-500/10"
+                          : summary.tone === "unassigned"
+                            ? "border-amber-400/35 bg-amber-500/10"
+                            : "border-slate-700 bg-[#17141f]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <h2 className="text-xs font-bold text-slate-100">
+                          {summary.label}
+                        </h2>
+                        <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-bold text-violet-200">
+                          {summary.taskCount}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[10px] text-slate-400">
+                        {summary.contextLine}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+
+              {error ? (
+                <p className="rounded-xl border border-amber-300/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+                  {error}
+                </p>
+              ) : null}
+
+              {actionMessage ? (
+                <p className="rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+                  {actionMessage}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-x-auto px-6 pb-6 lg:px-8">
+              {loading ? (
+                <p className="rounded-xl border border-slate-700 bg-[#17141f] px-4 py-3 text-sm text-slate-300">
+                  Loading board...
+                </p>
+              ) : lanes.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-slate-700 bg-[#17141f] px-4 py-3 text-sm text-slate-400">
+                  No member lanes available yet.
+                </p>
+              ) : (
+                <div
+                  role="tabpanel"
+                  id={`board-panel-${mode}`}
+                  aria-labelledby={`board-tab-${mode}`}
+                  className="h-full"
+                >
+                  <div className="flex h-full min-w-max gap-5">
+                    {lanes.map((lane) => (
+                      <section
+                        key={lane.id}
+                        className={`flex h-full min-h-[520px] w-[310px] flex-col rounded-xl border p-3 ${
+                          lane.tone === "viewer"
+                            ? "border-violet-400/50 bg-[#231c31]"
+                            : lane.tone === "unassigned"
+                              ? "border-amber-400/45 bg-[#2a1f2b]"
+                              : "border-slate-700 bg-[#111532]"
+                        } ${
+                          dropLaneId === lane.id && draggedTask
+                            ? "ring-2 ring-violet-400 ring-offset-1 ring-offset-[#100d19]"
+                            : ""
+                        }`}
+                        onDragOver={(event) => {
+                          if (!canRunDelegationActions || !draggedTask) {
+                            return;
+                          }
+                          event.preventDefault();
+                          setDropLaneId(lane.id);
+                        }}
+                        onDragLeave={() => {
+                          if (dropLaneId === lane.id) {
+                            setDropLaneId(null);
+                          }
+                        }}
+                        onDrop={(event) => {
+                          if (!canRunDelegationActions || !draggedTask) {
+                            return;
+                          }
+                          event.preventDefault();
+                          void handleLaneDrop(lane.id);
+                        }}
+                      >
+                        <div className="mb-3 flex items-center justify-between gap-2 px-1">
+                          <div className="flex items-center gap-2">
+                            <h2
+                              className={`text-xl font-bold ${
+                                lane.tone === "viewer"
+                                  ? "text-violet-300"
+                                  : "text-slate-100"
+                              }`}
+                            >
+                              {lane.title}
+                            </h2>
+                            <span className="rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] font-bold text-violet-200">
+                              {lane.taskCount}
+                            </span>
+                          </div>
+                          <span className="text-slate-500">...</span>
+                        </div>
+
+                        <div className="flex-1 space-y-2 overflow-y-auto pr-1">
+                          {groupedMode ? (
+                            <div className="space-y-3">
+                              {STATUS_SECTIONS.map((section) => {
+                                const sectionTasks = statusSection(
+                                  lane.tasks,
+                                  section.bucket,
+                                );
+
+                                if (sectionTasks.length === 0) {
+                                  return null;
+                                }
+
+                                return (
+                                  <div
+                                    key={`${lane.id}-${section.bucket}`}
+                                    className="space-y-2"
+                                  >
+                                    <h3 className="px-1 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                                      {section.heading}
+                                    </h3>
+                                    <div className="space-y-2">
+                                      {sectionTasks.map((task) =>
+                                        boardCard(
+                                          task,
+                                          nowMs,
+                                          mode === "categorized",
+                                          canRunDelegationActions,
+                                          (taskId) =>
+                                            setDraggedTask({
+                                              taskId,
+                                              fromLaneId: lane.id,
+                                            }),
+                                          () => {
+                                            setDraggedTask(null);
+                                            setDropLaneId(null);
+                                          },
+                                        ),
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+
+                              {lane.tasks.length === 0 ? (
+                                <p className="rounded-lg border border-dashed border-slate-700 px-3 py-3 text-xs text-slate-500">
+                                  No tasks in this lane.
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : lane.tasks.length === 0 ? (
+                            <p className="rounded-lg border border-dashed border-slate-700 px-3 py-3 text-xs text-slate-500">
+                              No tasks in this lane.
+                            </p>
+                          ) : (
+                            lane.tasks.map((task) =>
                               boardCard(
                                 task,
                                 nowMs,
-                                mode === "categorized",
+                                false,
                                 canRunDelegationActions,
                                 (taskId) =>
                                   setDraggedTask({
@@ -1127,62 +1237,18 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                                   setDropLaneId(null);
                                 },
                               ),
-                            )}
-                          </div>
+                            )
+                          )}
                         </div>
-                      );
-                    })}
-
-                    {lane.tasks.length === 0 ? (
-                      <p className="rounded-lg border border-dashed border-slate-700 px-3 py-3 text-xs text-slate-500">
-                        No tasks in this lane.
-                      </p>
-                    ) : null}
+                      </section>
+                    ))}
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    {lane.tasks.length === 0 ? (
-                      <p className="rounded-lg border border-dashed border-slate-700 px-3 py-3 text-xs text-slate-500">
-                        No tasks in this lane.
-                      </p>
-                    ) : (
-                      lane.tasks.map((task) =>
-                        boardCard(
-                          task,
-                          nowMs,
-                          false,
-                          canRunDelegationActions,
-                          (taskId) =>
-                            setDraggedTask({ taskId, fromLaneId: lane.id }),
-                          () => {
-                            setDraggedTask(null);
-                            setDropLaneId(null);
-                          },
-                        ),
-                      )
-                    )}
-                  </div>
-                )}
-              </section>
-            ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
-
-      {project.planningStatus !== "assigned" ? (
-        <div className="fixed bottom-6 right-6 z-20">
-          <button
-            type="button"
-            className="rounded-full bg-violet-600 px-6 py-3 text-sm font-bold text-white shadow-xl shadow-violet-900/40 disabled:cursor-not-allowed disabled:bg-slate-700"
-            disabled={
-              !canRunDelegationActions || totalTasks === 0 || isFinalizing
-            }
-            onClick={() => void finalizeAndSend()}
-          >
-            {isFinalizing ? "Sending..." : "Complete and Send Out"}
-          </button>
-        </div>
-      ) : null}
+        </main>
+      </div>
     </section>
   );
 }
