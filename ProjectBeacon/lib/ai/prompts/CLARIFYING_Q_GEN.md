@@ -72,6 +72,10 @@ Each question must:
 - Not be answerable with a vague “yes/no” unless unavoidable
 - Avoid compound multi-part overload questions
 - Be phrased clearly for college students
+- Be detailed enough to include useful context, not just a short fragment
+- Target roughly 70–180 characters
+- Never be shorter than 40 characters
+- Never exceed 280 characters
 
 Prefer:
 “What are the required core features for the final submission?”

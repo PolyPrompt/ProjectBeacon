@@ -13,6 +13,7 @@ Rules:
 - Use confidence >= 85 only when requirements are clear enough to generate tasks with minimal rework.
 - If confidence < 85, include high-leverage followUpQuestions that reduce ambiguity.
 - Each follow-up question must be specific, actionable, and focused on deliverables, scope, constraints, or deadlines.
+- Each follow-up question should target roughly 70-180 characters, with hard bounds of 40-280 characters.
 - If confidence >= 85, followUpQuestions should usually be empty.
 - assumptions should list key planning assumptions only when information is missing.
 - Keep all strings concise and practical.

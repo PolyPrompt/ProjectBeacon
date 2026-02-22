@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+export const CLARIFICATION_QUESTION_MIN_LENGTH = 40;
+export const CLARIFICATION_QUESTION_MAX_LENGTH = 280;
+
 export const difficultyPointsSchema = z.union([
   z.literal(1),
   z.literal(2),
@@ -20,7 +23,14 @@ export const clarificationStateSchema = z.object({
   threshold: z.number().int().min(1).max(100),
   askedCount: z.number().int().min(0),
   maxQuestions: z.number().int().min(1),
-  questions: z.array(z.string().min(1).max(200)).default([]),
+  questions: z
+    .array(
+      z
+        .string()
+        .min(CLARIFICATION_QUESTION_MIN_LENGTH)
+        .max(CLARIFICATION_QUESTION_MAX_LENGTH),
+    )
+    .default([]),
   assumptions: z.array(z.string().min(1).max(300)).optional(),
   readyForGeneration: z.boolean(),
 });
@@ -29,14 +39,29 @@ export type ClarificationState = z.infer<typeof clarificationStateSchema>;
 
 export const aiConfidenceOutputSchema = z.object({
   confidence: z.number().min(0).max(100),
-  followUpQuestions: z.array(z.string().min(1).max(200)).max(3).default([]),
+  followUpQuestions: z
+    .array(
+      z
+        .string()
+        .min(CLARIFICATION_QUESTION_MIN_LENGTH)
+        .max(CLARIFICATION_QUESTION_MAX_LENGTH),
+    )
+    .max(3)
+    .default([]),
   assumptions: z.array(z.string().min(1).max(300)).max(5).default([]),
 });
 
 export type AIConfidenceOutput = z.infer<typeof aiConfidenceOutputSchema>;
 
 export const aiClarifyingQuestionsOutputSchema = z.object({
-  clarification_questions: z.array(z.string().min(1).max(200)).max(5),
+  clarification_questions: z
+    .array(
+      z
+        .string()
+        .min(CLARIFICATION_QUESTION_MIN_LENGTH)
+        .max(CLARIFICATION_QUESTION_MAX_LENGTH),
+    )
+    .max(5),
   reasoning: z.string().min(1).max(600),
 });
 
