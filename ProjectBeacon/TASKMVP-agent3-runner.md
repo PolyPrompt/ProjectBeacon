@@ -23,6 +23,10 @@ Execution rules:
   - `npm run format:check`
   - `npm run lint`
   - `npm run build`
+- For frontend changes, run local UI verification loop:
+  - start app with `npm run dev`
+  - validate changed routes/flows with Playwright
+  - iterate (fix -> re-run Playwright) until checks pass
 - Update `ProjectBeacon/HANDOFF.md` after each milestone.
 - Update `ProjectBeacon/DECISIONS.md` for major UX and flow decisions.
 
@@ -47,6 +51,7 @@ Continuous loop (repeat until done):
    - claim issue (`status:in-progress`)
    - implement acceptance criteria with contract-first wiring
    - run required checks
+   - if frontend was changed: run `npm run dev` + Playwright verification, fix regressions, and re-check until passing
    - document intentional UX deviations in handoff notes
    - commit and open/update PR referencing the issue (`Closes #<id>`)
    - update issue status (`done`, `blocked`, or `handoff`) with summary comment
@@ -62,5 +67,5 @@ Blocking policy:
 Definition of done:
 
 - All `agent3` MVP V0 issues are either:
-  - completed and handed off with passing checks, or
+  - completed and handed off with passing checks (including Playwright for frontend changes), or
   - clearly blocked with explicit blocker notes and next action.

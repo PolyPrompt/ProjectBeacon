@@ -31,6 +31,10 @@
   - `admin`: full controls
   - `user`: restricted controls with read-only where required
 - Final QA matrix for both roles across all pages
+- Frontend verification loop for each UI issue:
+  - run `npm run dev`
+  - validate changed flows with Playwright
+  - iterate fixes + re-checks until acceptance criteria are satisfied
 
 ## Handoff Requirements
 
@@ -39,6 +43,7 @@
   - API integration coverage
   - manual QA paths + outcomes
   - verification commands + results
+- Do not close/mark done until Playwright verification passes for affected frontend routes.
 - Update linked GitHub Issue status (`done`, `blocked`, or `handoff`) and mirror key notes in `HANDOFF.local.md`.
 
 ## Boundaries

@@ -21,6 +21,10 @@
 - Unified project workspace UX:
   - `context + docs -> clarify -> generate draft -> review -> lock -> assign`
 - QA pass on end-to-end user flow
+- Frontend verification loop for each UI issue:
+  - run `npm run dev`
+  - validate changed routes/flows with Playwright
+  - iterate fixes + re-checks until behavior matches acceptance criteria
 
 ## Handoff Requirements
 
@@ -29,6 +33,7 @@
   - API integration coverage
   - manual QA paths + outcomes
   - verification commands + results
+- Do not mark an issue complete until Playwright checks pass for the affected frontend flows.
 - Update the linked GitHub Issue status (`done`, `blocked`, or `handoff`) and mirror key notes in `HANDOFF.local.md`.
 
 ## Boundaries

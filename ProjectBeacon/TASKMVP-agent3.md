@@ -33,6 +33,10 @@
 - UI implements V0 flows in `MVP_REFERENCE_V0.md` with API-contract-first wiring.
 - Loading/empty/error states are handled on all major screens.
 - Role-specific affordances are enforced in UI and aligned with backend capability flags.
+- Frontend verification loop for each UI issue:
+  - run `npm run dev`
+  - validate updated routes/flows with Playwright
+  - iterate fixes + re-checks until acceptance criteria pass
 
 ## Handoff Requirements
 
@@ -41,6 +45,7 @@
   - API integration status
   - manual QA outcomes
   - verification commands + results
+- Do not mark issue complete until Playwright verification passes for affected frontend changes.
 - Update issue status (`done`, `blocked`, or `handoff`) and mirror notes in handoff.
 - Record major UX and flow decisions in `DECISIONS.md`.
 
