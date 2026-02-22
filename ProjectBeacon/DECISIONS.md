@@ -268,3 +268,16 @@
 - Impact on files or behavior:
   - `components/projects/clarification-panel.tsx` now renders multi-step progress, low-confidence terminal actions, and retry controls.
   - `components/projects/planning-workspace.tsx` now wires proceed/refinement actions to generation/review navigation while preserving project scope.
+
+## 2026-02-22T06:32:53Z
+
+- Decision summary:
+  - Implement task-inventory refinement as a local draft layer over existing board API output instead of introducing new server-side draft endpoints.
+- Rationale:
+  - `PB-038` requires review/edit behavior before delegation while explicitly keeping existing API contracts unchanged.
+- Alternatives considered:
+  - Add a new server-backed inventory draft persistence endpoint.
+  - Reuse board page directly with no pre-delegation local edit stage.
+- Impact on files or behavior:
+  - New `components/projects/task-inventory-blueprint.tsx` handles grouped review/edit, validation, and export/proceed actions.
+  - `components/projects/planning-workspace.tsx` now routes delegation progression through the blueprint stage and keeps lock/assign APIs intact.
