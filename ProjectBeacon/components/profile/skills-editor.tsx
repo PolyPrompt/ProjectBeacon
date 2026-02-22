@@ -142,9 +142,11 @@ function SkillLevelBar({
 export function SkillsEditor({
   apiBasePath = "/api/me/skills",
   continueHref = "/projects/new",
+  continueButtonLabel = "Continue to adding project documents",
 }: {
   apiBasePath?: string;
   continueHref?: string;
+  continueButtonLabel?: string;
 }) {
   const router = useRouter();
   const [skills, setSkills] = useState<UserSkill[]>([]);
@@ -587,7 +589,7 @@ export function SkillsEditor({
                 disabled={!isReadyToContinue || isSaving}
                 onClick={() => router.push(continueHref)}
               >
-                Continue to adding project documents
+                {continueButtonLabel}
               </button>
             </div>
           </section>
