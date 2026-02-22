@@ -555,3 +555,36 @@
   - `npm run lint` -> pass
   - `npm run build` -> pass
   - `npm run dev` + Playwright on `http://localhost:3000/projects/new` -> pass (create, share-link, invite result summary flow).
+
+## 2026-02-22T01:05:52Z - PB-035 Milestone (Agent3)
+
+- Issue: `#85` `[PB-035] Rebuild project upload workspace to match both upload-spec reference states`.
+- Completed:
+  - Replaced `/projects/:projectId/workspace` placeholder with the live planning workspace component.
+  - Rebuilt workspace intake UI into reference-style bento layout:
+    - hero header
+    - drag/drop upload card
+    - paste-specifications panel
+    - recent uploads list
+    - AI tip card
+    - bottom primary action bar
+  - Added status-aware upload rows (`processing`, `analyzed`, `error`) with local state updates (no full-page refresh required).
+  - Added explicit state messaging for:
+    - upload load/upload failures
+    - spec-save progress/errors
+    - AI action readiness hints and disabled-state messaging.
+  - Preserved existing clarification + lock/assign pipeline controls in secondary sections below intake surface.
+- Files changed:
+  - `app/projects/[projectId]/workspace/page.tsx`
+  - `components/projects/planning-workspace.tsx`
+  - `components/projects/context-editor.tsx`
+  - `components/projects/project-documents-uploader.tsx`
+  - `DECISIONS.md`
+  - `HANDOFF.md`
+- Commands and results:
+  - `npm run format:check` -> pass
+  - `npm run lint` -> pass
+  - `npm run build` -> pass
+  - `npm run dev` + Playwright (`/projects/:projectId/workspace`) -> pass for layout/state rendering and upload error-state row behavior.
+- Notes:
+  - `GET /api/projects/:projectId/documents` currently returns `500` in this environment; UI now renders explicit empty/error states instead of silent failure.

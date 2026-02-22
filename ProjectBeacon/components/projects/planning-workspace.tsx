@@ -1,13 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  type ChangeEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import ClarificationPanel, {
   type ClarificationState,
@@ -16,6 +10,11 @@ import {
   ContextEditor,
   type PlanningWorkspaceContext,
 } from "@/components/projects/context-editor";
+import {
+  ProjectRecentUploads,
+  ProjectUploadDropzone,
+  type WorkspaceDocument,
+} from "@/components/projects/project-documents-uploader";
 
 type PlanningStatus = "draft" | "locked" | "assigned";
 
@@ -26,7 +25,7 @@ export type PlanningWorkspaceState = {
     contextType: string;
     createdAt: string;
   }>;
-  documents: Array<{ id: string; fileName: string; createdAt: string }>;
+  documents: WorkspaceDocument[];
   clarification: {
     confidence: number;
     readyForGeneration: boolean;
@@ -34,6 +33,7 @@ export type PlanningWorkspaceState = {
     maxQuestions: number;
   };
   canGenerate: boolean;
+  hasMinimumInput: boolean;
 };
 
 type PlanningWorkspaceProps = {
@@ -53,6 +53,7 @@ const INITIAL_WORKSPACE_STATE: PlanningWorkspaceState = {
   documents: [],
   clarification: DEFAULT_CLARIFICATION,
   canGenerate: false,
+  hasMinimumInput: false,
 };
 
 function normalizePlanningStatus(value: unknown): PlanningStatus {
@@ -110,9 +111,7 @@ function normalizeClarification(payload: unknown): ClarificationState {
   };
 }
 
-function normalizeDocuments(
-  payload: unknown,
-): PlanningWorkspaceState["documents"] {
+function normalizeDocuments(payload: unknown): WorkspaceDocument[] {
   if (!payload || typeof payload !== "object") {
     return [];
   }
@@ -141,6 +140,7 @@ function normalizeDocuments(
         typeof document.createdAt === "string"
           ? document.createdAt
           : new Date().toISOString(),
+      status: "analyzed" as const,
     }));
 }
 
@@ -162,20 +162,36 @@ function resolveMessage(payload: unknown, fallback: string): string {
   return fallback;
 }
 
-function computeCanGenerate(args: {
+function computeHasMinimumInput(args: {
   contextText: string;
-  documentsLength: number;
+  documents: WorkspaceDocument[];
+}): boolean {
+  if (args.contextText.trim().length > 0) {
+    return true;
+  }
+
+  return args.documents.some((document) => document.status !== "error");
+}
+
+function computeCanGenerate(args: {
+  hasMinimumInput: boolean;
   planningStatus: PlanningStatus;
   readyForGeneration: boolean;
 }): boolean {
-  const hasMinimumContext =
-    args.contextText.trim().length > 0 || args.documentsLength > 0;
-
   return (
-    hasMinimumContext &&
+    args.hasMinimumInput &&
     args.readyForGeneration &&
     args.planningStatus === "draft"
   );
+}
+
+function makeTempDocument(fileName: string): WorkspaceDocument {
+  return {
+    id: `pending-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    fileName,
+    createdAt: new Date().toISOString(),
+    status: "processing",
+  };
 }
 
 export default function PlanningWorkspace({
@@ -263,7 +279,7 @@ export default function PlanningWorkspace({
         projectPayload.planningStatus,
       );
 
-      let documents = INITIAL_WORKSPACE_STATE.documents;
+      let documents: WorkspaceDocument[] = [];
       if (documentsResponse.ok) {
         const documentsPayload = (await documentsResponse.json()) as unknown;
         documents = normalizeDocuments(documentsPayload);
@@ -314,9 +330,12 @@ export default function PlanningWorkspace({
         nextTaskCount = columnTasks + unassignedCount;
       }
 
-      const canGenerate = computeCanGenerate({
+      const hasMinimumInput = computeHasMinimumInput({
         contextText: description,
-        documentsLength: documents.length,
+        documents,
+      });
+      const canGenerate = computeCanGenerate({
+        hasMinimumInput,
         planningStatus: nextPlanningStatus,
         readyForGeneration: clarification.readyForGeneration,
       });
@@ -335,6 +354,7 @@ export default function PlanningWorkspace({
           maxQuestions: clarification.maxQuestions,
         },
         canGenerate,
+        hasMinimumInput,
       });
     } catch (error) {
       setLoadError(
@@ -372,20 +392,24 @@ export default function PlanningWorkspace({
       }
 
       const contexts = toContextEntries(nextText);
-      const canGenerate = computeCanGenerate({
-        contextText: nextText,
-        documentsLength: workspaceState.documents.length,
-        planningStatus,
-        readyForGeneration: workspaceState.clarification.readyForGeneration,
-      });
-
       setContextText(nextText);
-      setWorkspaceState((previous) => ({
-        ...previous,
-        contexts,
-        canGenerate,
-      }));
-      setActionStatus("Project context saved.");
+      setWorkspaceState((previous) => {
+        const hasMinimumInput = computeHasMinimumInput({
+          contextText: nextText,
+          documents: previous.documents,
+        });
+        return {
+          ...previous,
+          contexts,
+          hasMinimumInput,
+          canGenerate: computeCanGenerate({
+            hasMinimumInput,
+            planningStatus,
+            readyForGeneration: previous.clarification.readyForGeneration,
+          }),
+        };
+      });
+      setActionStatus("Specifications saved.");
     } catch (error) {
       setContextError(
         error instanceof Error ? error.message : "Failed to save context.",
@@ -395,17 +419,30 @@ export default function PlanningWorkspace({
     }
   }
 
-  async function handleDocumentUpload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
+  async function handleDocumentUpload(file: File) {
     setIsUploadingDocument(true);
     setDocumentsError(null);
     setActionError(null);
     setActionStatus(null);
+
+    const pendingDocument = makeTempDocument(file.name);
+    setWorkspaceState((previous) => {
+      const documents = [pendingDocument, ...previous.documents];
+      const hasMinimumInput = computeHasMinimumInput({
+        contextText,
+        documents,
+      });
+      return {
+        ...previous,
+        documents,
+        hasMinimumInput,
+        canGenerate: computeCanGenerate({
+          hasMinimumInput,
+          planningStatus,
+          readyForGeneration: previous.clarification.readyForGeneration,
+        }),
+      };
+    });
 
     try {
       const formData = new FormData();
@@ -437,46 +474,51 @@ export default function PlanningWorkspace({
         throw new Error("Upload completed but returned invalid document data.");
       }
 
-      const nextDocuments = [
-        ...workspaceState.documents.filter((entry) => entry.id !== document.id),
-        {
-          id: document.id,
-          fileName: document.fileName,
-          createdAt: document.createdAt ?? new Date().toISOString(),
-        },
-      ];
-
-      const canGenerate = computeCanGenerate({
-        contextText,
-        documentsLength: nextDocuments.length,
-        planningStatus,
-        readyForGeneration: workspaceState.clarification.readyForGeneration,
+      setWorkspaceState((previous) => {
+        const nextDocuments = previous.documents.map((entry) =>
+          entry.id === pendingDocument.id
+            ? {
+                id: document.id as string,
+                fileName: document.fileName as string,
+                createdAt: document.createdAt ?? new Date().toISOString(),
+                status: "analyzed" as const,
+              }
+            : entry,
+        );
+        const hasMinimumInput = computeHasMinimumInput({
+          contextText,
+          documents: nextDocuments,
+        });
+        return {
+          ...previous,
+          documents: nextDocuments,
+          hasMinimumInput,
+          canGenerate: computeCanGenerate({
+            hasMinimumInput,
+            planningStatus,
+            readyForGeneration: previous.clarification.readyForGeneration,
+          }),
+        };
       });
-
+      setActionStatus("File uploaded and added to planning inputs.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to upload document.";
+      setDocumentsError(message);
       setWorkspaceState((previous) => ({
         ...previous,
-        documents: nextDocuments,
-        canGenerate,
+        documents: previous.documents.map((entry) =>
+          entry.id === pendingDocument.id
+            ? { ...entry, status: "error", errorMessage: message }
+            : entry,
+        ),
       }));
-      setActionStatus("Document uploaded for planning.");
-    } catch (error) {
-      setDocumentsError(
-        error instanceof Error ? error.message : "Failed to upload document.",
-      );
     } finally {
       setIsUploadingDocument(false);
-      event.target.value = "";
     }
   }
 
   function handleClarificationState(state: ClarificationState) {
-    const canGenerate = computeCanGenerate({
-      contextText,
-      documentsLength: workspaceState.documents.length,
-      planningStatus,
-      readyForGeneration: state.readyForGeneration,
-    });
-
     setWorkspaceState((previous) => ({
       ...previous,
       clarification: {
@@ -485,12 +527,24 @@ export default function PlanningWorkspace({
         askedCount: state.askedCount,
         maxQuestions: state.maxQuestions,
       },
-      canGenerate,
+      canGenerate: computeCanGenerate({
+        hasMinimumInput: previous.hasMinimumInput,
+        planningStatus,
+        readyForGeneration: state.readyForGeneration,
+      }),
     }));
   }
 
   async function runGenerate() {
-    if (!workspaceState.canGenerate || requiresLocalUserHeader) {
+    if (!workspaceState.hasMinimumInput || requiresLocalUserHeader) {
+      return;
+    }
+
+    if (!workspaceState.canGenerate) {
+      setActionError(
+        "Inputs are ready. Complete clarification until confidence reaches the target, then start AI breakdown.",
+      );
+      setActionStatus(null);
       return;
     }
 
@@ -565,8 +619,7 @@ export default function PlanningWorkspace({
       setWorkspaceState((previous) => ({
         ...previous,
         canGenerate: computeCanGenerate({
-          contextText,
-          documentsLength: previous.documents.length,
+          hasMinimumInput: previous.hasMinimumInput,
           planningStatus: nextStatus,
           readyForGeneration: previous.clarification.readyForGeneration,
         }),
@@ -616,8 +669,7 @@ export default function PlanningWorkspace({
       setWorkspaceState((previous) => ({
         ...previous,
         canGenerate: computeCanGenerate({
-          contextText,
-          documentsLength: previous.documents.length,
+          hasMinimumInput: previous.hasMinimumInput,
           planningStatus: nextStatus,
           readyForGeneration: previous.clarification.readyForGeneration,
         }),
@@ -635,122 +687,147 @@ export default function PlanningWorkspace({
     }
   }
 
-  const canGenerateMessage = useMemo(() => {
+  const startActionEnabled = useMemo(
+    () =>
+      !requiresLocalUserHeader &&
+      planningStatus === "draft" &&
+      workspaceState.hasMinimumInput &&
+      !isUploadingDocument,
+    [
+      isUploadingDocument,
+      planningStatus,
+      requiresLocalUserHeader,
+      workspaceState.hasMinimumInput,
+    ],
+  );
+
+  const startActionLabel = startActionEnabled
+    ? "Start AI Breakdown"
+    : "Start AI Delegation";
+
+  const startActionHint = useMemo(() => {
     if (requiresLocalUserHeader) {
-      return "Local project session missing. Clarification and generation actions are disabled.";
-    }
-    if (workspaceState.canGenerate) {
-      return "Ready to generate draft tasks.";
+      return "Local session missing. AI actions are disabled.";
     }
     if (planningStatus !== "draft") {
-      return "Generation is disabled in non-draft planning states.";
+      return "AI draft generation is only available in draft planning status.";
     }
-    if (
-      contextText.trim().length === 0 &&
-      workspaceState.documents.length === 0
-    ) {
-      return "Add context text or upload at least one planning document.";
+    if (!workspaceState.hasMinimumInput) {
+      return "Upload at least one file or save pasted specs to unlock AI actions.";
     }
-    if (!workspaceState.clarification.readyForGeneration) {
-      return "Run clarification until confidence is ready for generation.";
+    if (!workspaceState.canGenerate) {
+      return "Input is ready. Clarification confidence still needs to reach the generation threshold.";
     }
-    return "Complete context and clarification to enable generation.";
+    return "Ready to run AI planning from the uploaded inputs.";
   }, [
-    contextText,
     planningStatus,
     requiresLocalUserHeader,
     workspaceState.canGenerate,
-    workspaceState.clarification.readyForGeneration,
-    workspaceState.documents.length,
+    workspaceState.hasMinimumInput,
   ]);
 
   if (isLoading) {
     return (
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-semibold text-slate-900">
-          Planning Workspace
+      <section className="rounded-2xl border border-slate-800 bg-[#0d1018] p-6 shadow-xl">
+        <h2 className="text-xl font-semibold text-slate-100">
+          Upload Project Specs
         </h2>
-        <p className="mt-2 text-sm text-slate-600">Loading workspace data...</p>
+        <p className="mt-2 text-sm text-slate-400">Loading workspace data...</p>
       </section>
     );
   }
 
   return (
-    <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900">
-            Planning Workspace
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Context + docs -&gt; clarify -&gt; generate -&gt; review -&gt; lock
-            -&gt; assign
-          </p>
-        </div>
-        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold uppercase text-slate-700">
-          {planningStatus}
-        </span>
+    <section className="space-y-6 rounded-2xl border border-slate-800 bg-[#0d1018] p-6 shadow-[0_24px_80px_rgba(15,23,42,0.45)]">
+      <div className="space-y-2">
+        <h2 className="text-4xl font-extrabold tracking-tight text-slate-100">
+          Upload Project Specs
+        </h2>
+        <p className="max-w-2xl text-base text-slate-400">
+          Provide project requirements so AI can break down tasks, estimate
+          delivery sequencing, and prepare delegation.
+        </p>
       </div>
 
       {loadError ? (
-        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
           {loadError}
         </p>
       ) : null}
 
+      <div className="grid gap-4 md:grid-cols-12 md:auto-rows-[minmax(180px,auto)]">
+        <div className="md:col-span-8 md:row-span-2">
+          <ProjectUploadDropzone
+            onUpload={handleDocumentUpload}
+            isUploading={isUploadingDocument}
+            error={documentsError}
+          />
+        </div>
+
+        <div className="md:col-span-4 md:row-span-3">
+          <ContextEditor
+            contexts={workspaceState.contexts}
+            error={contextError}
+            initialText={contextText}
+            isSaving={isSavingContext}
+            onSave={handleSaveContext}
+          />
+        </div>
+
+        <div className="md:col-span-4 md:row-span-2">
+          <ProjectRecentUploads
+            documents={workspaceState.documents}
+            error={documentsError}
+            isLoading={false}
+          />
+        </div>
+
+        <section className="relative overflow-hidden rounded-2xl border border-violet-500/30 bg-violet-500/10 p-5 md:col-span-4 md:row-span-1">
+          <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-violet-500/20 blur-3xl" />
+          <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-200">
+            AI Pro Tip
+          </h3>
+          <p className="relative mt-2 text-sm leading-6 text-slate-300">
+            Technical specs with constraints and deadlines improve task
+            decomposition quality and reduce rework during delegation.
+          </p>
+        </section>
+
+        <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-700 bg-[#161821] p-5 md:col-span-8 md:row-span-1">
+          <div className="flex items-start gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-full bg-slate-700 text-xs font-bold text-slate-200">
+              AI
+            </div>
+            <div>
+              <h4 className="text-base font-semibold text-slate-100">
+                Ready to proceed?
+              </h4>
+              <p className="mt-1 text-xs text-slate-400">{startActionHint}</p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="rounded-xl bg-violet-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-800/40 transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300 disabled:shadow-none"
+            onClick={runGenerate}
+            disabled={!startActionEnabled || isGenerating}
+          >
+            {isGenerating ? "Running AI Breakdown..." : startActionLabel}
+          </button>
+        </section>
+      </div>
+
       {requiresLocalUserHeader ? (
-        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          {canGenerateMessage}
+        <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+          Local project session is missing. Upload and save still work, but AI
+          generation/lock/assignment controls are disabled.
         </p>
       ) : null}
 
-      <ContextEditor
-        contexts={workspaceState.contexts}
-        error={contextError}
-        initialText={contextText}
-        isSaving={isSavingContext}
-        onSave={handleSaveContext}
-      />
-
-      <section className="space-y-3 rounded-lg border border-neutral-200 p-4">
-        <h3 className="text-base font-semibold">2. Supporting Documents</h3>
-        <label className="inline-flex cursor-pointer items-center rounded border border-black/20 px-3 py-2 text-sm">
-          <input
-            className="hidden"
-            type="file"
-            onChange={handleDocumentUpload}
-            disabled={isUploadingDocument}
-          />
-          {isUploadingDocument ? "Uploading..." : "Upload document"}
-        </label>
-
-        {workspaceState.documents.length === 0 ? (
-          <p className="rounded-md border border-dashed border-neutral-300 px-3 py-2 text-sm text-neutral-600">
-            No documents uploaded for planning yet.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {workspaceState.documents.map((document) => (
-              <li
-                key={document.id}
-                className="rounded-md border border-neutral-200 px-3 py-2 text-sm text-neutral-800"
-              >
-                <p className="font-medium">{document.fileName}</p>
-                <p className="text-xs text-neutral-500">
-                  Added {new Date(document.createdAt).toLocaleString()}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {documentsError ? (
-          <p className="text-sm text-red-600">{documentsError}</p>
-        ) : null}
-      </section>
-
-      <section className="space-y-3 rounded-lg border border-neutral-200 p-4">
-        <h3 className="text-base font-semibold">3. Clarify Ambiguities</h3>
+      <section className="space-y-3 rounded-2xl border border-slate-800 bg-[#171821] p-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
+          Clarification Checkpoint
+        </h3>
         <ClarificationPanel
           disabled={requiresLocalUserHeader}
           onStateChange={handleClarificationState}
@@ -759,36 +836,25 @@ export default function PlanningWorkspace({
         />
       </section>
 
-      <section className="space-y-3 rounded-lg border border-neutral-200 p-4">
-        <h3 className="text-base font-semibold">4. Generate Draft Tasks</h3>
-        <p className="text-sm text-neutral-600">{canGenerateMessage}</p>
-        <button
-          type="button"
-          className="rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
-          onClick={runGenerate}
-          disabled={!workspaceState.canGenerate || isGenerating}
-        >
-          {isGenerating ? "Generating..." : "Generate draft tasks"}
-        </button>
-      </section>
-
-      <section className="space-y-3 rounded-lg border border-neutral-200 p-4">
-        <h3 className="text-base font-semibold">5. Review, Lock, and Assign</h3>
-        <p className="text-sm text-neutral-600">
+      <section className="space-y-3 rounded-2xl border border-slate-800 bg-[#171821] p-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
+          Review, Lock, and Assign
+        </h3>
+        <p className="text-sm text-slate-400">
           {taskCount > 0
-            ? `${taskCount} tasks in the draft board.`
-            : "No tasks generated yet."}
+            ? `${taskCount} tasks currently in the draft board.`
+            : "No generated tasks yet. Start with AI breakdown once ready."}
         </p>
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/projects/${projectId}/board`}
-            className="rounded border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+            className="rounded-lg border border-slate-600 px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-700/60"
           >
             Review and edit tasks
           </Link>
           <button
             type="button"
-            className="rounded border border-black px-3 py-2 text-sm disabled:opacity-50"
+            className="rounded-lg border border-slate-500 px-3 py-2 text-sm text-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
             onClick={runLock}
             disabled={!canLock || isLocking}
           >
@@ -796,7 +862,7 @@ export default function PlanningWorkspace({
           </button>
           <button
             type="button"
-            className="rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
+            className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300"
             onClick={runAssign}
             disabled={!canAssign || isAssigning}
           >
@@ -804,20 +870,20 @@ export default function PlanningWorkspace({
           </button>
         </div>
         {assignedCount !== null ? (
-          <p className="text-xs text-neutral-600">
-            Assigned {assignedCount} tasks in the last run.
+          <p className="text-xs text-slate-400">
+            Assigned {assignedCount} tasks in the latest run.
           </p>
         ) : null}
       </section>
 
       {actionStatus ? (
-        <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <p className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
           {actionStatus}
         </p>
       ) : null}
 
       {actionError ? (
-        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
           {actionError}
         </p>
       ) : null}
