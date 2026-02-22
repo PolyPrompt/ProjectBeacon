@@ -77,7 +77,18 @@ export function DocumentPreviewModal({
         );
 
         if (!response.ok) {
-          throw new Error(`Preview endpoint returned ${response.status}`);
+          let message = `Preview endpoint returned ${response.status}`;
+          try {
+            const payload = (await response.json()) as {
+              error?: { message?: string };
+            } | null;
+            if (payload?.error?.message) {
+              message = payload.error.message;
+            }
+          } catch {
+            // Use default message when response body cannot be parsed.
+          }
+          throw new Error(message);
         }
 
         const json = (await response.json()) as unknown;

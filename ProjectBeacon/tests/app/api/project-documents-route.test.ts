@@ -95,7 +95,6 @@ describe("project documents route", () => {
           mimeType: "application/pdf",
           sizeBytes: 1234,
           storageKey: "projects/p/docs/doc-1-requirements.pdf",
-          uploadedByUserId: USER_ID,
           createdAt: "2026-02-21T00:00:00.000Z",
         },
       ],
@@ -127,17 +126,17 @@ describe("project documents route", () => {
   });
 
   it("POST returns uploaded document payload on success", async () => {
-    const file = new File(["hello"], "notes.md", { type: "text/markdown" });
+    const file = new File(["hello"], "notes.txt", { type: "text/plain" });
     const formData = new FormData();
     formData.set("file", file);
 
     uploadProjectDocumentMock.mockResolvedValue({
       id: "doc-2",
       projectId: PROJECT_ID,
-      fileName: "notes.md",
-      mimeType: "text/markdown",
+      fileName: "notes.txt",
+      mimeType: "text/plain",
       sizeBytes: 5,
-      storageKey: "projects/p/docs/doc-2-notes.md",
+      storageKey: "projects/p/docs/doc-2-notes.txt",
       uploadedByUserId: USER_ID,
       createdAt: "2026-02-21T00:00:00.000Z",
     });
@@ -167,18 +166,17 @@ describe("project documents route", () => {
       document: {
         id: "doc-2",
         projectId: PROJECT_ID,
-        fileName: "notes.md",
-        mimeType: "text/markdown",
+        fileName: "notes.txt",
+        mimeType: "text/plain",
         sizeBytes: 5,
-        storageKey: "projects/p/docs/doc-2-notes.md",
-        uploadedByUserId: USER_ID,
+        storageKey: "projects/p/docs/doc-2-notes.txt",
         createdAt: "2026-02-21T00:00:00.000Z",
       },
     });
   });
 
   it("POST returns contract-compliant API error when upload fails", async () => {
-    const file = new File(["bad"], "bad.md", { type: "text/markdown" });
+    const file = new File(["bad"], "bad.txt", { type: "text/plain" });
     const formData = new FormData();
     formData.set("file", file);
 

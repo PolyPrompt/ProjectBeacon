@@ -1,6 +1,11 @@
 import { normalizeProjectRole } from "@/lib/auth/project-role";
 import { requireSessionUser } from "@/lib/auth/clerk-auth";
 import { ApiHttpError, apiError } from "@/lib/api/errors";
+import {
+  PROJECT_DOCUMENT_ALLOWED_TYPES_LABEL,
+  isAllowedProjectDocumentExtension,
+  isAllowedProjectDocumentMimeType,
+} from "@/lib/documents/file-types";
 import { listDocumentsForRole } from "@/lib/documents/access-policy";
 import {
   getProjectMembership,
@@ -11,13 +16,21 @@ import { getServiceSupabaseClient } from "@/lib/supabase/server";
 import { z } from "zod";
 
 const uploadDocumentSchema = z.object({
-  fileName: z.string().trim().min(1),
-  mimeType: z.string().trim().min(1),
+  fileName: z.string().trim().min(1).refine(isAllowedProjectDocumentExtension, {
+    message: `fileName must end with .pdf, .docx, or .txt.`,
+  }),
+  mimeType: z
+    .string()
+    .trim()
+    .min(1)
+    .transform((value) => value.toLowerCase())
+    .refine(isAllowedProjectDocumentMimeType, {
+      message: `mimeType must be one of the allowed project document types (${PROJECT_DOCUMENT_ALLOWED_TYPES_LABEL}).`,
+    }),
   sizeBytes: z.number().int().nonnegative(),
   storageKey: z.string().trim().min(1),
   isPublic: z.boolean().optional().default(false),
   usedForPlanning: z.boolean().optional().default(false),
-  assignedUserIds: z.array(z.string().uuid()).optional().default([]),
 });
 
 const deleteDocumentSchema = z.object({
@@ -74,7 +87,6 @@ export async function GET(
         fileName: document.file_name,
         mimeType: document.mime_type,
         sizeBytes: document.size_bytes,
-        uploadedByUserId: document.uploaded_by_user_id,
         isPublic: Boolean(document.is_public),
         usedForPlanning: Boolean(document.used_for_planning),
         // Do not expose storage keys to non-admin roles.
@@ -172,7 +184,13 @@ export async function POST(
       return Response.json(
         {
           document: {
-            ...uploaded,
+            id: uploaded.id,
+            projectId: uploaded.projectId,
+            fileName: uploaded.fileName,
+            mimeType: uploaded.mimeType,
+            sizeBytes: uploaded.sizeBytes,
+            storageKey: uploaded.storageKey,
+            createdAt: uploaded.createdAt,
             isPublic,
             usedForPlanning,
           },
@@ -204,22 +222,6 @@ export async function POST(
       throw documentError ?? new Error("Could not create project document.");
     }
 
-    if (payload.assignedUserIds.length > 0) {
-      const assignmentRows = payload.assignedUserIds.map((userId) => ({
-        document_id: document.id,
-        user_id: userId,
-        assigned_by_user_id: actorUserId,
-      }));
-
-      const { error: assignmentError } = await supabase
-        .from("project_document_access")
-        .upsert(assignmentRows, { onConflict: "document_id,user_id" });
-
-      if (assignmentError) {
-        throw assignmentError;
-      }
-    }
-
     return Response.json(
       {
         document: {
@@ -229,7 +231,6 @@ export async function POST(
           mimeType: document.mime_type,
           sizeBytes: document.size_bytes,
           storageKey: document.storage_key,
-          uploadedByUserId: document.uploaded_by_user_id,
           isPublic: Boolean(document.is_public),
           usedForPlanning: Boolean(document.used_for_planning),
           createdAt: document.created_at,

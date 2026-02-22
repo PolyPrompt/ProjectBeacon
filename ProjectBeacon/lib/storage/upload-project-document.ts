@@ -1,15 +1,12 @@
 import { ApiHttpError } from "@/lib/api/errors";
+import {
+  PROJECT_DOCUMENT_ALLOWED_TYPES_LABEL,
+  isPermittedProjectDocumentFile,
+} from "@/lib/documents/file-types";
 import { getEnv } from "@/lib/env";
 import { getServiceSupabaseClient } from "@/lib/supabase/server";
 
 const MAX_FILE_BYTES = 15 * 1024 * 1024;
-const ALLOWED_MIME_TYPES = new Set([
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "text/plain",
-  "text/markdown",
-]);
 
 function sanitizeFileName(fileName: string) {
   return fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -33,11 +30,16 @@ export async function uploadProjectDocument(input: {
 }): Promise<ProjectDocumentDTO> {
   const { projectId, uploadedByUserId, file } = input;
 
-  if (!ALLOWED_MIME_TYPES.has(file.type)) {
+  if (
+    !isPermittedProjectDocumentFile({
+      fileName: file.name,
+      mimeType: file.type,
+    })
+  ) {
     throw new ApiHttpError(
       400,
       "UNSUPPORTED_FILE_TYPE",
-      `Unsupported file type: ${file.type || "unknown"}`,
+      `Unsupported file type. Allowed types: ${PROJECT_DOCUMENT_ALLOWED_TYPES_LABEL}.`,
     );
   }
 
