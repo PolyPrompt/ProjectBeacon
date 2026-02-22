@@ -718,6 +718,7 @@ Response `200`:
   "id": "t_123",
   "title": "Build Auth Middleware",
   "description": "Implement protected route checks",
+  "status": "todo",
   "softDeadline": "2026-03-01T00:00:00.000Z",
   "assignmentReasoning": "Ada Lovelace was assigned due to strongest skill coverage in React (4/5), Auth (5/5).",
   "dependencyTaskIds": ["t_001", "t_004"],
@@ -734,6 +735,43 @@ Notes:
 
 - `dependencyTaskIds` are direct prerequisites (`task_dependencies.depends_on_task_id`) for the selected task.
 - `timelinePlacement` uses dependency-aware deterministic ordering (tie-break by due date, then created time, then id).
+
+## `PATCH /api/projects/:projectId/tasks/:taskId`
+
+Request:
+
+```json
+{
+  "status": "in_progress"
+}
+```
+
+Response `200`:
+
+```json
+{
+  "task": {
+    "id": "t_123",
+    "projectId": "p_123",
+    "assigneeUserId": "u_123",
+    "title": "Build Auth Middleware",
+    "description": "Implement protected route checks",
+    "difficultyPoints": 3,
+    "status": "in_progress",
+    "dueAt": "2026-03-01T00:00:00.000Z",
+    "createdAt": "2026-02-21T00:00:00.000Z",
+    "updatedAt": "2026-02-22T00:00:00.000Z"
+  }
+}
+```
+
+Error semantics:
+
+- `401` when unauthenticated.
+- `403` when requester is not a project member, or requester has `user` role and task is not assigned to them.
+- `404` when project/task is not found in project scope.
+- `409` for invalid status transition (for example `done -> todo`).
+- `422` for invalid request payload.
 
 ## `GET /api/projects/:projectId/workflow/timeline/:taskId`
 

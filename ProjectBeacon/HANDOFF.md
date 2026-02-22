@@ -654,3 +654,34 @@
 - Branch: `agent1/pb-030-document-access-alignment`
 - Issue comment posted with shipped scope + validation summary:
   - https://github.com/PolyPrompt/ProjectBeacon/issues/71#issuecomment-3939834702
+
+## 2026-02-22T02:34:05Z - PB-046 Milestone (Agent2)
+
+- Issue: `#97` `[PB-046] Add task status update API + contract support for dashboard/modal controls`.
+- Completed:
+  - Added `PATCH /api/projects/:projectId/tasks/:taskId` endpoint.
+  - Enforced role behavior:
+    - `admin` can update any task in project scope.
+    - `user` can update only tasks currently assigned to self.
+  - Added deterministic transition guard:
+    - allowed: `todo -> in_progress|blocked|done`
+    - allowed: `in_progress -> blocked|done`
+    - allowed: `blocked -> in_progress|done`
+    - terminal: `done` (idempotent `done -> done` only)
+  - Added `422` payload validation handling for invalid `status` body.
+  - Updated task detail response to include stable `status` field and switched detail route access to shared project session/membership guard.
+  - Updated dashboard modal DTO/guard/rendering to consume and display `status`.
+  - Updated `API_CONTRACT.md` with:
+    - new `PATCH /api/projects/:projectId/tasks/:taskId` request/response
+    - error semantics (`401/403/404/409/422`)
+    - `status` field on task detail payload
+- Verification:
+  - `npm run format:check` => pass.
+  - `npm run lint` => pass.
+  - `npm run build` => pass.
+- Files changed:
+  - `app/api/projects/[projectId]/tasks/[taskId]/route.ts`
+  - `app/api/projects/[projectId]/tasks/[taskId]/detail/route.ts`
+  - `components/dashboard/task-detail-modal.tsx`
+  - `types/dashboard.ts`
+  - `API_CONTRACT.md`

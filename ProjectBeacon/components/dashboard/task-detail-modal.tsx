@@ -37,6 +37,7 @@ function createFallbackDetail(
     id: task.id,
     title: task.title,
     description: task.description,
+    status: task.status,
     softDeadline: task.softDeadline,
     assignmentReasoning:
       "Assignment reasoning endpoint is not available yet. This placeholder confirms modal plumbing and timeline deep-link behavior.",
@@ -60,6 +61,10 @@ function isTaskDetailModalDTO(value: unknown): value is TaskDetailModalDTO {
     typeof detail.id === "string" &&
     typeof detail.title === "string" &&
     typeof detail.description === "string" &&
+    (detail.status === "todo" ||
+      detail.status === "in_progress" ||
+      detail.status === "blocked" ||
+      detail.status === "done") &&
     (typeof detail.softDeadline === "string" || detail.softDeadline === null) &&
     typeof detail.assignmentReasoning === "string" &&
     Array.isArray(detail.dependencyTaskIds) &&
@@ -191,6 +196,14 @@ export function TaskDetailModal({
         ) : null}
 
         <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Status
+            </dt>
+            <dd className="mt-1 text-sm text-slate-800">
+              {activeDetail.status}
+            </dd>
+          </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Soft Deadline

@@ -1,7 +1,9 @@
 import { buildAssignmentReasoning } from "@/lib/tasks/assignment-reasoning";
-import { requireAuthenticatedUserId } from "@/lib/server/auth";
-import { HttpError, toErrorResponse } from "@/lib/server/errors";
-import { requireProjectMembership } from "@/lib/server/project-access";
+import { jsonError } from "@/lib/server/errors";
+import {
+  mapRouteError,
+  requireProjectAccess,
+} from "@/lib/server/route-helpers";
 import { supabaseRestGet } from "@/lib/server/supabase-rest";
 import {
   type TaskDependencyInput,
@@ -21,6 +23,7 @@ type TaskRow = {
   id: string;
   title: string;
   description: string | null;
+  status: "todo" | "in_progress" | "blocked" | "done";
   due_at: string | null;
   difficulty_points: number | null;
   assignee_user_id: string | null;
@@ -62,7 +65,7 @@ function buildInFilter(values: string[]): string {
 
 async function getProjectTaskRows(projectId: string): Promise<TaskRow[]> {
   return supabaseRestGet<TaskRow[]>(
-    `tasks?select=id,title,description,due_at,difficulty_points,assignee_user_id,created_at&project_id=eq.${encodeURIComponent(projectId)}`,
+    `tasks?select=id,title,description,status,due_at,difficulty_points,assignee_user_id,created_at&project_id=eq.${encodeURIComponent(projectId)}`,
   );
 }
 
@@ -160,18 +163,19 @@ async function getEffectiveSkillLevels(
 export async function GET(
   request: Request,
   { params }: RouteContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   try {
     const { projectId, taskId } = await params;
-    const userId = requireAuthenticatedUserId(request);
-
-    await requireProjectMembership(projectId, userId);
+    const access = await requireProjectAccess(request, projectId);
+    if (!access.ok) {
+      return access.response;
+    }
 
     const tasks = await getProjectTaskRows(projectId);
     const selectedTask = tasks.find((task) => task.id === taskId);
 
     if (!selectedTask) {
-      throw new HttpError(404, "TASK_NOT_FOUND", "Task was not found.");
+      return jsonError(404, "TASK_NOT_FOUND", "Task was not found.");
     }
 
     const taskIds = tasks.map((task) => task.id);
@@ -231,6 +235,7 @@ export async function GET(
       id: selectedTask.id,
       title: selectedTask.title,
       description: selectedTask.description ?? "",
+      status: selectedTask.status,
       softDeadline: selectedTask.due_at,
       assignmentReasoning,
       dependencyTaskIds,
@@ -238,6 +243,6 @@ export async function GET(
       timelinePlacement,
     });
   } catch (error) {
-    return toErrorResponse(error);
+    return mapRouteError(error);
   }
 }
