@@ -266,7 +266,7 @@ export function ProjectForm() {
     setShareStatus(null);
 
     try {
-      const projectUrl = `http://localhost:3000/projects/${projectId}`;
+      const projectUrl = `http://localhost:3000/projects/${projectId}/skills`;
 
       const response = await fetch(`/api/projects/${projectId}/share-email`, {
         method: "POST",

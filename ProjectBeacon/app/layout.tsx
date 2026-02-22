@@ -33,7 +33,6 @@ export default function RootLayout({
               </Link>
               <div className="flex items-center gap-4 text-sm">
                 <Link href="/projects/new">Projects</Link>
-                <Link href="/profile">Profile</Link>
               </div>
             </nav>
           </header>
@@ -55,7 +54,6 @@ export default function RootLayout({
               <div className="flex items-center gap-4 text-sm">
                 <SignedIn>
                   <Link href="/projects/new">Projects</Link>
-                  <Link href="/profile">Profile</Link>
                   <UserButton />
                 </SignedIn>
                 <SignedOut>

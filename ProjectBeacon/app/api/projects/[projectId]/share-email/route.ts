@@ -29,15 +29,10 @@ export async function POST(
     await requireProjectMember(params.projectId, user.userId);
 
     const payload = requestSchema.parse(await request.json());
-    const inviteUrl = payload.projectUrl ?? payload.joinUrl;
-
-    if (!inviteUrl) {
-      return jsonError(
-        400,
-        "VALIDATION_ERROR",
-        "projectUrl or joinUrl is required",
-      );
-    }
+    const inviteUrl = new URL(
+      `/projects/${params.projectId}/skills`,
+      request.url,
+    ).toString();
 
     if (payload.emails.length > 20) {
       return jsonError(
