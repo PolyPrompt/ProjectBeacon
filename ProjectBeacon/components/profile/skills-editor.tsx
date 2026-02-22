@@ -101,7 +101,13 @@ function SkillLevelBar({
   );
 }
 
-export function SkillsEditor() {
+export function SkillsEditor({
+  apiBasePath = "/api/me/skills",
+  continueHref = "/projects/new",
+}: {
+  apiBasePath?: string;
+  continueHref?: string;
+}) {
   const router = useRouter();
   const [skills, setSkills] = useState<UserSkill[]>([]);
   const [manualSkillName, setManualSkillName] = useState("");
@@ -112,7 +118,7 @@ export function SkillsEditor() {
 
   const loadSkills = useCallback(async () => {
     setIsLoading(true);
-    const response = await fetch("/api/me/skills", { cache: "no-store" });
+    const response = await fetch(apiBasePath, { cache: "no-store" });
     const data = await response.json();
 
     if (!response.ok) {
@@ -123,7 +129,7 @@ export function SkillsEditor() {
 
     setSkills(data.skills ?? []);
     setIsLoading(false);
-  }, []);
+  }, [apiBasePath]);
 
   useEffect(() => {
     void loadSkills();
@@ -166,7 +172,7 @@ export function SkillsEditor() {
     setIsSaving(true);
 
     try {
-      const response = await fetch("/api/me/skills", {
+      const response = await fetch(apiBasePath, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -230,7 +236,7 @@ export function SkillsEditor() {
       }),
     );
 
-    const response = await fetch("/api/me/skills", {
+    const response = await fetch(apiBasePath, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, level: nextLevel }),
@@ -255,7 +261,7 @@ export function SkillsEditor() {
   async function removeSkill(id: string) {
     setError(null);
 
-    const response = await fetch("/api/me/skills", {
+    const response = await fetch(apiBasePath, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
@@ -504,7 +510,7 @@ export function SkillsEditor() {
                 type="button"
                 className="rounded-xl bg-violet-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:bg-violet-900/60 disabled:text-violet-200/70"
                 disabled={!isReadyToContinue || isSaving}
-                onClick={() => router.push("/projects/new")}
+                onClick={() => router.push(continueHref)}
               >
                 Save & Continue
               </button>
