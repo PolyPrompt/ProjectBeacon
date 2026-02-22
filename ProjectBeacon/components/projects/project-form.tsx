@@ -53,6 +53,20 @@ function daysUntil(dateValue: string) {
   return Math.ceil(diff / msPerDay);
 }
 
+function isPastDate(dateValue: string) {
+  if (!dateValue) {
+    return false;
+  }
+
+  const selectedDate = new Date(`${dateValue}T23:59:59`);
+
+  if (Number.isNaN(selectedDate.getTime())) {
+    return false;
+  }
+
+  return selectedDate.getTime() < Date.now();
+}
+
 function estimatedDurationLabel(remainingDays: number | null) {
   if (remainingDays === null) {
     return "Set a deadline to calculate timeline";
@@ -348,6 +362,10 @@ export function ProjectForm() {
       return;
     }
 
+    if (isPastDate(date)) {
+      return;
+    }
+
     setMilestones((current) => [
       ...current,
       { id: nextId(), title: title || "Untitled milestone", date },
@@ -424,6 +442,8 @@ export function ProjectForm() {
     );
     setTeamMembers((current) => current.filter((member) => member.id !== id));
   }
+
+  const canAddMilestone = !isPastDate(newMilestoneDate);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#110a1f] text-slate-100">
@@ -556,6 +576,12 @@ export function ProjectForm() {
                               setNewMilestoneDate(event.target.value)
                             }
                           />
+                          {isPastDate(newMilestoneDate) ? (
+                            <p className="text-[11px] text-red-300">
+                              Please choose today or a future date for this
+                              milestone.
+                            </p>
+                          ) : null}
                           <div className="flex items-center justify-end gap-2">
                             <button
                               className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-400 transition hover:text-slate-200"
@@ -569,9 +595,10 @@ export function ProjectForm() {
                               Cancel
                             </button>
                             <button
-                              className="rounded-md border border-violet-500/60 bg-violet-600/20 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-violet-100 transition hover:bg-violet-600/35"
+                              className="rounded-md border border-violet-500/60 bg-violet-600/20 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-violet-100 transition hover:bg-violet-600/35 disabled:cursor-not-allowed disabled:opacity-45"
                               type="button"
                               onClick={addMilestoneFromInput}
+                              disabled={!canAddMilestone}
                             >
                               Add
                             </button>
@@ -597,39 +624,50 @@ export function ProjectForm() {
                                 }
                                 placeholder="Milestone title"
                               />
-                              <div className="flex items-center gap-3">
-                                <input
-                                  className="w-full rounded-lg border border-violet-900/50 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none focus:border-violet-500"
-                                  type="date"
-                                  value={milestone.date}
-                                  onChange={(event) =>
-                                    updateMilestone(milestone.id, {
-                                      date: event.target.value,
-                                    })
-                                  }
-                                />
-                                <button
-                                  className="text-xs font-semibold uppercase tracking-[0.1em] text-violet-300 transition hover:text-violet-200"
-                                  type="button"
-                                  onClick={() =>
-                                    setEditingMilestoneIds((current) =>
-                                      current.filter(
-                                        (milestoneId) =>
-                                          milestoneId !== milestone.id,
-                                      ),
-                                    )
-                                  }
-                                >
-                                  Done
-                                </button>
-                                <button
-                                  className="text-slate-500 transition hover:text-red-400"
-                                  type="button"
-                                  onClick={() => removeMilestone(milestone.id)}
-                                  aria-label="Remove milestone"
-                                >
-                                  ×
-                                </button>
+                              <div className="space-y-1.5">
+                                <div className="flex items-center gap-3">
+                                  <input
+                                    className="w-full rounded-lg border border-violet-900/50 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none focus:border-violet-500"
+                                    type="date"
+                                    value={milestone.date}
+                                    onChange={(event) =>
+                                      updateMilestone(milestone.id, {
+                                        date: event.target.value,
+                                      })
+                                    }
+                                  />
+                                  <button
+                                    className="text-xs font-semibold uppercase tracking-[0.1em] text-violet-300 transition hover:text-violet-200 disabled:cursor-not-allowed disabled:opacity-45"
+                                    type="button"
+                                    onClick={() =>
+                                      setEditingMilestoneIds((current) =>
+                                        current.filter(
+                                          (milestoneId) =>
+                                            milestoneId !== milestone.id,
+                                        ),
+                                      )
+                                    }
+                                    disabled={isPastDate(milestone.date)}
+                                  >
+                                    Done
+                                  </button>
+                                  <button
+                                    className="text-slate-500 transition hover:text-red-400"
+                                    type="button"
+                                    onClick={() =>
+                                      removeMilestone(milestone.id)
+                                    }
+                                    aria-label="Remove milestone"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                                {isPastDate(milestone.date) ? (
+                                  <p className="text-[11px] text-red-300">
+                                    Please choose today or a future date for
+                                    this milestone.
+                                  </p>
+                                ) : null}
                               </div>
                             </>
                           ) : (
@@ -638,9 +676,17 @@ export function ProjectForm() {
                                 {milestone.title}
                               </p>
                               <div className="flex items-center justify-between gap-3">
-                                <p className="text-sm text-slate-300">
-                                  {milestone.date || "No date"}
-                                </p>
+                                <div>
+                                  <p className="text-sm text-slate-300">
+                                    {milestone.date || "No date"}
+                                  </p>
+                                  {isPastDate(milestone.date) ? (
+                                    <p className="mt-1 text-[11px] text-red-300">
+                                      Please choose today or a future date for
+                                      this milestone.
+                                    </p>
+                                  ) : null}
+                                </div>
                                 <div className="flex items-center gap-3">
                                   <button
                                     className="text-xs font-semibold uppercase tracking-[0.1em] text-violet-300 transition hover:text-violet-200"
@@ -836,7 +882,7 @@ export function ProjectForm() {
             <section className="flex flex-col gap-4 md:col-span-5">
               <div className="rounded-2xl border border-violet-700/40 bg-violet-900/15 p-4">
                 <button
-                  className="group flex w-full items-center justify-center gap-2 rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-55"
+                  className="group flex w-full items-center justify-center gap-2 rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-violet-600 disabled:cursor-default disabled:opacity-55"
                   type={project ? "button" : "submit"}
                   form={project ? undefined : "project-setup-form"}
                   onClick={project ? generateShareLink : undefined}

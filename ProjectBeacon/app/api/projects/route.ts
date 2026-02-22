@@ -8,7 +8,7 @@ import { getServiceSupabaseClient } from "@/lib/supabase/server";
 
 const createProjectSchema = z.object({
   name: z.string().trim().min(1),
-  description: z.string().trim().min(1),
+  description: z.string().trim().optional().default(""),
   deadline: z.string().datetime(),
 });
 
