@@ -77,13 +77,18 @@ export function NavBar(props: NavBarProps) {
 
   if (props.mode === "project") {
     userInitials = getUserInitials(props.userId);
+    const isCompleteRoute = pathname.endsWith("/complete");
+    const boardHref = isCompleteRoute
+      ? `/projects/${props.projectId}/board?view=completed`
+      : `/projects/${props.projectId}/board`;
     navItems = [
       {
         label: "Dashboard",
         href: `/projects/${props.projectId}`,
         match: (path) =>
           path === `/projects/${props.projectId}` ||
-          path.endsWith("/workspace"),
+          path.endsWith("/workspace") ||
+          path.endsWith("/complete"),
       },
       {
         label: "Documents",
@@ -92,7 +97,7 @@ export function NavBar(props: NavBarProps) {
       },
       {
         label: "Board",
-        href: `/projects/${props.projectId}/board`,
+        href: boardHref,
         match: (path) =>
           path.includes("/userflow/board") || path.includes("/board"),
       },
