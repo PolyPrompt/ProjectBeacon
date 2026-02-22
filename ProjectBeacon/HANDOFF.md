@@ -225,24 +225,31 @@
 ### Commands Run + Results
 
 1. `set -a && source .env.local && set +a && npm test`
+
 - Result: initial run had `1` failing assertion due strict `File` object identity comparison; updated expectation to contract-level checks.
 
 2. `set -a && source .env.local && set +a && npm test`
+
 - Result: success, `9` files passed, `24` tests passed.
 
 3. `set -a && source .env.local && set +a && npm run format:check`
+
 - Result: fails due existing docs/spec formatting drift outside PB-019 scope.
 
 4. `npx prettier HANDOFF.md --write`
+
 - Result: success.
 
 5. `set -a && source .env.local && set +a && npm run format:check`
+
 - Result: still fails only on pre-existing docs/spec files.
 
 6. `set -a && source .env.local && set +a && npm run lint`
+
 - Result: success.
 
 7. `set -a && source .env.local && set +a && npm run build`
+
 - Result: success.
 
 ### Blockers
@@ -254,7 +261,6 @@
 
 1. Open PB-019 PR and close issue `#30`.
 2. Keep extending agent1 backend test coverage as new endpoints are added.
-
 
 # Agent2 Handoff - 2026-02-21T12:50:19Z
 
@@ -406,8 +412,8 @@
 - Blockers:
   - None.
 
-
 ## 2026-02-21T20:58:29Z - Agent3 Runner Intake Result
+
 - Runner executed: `TASK2-agent3-runner.md`.
 - Role guard: `AGENT_ID=agent3` (pass, loaded from `.env.local`).
 - GitHub intake command:
@@ -421,6 +427,7 @@
   - `HANDOFF.local.md`
 
 ## 2026-02-21T21:08:31Z - PB-021 Milestone (Agent2)
+
 - Issue: `#43` `[PB-021] Dashboard Summary + My Tasks APIs (Soft Deadline Sorted)` (claimed, in progress to done path).
 - Completed:
   - Added `GET /api/projects/:projectId/dashboard`.
@@ -449,6 +456,7 @@
   - `DECISIONS.md`
 
 ## 2026-02-21T21:13:03Z - PB-022 Milestone (Agent2)
+
 - Issue: `#44` `[PB-022] Task Detail Modal and Task-Specific Timeline APIs` (claimed, in progress to done path).
 - Completed:
   - Added `GET /api/projects/:projectId/tasks/:taskId/detail`.
@@ -470,6 +478,7 @@
   - `DECISIONS.md`
 
 ## 2026-02-21T21:16:19Z - PB-023 Milestone (Agent2)
+
 - Issue: `#45` `[PB-023] Workflow Board and Timeline Aggregate APIs` (claimed, in progress to done path).
 - Completed:
   - Added `GET /api/projects/:projectId/workflow/board`.
@@ -493,6 +502,7 @@
   - `DECISIONS.md`
 
 ## 2026-02-21T21:17:29Z - Agent2 Runner Final Summary
+
 - Runner executed: `TASK2-agent2-runner.md`.
 - Completed and handed off:
   - `PB-021` -> PR `#55` (`status:handoff`)
@@ -508,6 +518,7 @@
   - No actionable `agent2` issues remain in `status:ready`.
 
 ## 2026-02-21T23:05:32Z - PB-015 Milestone (Agent3)
+
 - Issue: `#17` `[PB-015] Project Dashboard Shell`.
 - Completed:
   - Added server-rendered dashboard view model for project summary, members, tasks, and dependency edges.

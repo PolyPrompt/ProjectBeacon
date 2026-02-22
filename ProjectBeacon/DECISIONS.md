@@ -45,7 +45,6 @@
   - Added `vitest` + `npm test`, `vitest.config.ts`, and test setup defaults.
   - Added unit tests for project create route behavior, share-token helpers, document upload helper, and project DTO mapping.
 
-
 # Decision Log
 
 ## 2026-02-21T12:35:22Z
@@ -115,8 +114,8 @@
 - Impact on files or behavior:
   - Issues `#12`, `#13`, `#14`, `#15`, and `#16` are now closed with traceable comments pointing to PRs `#34`-`#38`.
 
-
 ## 2026-02-21T21:08:31Z
+
 - Decision: Represent dashboard countdowns as non-negative integer hours (`Math.ceil` then clamp at `0`) and map legacy project roles (`owner/member`) to API roles (`admin/user`) in read APIs.
 - Rationale: Frontend dashboard and workflow views need deterministic countdown values and stable capability flags even while Agent 1 role migration remains in progress.
 - Alternatives considered:
@@ -128,6 +127,7 @@
   - `API_CONTRACT.md`
 
 ## 2026-02-21T21:13:03Z
+
 - Decision: Use deterministic dependency-aware task ordering (Kahn topological sort with due-date/created-at/id tie-breakers) for task detail timeline placement.
 - Rationale: Task detail modal and timeline deep-link APIs need stable phase positioning across repeated reads, even when due dates collide or DAG edges are sparse.
 - Alternatives considered:
@@ -141,6 +141,7 @@
   - `DATAMODEL.md`
 
 ## 2026-02-21T21:16:19Z
+
 - Decision: Expose workflow write capability flags (`canManageProject`, `canEditWorkflow`) directly in board/timeline aggregate responses based on normalized project role.
 - Rationale: Frontend needs a single trusted source of role-aware affordances to avoid client-side drift and duplicate role-logic inference.
 - Alternatives considered:

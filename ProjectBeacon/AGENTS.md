@@ -175,6 +175,7 @@ where table_schema = 'public' and table_name = 'test_items';
 - When conflicts exist, product/task requirements and API contracts take priority over UI reference.
 
 How to use `./docs/ui`:
+
 - Read relevant files in `./docs/ui` before implementing UI work.
 - Preserve page structure, key components/states, and primary user flows.
 - If reference includes out-of-scope features, omit or stub them.
@@ -182,12 +183,14 @@ How to use `./docs/ui`:
 - Record intentional UI deviations in `./HANDOFF.local.md` with a brief reason.
 
 Priority order for decisions:
+
 1. `./tasks.md`
 2. `./API_CONTRACT.md`
 3. `./DATAMODEL.md`
 4. `./docs/ui`
 
 UI Definition of Done:
+
 - Core layout/flow is close to `./docs/ui`.
 - Required task behavior is implemented even where reference is incomplete.
 - Loading, empty, and error states are handled.

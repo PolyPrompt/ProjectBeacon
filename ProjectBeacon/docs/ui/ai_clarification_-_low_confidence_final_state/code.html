@@ -1,133 +1,231 @@
-<!DOCTYPE html>
+<!doctype html>
 
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Nexus OS - Clarification Process</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#622faf",
-                        "background-light": "#f7f6f8",
-                        "background-dark": "#18131f",
-                    },
-                    fontFamily: {
-                        "display": ["Manrope"]
-                    },
-                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
-                },
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Nexus OS - Clarification Process</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#622faf",
+              "background-light": "#f7f6f8",
+              "background-dark": "#18131f",
             },
-        }
+            fontFamily: {
+              display: ["Manrope"],
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px",
+            },
+          },
+        },
+      };
     </script>
-<style>
-        body {
-            font-family: 'Manrope', sans-serif;
-        }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .fuel-gauge-container {
-            background: rgba(98, 47, 175, 0.1);
-        }
-        .fuel-gauge-fill {
-            background: linear-gradient(90deg, #622faf 0%, #8b5cf6 100%);
-        }
+    <style>
+      body {
+        font-family: "Manrope", sans-serif;
+      }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .fuel-gauge-container {
+        background: rgba(98, 47, 175, 0.1);
+      }
+      .fuel-gauge-fill {
+        background: linear-gradient(90deg, #622faf 0%, #8b5cf6 100%);
+      }
     </style>
-</head>
-<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
-<!-- Top Navigation & Progress -->
-<header class="w-full border-b border-slate-200 dark:border-primary/20 bg-background-light dark:bg-background-dark sticky top-0 z-50">
-<div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-12">
-<div class="flex items-center gap-3 shrink-0">
-<div class="size-9 bg-primary rounded-lg flex items-center justify-center text-white">
-<span class="material-symbols-outlined text-2xl">diamond</span>
-</div>
-<h2 class="text-xl font-bold tracking-tight">Nexus OS</h2>
-</div>
-<!-- Fuel Gauge Style Progress Bar -->
-<div class="flex-1 max-w-2xl flex flex-col gap-2">
-<div class="flex justify-between items-end text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-<span>Clarification Confidence</span>
-<span class="text-primary dark:text-primary">72% / <span class="text-slate-400">85% Target</span></span>
-</div>
-<div class="relative h-3 w-full fuel-gauge-container rounded-full overflow-hidden">
-<div class="absolute top-0 left-0 h-full fuel-gauge-fill rounded-full" style="width: 72%;"></div>
-<!-- 85% Marker -->
-<div class="absolute top-0 h-full w-0.5 bg-white/40 z-10" style="left: 85%;"></div>
-<div class="absolute -top-1 h-5 w-px bg-primary z-20" style="left: 85%;"></div>
-</div>
-</div>
-<div class="flex items-center gap-4 shrink-0">
-<div class="text-right hidden sm:block">
-<p class="text-xs font-medium text-slate-400">Project Lead</p>
-<p class="text-sm font-bold">Alex Chen</p>
-</div>
-<div class="size-10 rounded-full bg-primary/20 border border-primary/30 overflow-hidden">
-<img class="w-full h-full object-cover" data-alt="User profile avatar of Alex Chen" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAfzNcslfMjhi7iK15GclNRw_pyjWaVIrUWV0g4KDMZqu_Q7eT4CURqwowTHj2iCLwrjiFGcO-WlsZPWwFNkhgcDcDOVeJIG8I8vlkvDS-M625xaiRlb3Mpg0IEnAvNEL0DWzB44z__1Sb0eUE1oPAY5hzGS0he5Lwpvsa9DpiYB9Qlrg-iw7KeTsKWTUfOFgKhLrxu1nIkkTXZ9JflRwZnm5uCn6PtIKdI-rUYN6aL4OUyhRcL0SXNbOcj4LrYCkOiHGthz_atEU"/>
-</div>
-</div>
-</div>
-</header>
-<main class="flex-1 flex max-w-7xl mx-auto w-full overflow-hidden justify-center">
-<!-- Center: Conversational Hub -->
-<div class="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 relative w-full">
-<!-- Step Indicator -->
-<div class="absolute top-8 flex items-center gap-4">
-<div class="flex gap-1.5"><div class="size-2 rounded-full bg-primary"></div><div class="size-2 rounded-full bg-primary"></div><div class="size-2 rounded-full bg-primary"></div><div class="size-2 rounded-full bg-primary"></div><div class="size-2 rounded-full bg-primary ring-4 ring-primary/20"></div></div>
-<span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Question 5 of 5</span>
-</div>
-<!-- AI Chat Bubble Glassmorphic -->
-<div class="w-full max-w-2xl glass-card rounded-3xl p-6 mb-6 flex items-start gap-4 shadow-xl border border-primary/20 bg-primary/5">
-<div class="size-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-primary text-2xl">smart_toy</span>
-</div>
-<p class="text-base font-medium leading-relaxed text-slate-200">
-        I've analyzed your 8 files! To generate the most accurate task list, I need to know about your UI preferences.
-    </p>
-</div><div class="w-full max-w-2xl glass-card rounded-3xl p-8 md:p-10 flex flex-col gap-8 shadow-2xl">
-<div class="flex items-start gap-5">
-<div class="size-12 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-primary/20">
-<span class="material-symbols-outlined text-white text-3xl">smart_toy</span>
-</div>
-<div class="flex flex-col gap-2">
-<p class="text-sm font-bold text-primary uppercase tracking-wide">Beaver AI Mascot</p>
-<h1 class="text-2xl md:text-3xl font-bold leading-tight">I’m still a bit fuzzy on the UI details, but we can start.</h1><p class="text-slate-400 text-lg mt-2">Expect some tasks to need manual refinement as the confidence target wasn't fully met.</p>
-</div>
-</div>
-<div class="flex flex-col gap-6 items-center pt-4">
-<button class="w-full bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 shadow-lg shadow-primary/25 transition-transform active:scale-95">
-        Proceed to Delegation Anyway
-        <span class="material-symbols-outlined">arrow_forward</span>
-</button>
-<button class="text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest text-xs transition-colors">
-        Go back to refinement
-    </button>
-</div>
-</div>
-</div>
-<!-- Sidebar: What I've Learned So Far -->
-</main>
-<!-- Footer Status -->
-<footer class="w-full h-12 border-t border-slate-200 dark:border-primary/10 bg-white/5 backdrop-blur-sm flex items-center px-6">
-<div class="max-w-7xl mx-auto w-full flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
-<div class="flex items-center gap-4">
-<span class="flex items-center gap-1.5"><span class="size-1.5 rounded-full bg-green-500"></span> AI Agent Active</span>
-<span class="flex items-center gap-1.5"><span class="size-1.5 rounded-full bg-primary"></span> Specs Parsing: 88%</span>
-</div>
-<div class="flex items-center gap-4">
-<a class="hover:text-primary transition-colors" href="#">Documentation</a>
-<a class="hover:text-primary transition-colors" href="#">Support</a>
-</div>
-</div>
-</footer>
-</body></html>
+  </head>
+  <body
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display"
+  >
+    <!-- Top Navigation & Progress -->
+    <header
+      class="w-full border-b border-slate-200 dark:border-primary/20 bg-background-light dark:bg-background-dark sticky top-0 z-50"
+    >
+      <div
+        class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-12"
+      >
+        <div class="flex items-center gap-3 shrink-0">
+          <div
+            class="size-9 bg-primary rounded-lg flex items-center justify-center text-white"
+          >
+            <span class="material-symbols-outlined text-2xl">diamond</span>
+          </div>
+          <h2 class="text-xl font-bold tracking-tight">Nexus OS</h2>
+        </div>
+        <!-- Fuel Gauge Style Progress Bar -->
+        <div class="flex-1 max-w-2xl flex flex-col gap-2">
+          <div
+            class="flex justify-between items-end text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+          >
+            <span>Clarification Confidence</span>
+            <span class="text-primary dark:text-primary"
+              >72% / <span class="text-slate-400">85% Target</span></span
+            >
+          </div>
+          <div
+            class="relative h-3 w-full fuel-gauge-container rounded-full overflow-hidden"
+          >
+            <div
+              class="absolute top-0 left-0 h-full fuel-gauge-fill rounded-full"
+              style="width: 72%"
+            ></div>
+            <!-- 85% Marker -->
+            <div
+              class="absolute top-0 h-full w-0.5 bg-white/40 z-10"
+              style="left: 85%"
+            ></div>
+            <div
+              class="absolute -top-1 h-5 w-px bg-primary z-20"
+              style="left: 85%"
+            ></div>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 shrink-0">
+          <div class="text-right hidden sm:block">
+            <p class="text-xs font-medium text-slate-400">Project Lead</p>
+            <p class="text-sm font-bold">Alex Chen</p>
+          </div>
+          <div
+            class="size-10 rounded-full bg-primary/20 border border-primary/30 overflow-hidden"
+          >
+            <img
+              class="w-full h-full object-cover"
+              data-alt="User profile avatar of Alex Chen"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAfzNcslfMjhi7iK15GclNRw_pyjWaVIrUWV0g4KDMZqu_Q7eT4CURqwowTHj2iCLwrjiFGcO-WlsZPWwFNkhgcDcDOVeJIG8I8vlkvDS-M625xaiRlb3Mpg0IEnAvNEL0DWzB44z__1Sb0eUE1oPAY5hzGS0he5Lwpvsa9DpiYB9Qlrg-iw7KeTsKWTUfOFgKhLrxu1nIkkTXZ9JflRwZnm5uCn6PtIKdI-rUYN6aL4OUyhRcL0SXNbOcj4LrYCkOiHGthz_atEU"
+            />
+          </div>
+        </div>
+      </div>
+    </header>
+    <main
+      class="flex-1 flex max-w-7xl mx-auto w-full overflow-hidden justify-center"
+    >
+      <!-- Center: Conversational Hub -->
+      <div
+        class="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 relative w-full"
+      >
+        <!-- Step Indicator -->
+        <div class="absolute top-8 flex items-center gap-4">
+          <div class="flex gap-1.5">
+            <div class="size-2 rounded-full bg-primary"></div>
+            <div class="size-2 rounded-full bg-primary"></div>
+            <div class="size-2 rounded-full bg-primary"></div>
+            <div class="size-2 rounded-full bg-primary"></div>
+            <div
+              class="size-2 rounded-full bg-primary ring-4 ring-primary/20"
+            ></div>
+          </div>
+          <span
+            class="text-xs font-bold text-slate-400 uppercase tracking-widest"
+            >Question 5 of 5</span
+          >
+        </div>
+        <!-- AI Chat Bubble Glassmorphic -->
+        <div
+          class="w-full max-w-2xl glass-card rounded-3xl p-6 mb-6 flex items-start gap-4 shadow-xl border border-primary/20 bg-primary/5"
+        >
+          <div
+            class="size-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0"
+          >
+            <span class="material-symbols-outlined text-primary text-2xl"
+              >smart_toy</span
+            >
+          </div>
+          <p class="text-base font-medium leading-relaxed text-slate-200">
+            I've analyzed your 8 files! To generate the most accurate task list,
+            I need to know about your UI preferences.
+          </p>
+        </div>
+        <div
+          class="w-full max-w-2xl glass-card rounded-3xl p-8 md:p-10 flex flex-col gap-8 shadow-2xl"
+        >
+          <div class="flex items-start gap-5">
+            <div
+              class="size-12 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-primary/20"
+            >
+              <span class="material-symbols-outlined text-white text-3xl"
+                >smart_toy</span
+              >
+            </div>
+            <div class="flex flex-col gap-2">
+              <p class="text-sm font-bold text-primary uppercase tracking-wide">
+                Beaver AI Mascot
+              </p>
+              <h1 class="text-2xl md:text-3xl font-bold leading-tight">
+                I’m still a bit fuzzy on the UI details, but we can start.
+              </h1>
+              <p class="text-slate-400 text-lg mt-2">
+                Expect some tasks to need manual refinement as the confidence
+                target wasn't fully met.
+              </p>
+            </div>
+          </div>
+          <div class="flex flex-col gap-6 items-center pt-4">
+            <button
+              class="w-full bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 shadow-lg shadow-primary/25 transition-transform active:scale-95"
+            >
+              Proceed to Delegation Anyway
+              <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+            <button
+              class="text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest text-xs transition-colors"
+            >
+              Go back to refinement
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Sidebar: What I've Learned So Far -->
+    </main>
+    <!-- Footer Status -->
+    <footer
+      class="w-full h-12 border-t border-slate-200 dark:border-primary/10 bg-white/5 backdrop-blur-sm flex items-center px-6"
+    >
+      <div
+        class="max-w-7xl mx-auto w-full flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500"
+      >
+        <div class="flex items-center gap-4">
+          <span class="flex items-center gap-1.5"
+            ><span class="size-1.5 rounded-full bg-green-500"></span> AI Agent
+            Active</span
+          >
+          <span class="flex items-center gap-1.5"
+            ><span class="size-1.5 rounded-full bg-primary"></span> Specs
+            Parsing: 88%</span
+          >
+        </div>
+        <div class="flex items-center gap-4">
+          <a class="hover:text-primary transition-colors" href="#"
+            >Documentation</a
+          >
+          <a class="hover:text-primary transition-colors" href="#">Support</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
