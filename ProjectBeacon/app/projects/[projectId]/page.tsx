@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import {
   ProjectDashboardShell,
@@ -171,6 +171,7 @@ async function getProjectDashboardData(
         name: profile?.name?.trim() || profile?.email || "Unknown member",
         email: profile?.email || "",
         role: normalizeMemberRole(member.role),
+        inviteStatus: "accepted",
       };
     }),
     tasks: (tasksResponse.data ?? []).map((task) => ({
@@ -197,6 +198,26 @@ export default async function ProjectDashboardPage({
   const sessionUser = await requireSessionUser(`/projects/${projectId}`, {
     projectId,
   });
+  const supabase = getServiceSupabaseClient();
+
+  const { data: existingProjectSkill, error: existingProjectSkillError } =
+    await supabase
+      .from("project_member_skills")
+      .select("skill_id")
+      .eq("project_id", projectId)
+      .eq("user_id", sessionUser.userId)
+      .limit(1)
+      .maybeSingle();
+
+  if (existingProjectSkillError) {
+    throw new Error(
+      `Failed checking project skills for dashboard access: ${existingProjectSkillError.message}`,
+    );
+  }
+
+  if (!existingProjectSkill) {
+    redirect(`/projects/${projectId}/skills`);
+  }
 
   const dashboardData = await getProjectDashboardData(
     projectId,

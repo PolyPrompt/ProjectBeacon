@@ -6,6 +6,7 @@ type TeamStatusOverviewProps = {
     name: string;
     email: string;
     role: "owner" | "member";
+    inviteStatus: "accepted";
   }>;
   tasks: Array<{
     assigneeUserId: string | null;
@@ -102,6 +103,9 @@ export function TeamStatusOverview({
                   </p>
                   <p className="truncate text-xs text-slate-300">
                     {member.role === "owner" ? "Project Owner" : "Team Member"}
+                  </p>
+                  <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-violet-200">
+                    Invite Accepted
                   </p>
                 </div>
 
