@@ -1,5 +1,10 @@
 import { redirect } from "next/navigation";
 import { ApiHttpError } from "@/lib/api/errors";
+import {
+  getE2EBypassRole,
+  getE2EBypassUserId,
+  isE2EAuthBypassEnabled,
+} from "@/lib/auth/e2e-bypass";
 import { normalizeProjectRole } from "@/lib/auth/project-role";
 import { requireUser } from "@/lib/auth/require-user";
 import { getServiceSupabaseClient } from "@/lib/supabase/server";
@@ -50,6 +55,13 @@ async function resolveProjectRole(
 export async function getSessionUser(
   options: SessionOptions = {},
 ): Promise<SessionUser | null> {
+  if (isE2EAuthBypassEnabled()) {
+    return {
+      userId: getE2EBypassUserId(),
+      role: getE2EBypassRole(),
+    };
+  }
+
   try {
     const user = await requireUser();
 

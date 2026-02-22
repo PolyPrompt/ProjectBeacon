@@ -8,5 +8,9 @@ node_modules/
 .next/
 out/
 
+# Playwright artifacts
+playwright-report/
+test-results/
+
 # Local agent handoff notes (not committed)
 HANDOFF.local.md

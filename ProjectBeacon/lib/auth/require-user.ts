@@ -1,6 +1,11 @@
 import { auth } from "@clerk/nextjs/server";
 
 import { ApiHttpError } from "@/lib/api/errors";
+import {
+  getE2EBypassClerkUserId,
+  getE2EBypassUserId,
+  isE2EAuthBypassEnabled,
+} from "@/lib/auth/e2e-bypass";
 import { getServiceSupabaseClient } from "@/lib/supabase/server";
 import { upsertUserFromClerk } from "@/lib/users/upsert-user";
 
@@ -10,6 +15,13 @@ export type AuthenticatedUser = {
 };
 
 export async function requireUser(): Promise<AuthenticatedUser> {
+  if (isE2EAuthBypassEnabled()) {
+    return {
+      userId: getE2EBypassUserId(),
+      clerkUserId: getE2EBypassClerkUserId(),
+    };
+  }
+
   const { userId: clerkUserId } = await auth();
 
   if (!clerkUserId) {

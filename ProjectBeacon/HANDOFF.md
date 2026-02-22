@@ -921,3 +921,43 @@
   - `app/projects/[projectId]/board/page.tsx`
   - `components/workflow/board-page.tsx`
   - `types/workflow.ts`
+
+## 2026-02-22T07:13:16Z - PB-042 Milestone (Agent3)
+
+- Issue: `#92` `[PB-042] Add Playwright regression suite for project setup/share context and UI parity flows`.
+- Completed:
+  - Added a deterministic Playwright suite with route-mocked coverage for:
+    - project create/share-link/share-email context retention
+    - workspace clarification + inventory smoke transitions
+    - board/timeline route rendering smoke checks
+  - Added Playwright runner and config:
+    - `playwright.config.ts`
+    - `package.json` scripts: `test:e2e`, `test:e2e:headed`
+  - Added env-gated e2e auth bypass wiring so route-level tests run without external Clerk session setup:
+    - middleware short-circuit before Clerk middleware
+    - shared e2e auth helpers
+    - server auth/session/new-project route wiring for bypass mode
+    - e2e fallback shell in root layout
+  - Documented e2e command and artifact locations in `README.md`.
+  - Added Playwright artifact paths to `.gitignore`.
+- Verification:
+  - `set -a; source .env.local; set +a; npm run format:check` -> pass
+  - `set -a; source .env.local; set +a; npm run lint` -> pass
+  - `set -a; source .env.local; set +a; npm run build` -> pass
+  - `set -a; source .env.local; set +a; npm run test:e2e` -> pass (`5 passed`)
+- Files changed:
+  - `.gitignore`
+  - `README.md`
+  - `app/layout.tsx`
+  - `app/projects/new/page.tsx`
+  - `lib/auth/e2e-bypass.ts`
+  - `lib/auth/require-user.ts`
+  - `lib/auth/session.ts`
+  - `middleware.ts`
+  - `package.json`
+  - `package-lock.json`
+  - `playwright.config.ts`
+  - `tests/e2e/helpers.ts`
+  - `tests/e2e/project-setup-share.spec.ts`
+  - `tests/e2e/workspace-flow.spec.ts`
+  - `tests/e2e/board-timeline-smoke.spec.ts`
