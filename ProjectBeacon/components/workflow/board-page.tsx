@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+
 import type {
   WorkflowBoardColumnDTO,
   WorkflowBoardDTO,
+  WorkflowBoardTaskDTO,
 } from "@/types/workflow";
 
 type BoardPageProps = {
@@ -15,31 +17,50 @@ type BoardPageProps = {
 const FALLBACK_COLUMNS: WorkflowBoardColumnDTO[] = [
   {
     userId: "user_001",
-    userName: "Alex",
+    name: "Alex",
+    email: "alex@example.edu",
+    role: "admin",
     tasks: [
       {
         id: "t_board_1",
         title: "Draft timeline checkpoints",
         status: "in_progress",
-        dueAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-        dependencyTaskIds: [],
+        softDeadline: new Date(
+          Date.now() + 2 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
+        difficultyPoints: 3,
         phase: "beginning",
       },
     ],
   },
   {
     userId: "user_002",
-    userName: "Jordan",
+    name: "Jordan",
+    email: "jordan@example.edu",
+    role: "user",
     tasks: [
       {
         id: "t_board_2",
         title: "Integrate dashboard API responses",
         status: "todo",
-        dueAt: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
-        dependencyTaskIds: ["t_board_1"],
+        softDeadline: new Date(
+          Date.now() + 4 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
+        difficultyPoints: 2,
         phase: "middle",
       },
     ],
+  },
+];
+
+const FALLBACK_UNASSIGNED: WorkflowBoardTaskDTO[] = [
+  {
+    id: "t_board_3",
+    title: "QA workflow fallback states",
+    status: "blocked",
+    softDeadline: null,
+    difficultyPoints: 1,
+    phase: "end",
   },
 ];
 
@@ -48,21 +69,26 @@ function parseBoardPayload(value: unknown): WorkflowBoardDTO | null {
     return null;
   }
 
-  const payload = value as {
-    columns?: WorkflowBoardColumnDTO[];
-    capabilities?: { canEdit?: boolean; canReassign?: boolean };
-  };
+  const payload = value as Partial<WorkflowBoardDTO>;
 
-  if (!Array.isArray(payload.columns)) {
+  if (!payload.capability || typeof payload.capability !== "object") {
     return null;
   }
 
+  if (!Array.isArray(payload.columns) || !Array.isArray(payload.unassigned)) {
+    return null;
+  }
+
+  const capability = payload.capability;
+
   return {
-    columns: payload.columns,
-    capabilities: {
-      canEdit: Boolean(payload.capabilities?.canEdit),
-      canReassign: payload.capabilities?.canReassign,
+    capability: {
+      role: capability.role === "admin" ? "admin" : "user",
+      canManageProject: Boolean(capability.canManageProject),
+      canEditWorkflow: Boolean(capability.canEditWorkflow),
     },
+    columns: payload.columns,
+    unassigned: payload.unassigned,
   };
 }
 
@@ -70,16 +96,37 @@ function toDueLabel(value: string | null): string {
   if (!value) {
     return "No due date";
   }
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return "Invalid date";
   }
+
   return date.toLocaleString();
+}
+
+function renderTaskCard(task: WorkflowBoardTaskDTO) {
+  return (
+    <article key={task.id} className="rounded-lg border border-slate-200 p-3">
+      <p className="text-sm font-semibold text-slate-900">{task.title}</p>
+      <p className="mt-1 text-xs text-slate-500">
+        {task.status} · phase {task.phase} · {task.difficultyPoints} pts
+      </p>
+      <p className="mt-1 text-xs text-slate-500">
+        due {toDueLabel(task.softDeadline)}
+      </p>
+    </article>
+  );
 }
 
 export function BoardPage({ projectId, role }: BoardPageProps) {
   const [columns, setColumns] = useState<WorkflowBoardColumnDTO[]>([]);
-  const [canEdit, setCanEdit] = useState(role === "admin");
+  const [unassigned, setUnassigned] = useState<WorkflowBoardTaskDTO[]>([]);
+  const [capability, setCapability] = useState({
+    role,
+    canManageProject: role === "admin",
+    canEditWorkflow: role === "admin",
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -112,12 +159,18 @@ export function BoardPage({ projectId, role }: BoardPageProps) {
 
         if (!cancelled) {
           setColumns(payload.columns);
-          setCanEdit(Boolean(payload.capabilities.canEdit));
+          setUnassigned(payload.unassigned);
+          setCapability(payload.capability);
         }
       } catch (boardError) {
         if (!cancelled) {
           setColumns(FALLBACK_COLUMNS);
-          setCanEdit(role === "admin");
+          setUnassigned(FALLBACK_UNASSIGNED);
+          setCapability({
+            role,
+            canManageProject: role === "admin",
+            canEditWorkflow: role === "admin",
+          });
           setError(
             boardError instanceof Error
               ? `${boardError.message}. Showing scaffold board.`
@@ -167,10 +220,9 @@ export function BoardPage({ projectId, role }: BoardPageProps) {
           </div>
         </div>
         <p className="mt-3 text-xs font-medium text-slate-500">
-          Edit affordances:{" "}
-          {canEdit
-            ? "enabled by API capability flags"
-            : "read-only by API capability flags"}
+          Capability: role `{capability.role}` · manage project:{" "}
+          {capability.canManageProject ? "yes" : "no"} · edit workflow:{" "}
+          {capability.canEditWorkflow ? "yes" : "no"}
         </p>
       </header>
 
@@ -196,10 +248,10 @@ export function BoardPage({ projectId, role }: BoardPageProps) {
               className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
             >
               <h2 className="text-base font-semibold text-slate-900">
-                {column.userName}
+                {column.name}
               </h2>
               <p className="mt-1 text-xs text-slate-500">
-                {column.tasks.length} tasks
+                {column.role} · {column.email || "No email"}
               </p>
               <div className="mt-3 space-y-3">
                 {column.tasks.length === 0 ? (
@@ -207,25 +259,26 @@ export function BoardPage({ projectId, role }: BoardPageProps) {
                     No tasks assigned.
                   </p>
                 ) : (
-                  column.tasks.map((task) => (
-                    <article
-                      key={task.id}
-                      className="rounded-lg border border-slate-200 p-3"
-                    >
-                      <p className="text-sm font-semibold text-slate-900">
-                        {task.title}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {task.status} · due {toDueLabel(task.dueAt)}
-                      </p>
-                    </article>
-                  ))
+                  column.tasks.map((task) => renderTaskCard(task))
                 )}
               </div>
             </section>
           ))}
         </div>
       )}
+
+      {!loading ? (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-900">Unassigned</h2>
+          {unassigned.length === 0 ? (
+            <p className="mt-2 text-sm text-slate-500">No unassigned tasks.</p>
+          ) : (
+            <div className="mt-3 space-y-3">
+              {unassigned.map((task) => renderTaskCard(task))}
+            </div>
+          )}
+        </section>
+      ) : null}
     </section>
   );
 }
