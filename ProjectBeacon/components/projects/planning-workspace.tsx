@@ -94,38 +94,6 @@ function toContextEntries(description: string): PlanningWorkspaceContext[] {
   ];
 }
 
-function normalizeClarification(payload: unknown): ClarificationState {
-  if (!payload || typeof payload !== "object") {
-    return {
-      ...DEFAULT_CLARIFICATION,
-      threshold: 85,
-    };
-  }
-
-  const candidate = payload as Record<string, unknown>;
-
-  return {
-    confidence:
-      typeof candidate.confidence === "number"
-        ? Math.round(candidate.confidence)
-        : DEFAULT_CLARIFICATION.confidence,
-    threshold:
-      typeof candidate.threshold === "number" ? candidate.threshold : 85,
-    askedCount:
-      typeof candidate.askedCount === "number"
-        ? candidate.askedCount
-        : DEFAULT_CLARIFICATION.askedCount,
-    maxQuestions:
-      typeof candidate.maxQuestions === "number"
-        ? candidate.maxQuestions
-        : DEFAULT_CLARIFICATION.maxQuestions,
-    readyForGeneration:
-      typeof candidate.readyForGeneration === "boolean"
-        ? candidate.readyForGeneration
-        : DEFAULT_CLARIFICATION.readyForGeneration,
-  };
-}
-
 function normalizeDocuments(payload: unknown): WorkspaceDocument[] {
   if (!payload || typeof payload !== "object") {
     return [];
@@ -252,14 +220,10 @@ export default function PlanningWorkspace({
     setGenerationMetadata(null);
 
     try {
-      const [projectResponse, documentsResponse, boardResponse] =
-        await Promise.all([
-          fetch(`/api/projects/${projectId}`, { cache: "no-store" }),
-          fetch(`/api/projects/${projectId}/documents`, { cache: "no-store" }),
-          fetch(`/api/projects/${projectId}/workflow/board`, {
-            cache: "no-store",
-          }),
-        ]);
+      const [projectResponse, documentsResponse] = await Promise.all([
+        fetch(`/api/projects/${projectId}`, { cache: "no-store" }),
+        fetch(`/api/projects/${projectId}/documents`, { cache: "no-store" }),
+      ]);
 
       const projectPayload = (await projectResponse.json()) as {
         description?: string;
@@ -292,60 +256,11 @@ export default function PlanningWorkspace({
         );
       }
 
-      let nextTaskCount = 0;
-      if (boardResponse.ok) {
-        const boardPayload = (await boardResponse.json()) as {
-          columns?: Array<{ tasks?: Array<{ id?: string }> }>;
-          unassigned?: Array<{ id?: string }>;
-        };
-
-        const columnTasks = (boardPayload.columns ?? []).reduce(
-          (count, column) =>
-            count + (Array.isArray(column.tasks) ? column.tasks.length : 0),
-          0,
-        );
-        const unassignedCount = Array.isArray(boardPayload.unassigned)
-          ? boardPayload.unassigned.length
-          : 0;
-
-        nextTaskCount = columnTasks + unassignedCount;
-      }
-
       const hasMinimumInput = computeHasMinimumInput({
         contextText: description,
         documents,
       });
-      let clarification = {
-        ...DEFAULT_CLARIFICATION,
-        threshold: 85,
-      };
-
-      if (hasMinimumInput) {
-        const confidenceResponse = await fetch(
-          `/api/projects/${projectId}/context/confidence`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          },
-        );
-
-        if (confidenceResponse.ok) {
-          const confidencePayload =
-            (await confidenceResponse.json()) as unknown;
-          clarification = normalizeClarification(confidencePayload);
-        } else {
-          const confidencePayload =
-            (await confidenceResponse.json()) as unknown;
-          setLoadError(
-            resolveMessage(
-              confidencePayload,
-              "Could not compute clarification confidence yet.",
-            ),
-          );
-        }
-      }
+      const clarification = { ...DEFAULT_CLARIFICATION };
 
       const canGenerate = computeCanGenerate({
         hasMinimumInput,
@@ -355,7 +270,6 @@ export default function PlanningWorkspace({
 
       setContextText(description);
       setPlanningStatus(nextPlanningStatus);
-      setTaskCount(nextTaskCount);
       setAssignedCount(null);
       setWorkspaceState({
         contexts,
@@ -988,6 +902,7 @@ export default function PlanningWorkspace({
 
       <TaskInventoryBlueprint
         isProceeding={isDelegatingFromInventory || isLocking || isAssigning}
+        onTaskCountChange={(count) => setTaskCount(count)}
         onProceedToDelegation={handleProceedToDelegationFromInventory}
         planningStatus={planningStatus}
         projectId={projectId}
