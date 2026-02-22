@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 type ProjectSettingsPageProps = {
   projectId: string;
@@ -42,7 +42,6 @@ export function ProjectSettingsPage({
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const deadlineInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -222,18 +221,6 @@ export function ProjectSettingsPage({
     }
   }
 
-  function openDeadlinePicker() {
-    if (loadingMetadata || !deadlineInputRef.current) {
-      return;
-    }
-
-    const input = deadlineInputRef.current as HTMLInputElement & {
-      showPicker?: () => void;
-    };
-    input.focus();
-    input.showPicker?.();
-  }
-
   return (
     <section className="relative left-1/2 w-screen -translate-x-1/2 bg-[#120d1c]">
       <div className="mx-auto min-h-[calc(100vh-73px)] w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6">
@@ -283,30 +270,18 @@ export function ProjectSettingsPage({
                 <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                   Submission Deadline
                 </span>
-                <div className="relative">
-                  <input
-                    ref={deadlineInputRef}
-                    className="w-full rounded-lg border border-violet-500/20 bg-[#150f23] px-3 py-3 pr-12 text-sm text-slate-100 outline-none transition [color-scheme:dark] focus:border-violet-400 focus:ring-2 focus:ring-violet-500/30"
-                    disabled={loadingMetadata}
-                    onChange={(event) =>
-                      setMetadata((current) => ({
-                        ...current,
-                        deadline: event.target.value,
-                      }))
-                    }
-                    type="date"
-                    value={metadata.deadline}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md border border-violet-500/20 bg-violet-500/10 px-2 py-1 text-xs text-violet-200 transition hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-                    onClick={openDeadlinePicker}
-                    disabled={loadingMetadata}
-                    aria-label="Open calendar"
-                  >
-                    📅
-                  </button>
-                </div>
+                <input
+                  className="w-full rounded-lg border border-violet-500/20 bg-[#150f23] px-3 py-3 text-sm text-slate-100 outline-none transition [color-scheme:dark] focus:border-violet-400 focus:ring-2 focus:ring-violet-500/30"
+                  disabled={loadingMetadata}
+                  onChange={(event) =>
+                    setMetadata((current) => ({
+                      ...current,
+                      deadline: event.target.value,
+                    }))
+                  }
+                  type="date"
+                  value={metadata.deadline}
+                />
               </label>
 
               <div className="md:col-span-2">
