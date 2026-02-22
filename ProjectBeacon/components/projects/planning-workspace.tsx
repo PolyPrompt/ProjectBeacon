@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import ClarificationPanel, {
   type ClarificationState,
@@ -48,6 +48,10 @@ type GenerationMetadata = {
     message?: string;
     status?: number;
   };
+};
+
+type RunGenerateOptions = {
+  allowLowConfidenceProceed?: boolean;
 };
 
 const DEFAULT_CLARIFICATION: PlanningWorkspaceState["clarification"] = {
@@ -226,6 +230,8 @@ export default function PlanningWorkspace({
   const [assignedCount, setAssignedCount] = useState<number | null>(null);
   const [generationMetadata, setGenerationMetadata] =
     useState<GenerationMetadata | null>(null);
+  const intakeSectionRef = useRef<HTMLDivElement | null>(null);
+  const reviewSectionRef = useRef<HTMLElement | null>(null);
 
   const canLock = planningStatus === "draft" && taskCount > 0;
   const canAssign = planningStatus === "locked";
@@ -531,8 +537,21 @@ export default function PlanningWorkspace({
     }));
   }
 
-  async function runGenerate() {
-    if (!workspaceState.canGenerate) {
+  async function runGenerate(options?: RunGenerateOptions) {
+    if (isGenerating) {
+      return;
+    }
+
+    const readyForGeneration = options?.allowLowConfidenceProceed
+      ? true
+      : workspaceState.clarification.readyForGeneration;
+    const canGenerateNow = computeCanGenerate({
+      hasMinimumInput: workspaceState.hasMinimumInput,
+      planningStatus,
+      readyForGeneration,
+    });
+
+    if (!canGenerateNow) {
       setActionError(
         "Inputs are ready. Complete clarification until confidence reaches the target, then start AI breakdown.",
       );
@@ -720,6 +739,28 @@ export default function PlanningWorkspace({
     }
   }
 
+  async function handleProceedFromClarification(
+    clarificationState: ClarificationState,
+  ) {
+    handleClarificationState(clarificationState);
+    await runGenerate({ allowLowConfidenceProceed: true });
+    reviewSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
+  function handleReturnToRefinement() {
+    setActionError(null);
+    setActionStatus(
+      "Returned to refinement. Update specs or constraints, then re-run clarification prompts.",
+    );
+    intakeSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
   const startActionEnabled = useMemo(
     () =>
       planningStatus === "draft" &&
@@ -778,7 +819,10 @@ export default function PlanningWorkspace({
         </p>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-12 md:auto-rows-[minmax(180px,auto)]">
+      <div
+        ref={intakeSectionRef}
+        className="grid gap-4 md:grid-cols-12 md:auto-rows-[minmax(180px,auto)]"
+      >
         <div className="md:col-span-8 md:row-span-2">
           <ProjectUploadDropzone
             onUpload={handleDocumentUpload}
@@ -832,7 +876,9 @@ export default function PlanningWorkspace({
           <button
             type="button"
             className="rounded-xl bg-violet-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-800/40 transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300 disabled:shadow-none"
-            onClick={runGenerate}
+            onClick={() => {
+              void runGenerate();
+            }}
             disabled={!startActionEnabled || isGenerating}
           >
             {isGenerating ? "Running AI Breakdown..." : startActionLabel}
@@ -845,12 +891,18 @@ export default function PlanningWorkspace({
           Clarification Checkpoint
         </h3>
         <ClarificationPanel
+          disabled={planningStatus !== "draft" || isGenerating}
+          onProceedToDelegation={handleProceedFromClarification}
+          onReturnToRefinement={handleReturnToRefinement}
           onStateChange={handleClarificationState}
           projectId={projectId}
         />
       </section>
 
-      <section className="space-y-3 rounded-2xl border border-slate-800 bg-[#171821] p-4">
+      <section
+        ref={reviewSectionRef}
+        className="space-y-3 rounded-2xl border border-slate-800 bg-[#171821] p-4"
+      >
         <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
           Review, Lock, and Assign
         </h3>
