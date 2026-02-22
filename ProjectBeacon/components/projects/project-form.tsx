@@ -375,13 +375,13 @@ export function ProjectForm() {
     <div className="relative min-h-screen overflow-hidden bg-[#110a1f] text-slate-100">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_8%,rgba(103,47,180,0.24),transparent_38%),radial-gradient(circle_at_85%_20%,rgba(47,25,90,0.22),transparent_48%),linear-gradient(180deg,#120a24_0%,#130b22_55%,#120a1f_100%)]" />
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-[1280px] flex-col">
-        <main className="flex-1 px-6 pb-10 pt-10 lg:px-10 lg:pt-14">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-[1080px] flex-col">
+        <main className="flex-1 px-5 pb-10 pt-9 lg:px-8 lg:pt-12">
           <div className="mb-10 space-y-3">
-            <h1 className="text-6xl font-semibold tracking-tight text-white">
+            <h1 className="text-5xl font-semibold tracking-tight text-white">
               Start Your Project
             </h1>
-            <p className="text-[31px] text-slate-300/95">
+            <p className="text-2xl text-slate-300/95">
               Set the foundation for your team&apos;s success with structured
               delegation.
             </p>
@@ -396,7 +396,7 @@ export function ProjectForm() {
               <section className="rounded-2xl border border-violet-900/45 bg-[#17191f]/85 p-6 md:col-span-8">
                 <div className="mb-6 flex items-center gap-2.5">
                   <ProjectDetailsIcon />
-                  <h2 className="text-4xl font-semibold text-white">
+                  <h2 className="text-3xl font-semibold text-white">
                     Project Details
                   </h2>
                 </div>
@@ -407,7 +407,7 @@ export function ProjectForm() {
                       Project Name
                     </span>
                     <input
-                      className="w-full rounded-xl border border-violet-950/80 bg-[#11091d] px-4 py-3.5 text-[28px] text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-violet-500"
+                      className="w-full rounded-xl border border-violet-950/80 bg-[#11091d] px-4 py-3.5 text-xl text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-violet-500"
                       value={name}
                       onChange={(event) => setName(event.target.value)}
                       placeholder="e.g. CS302 Distributed Systems Lab"
@@ -423,7 +423,7 @@ export function ProjectForm() {
                       </span>
                     </span>
                     <textarea
-                      className="w-full resize-none rounded-xl border border-violet-950/80 bg-[#11091d] px-4 py-3.5 text-[27px] text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-violet-500"
+                      className="w-full resize-none rounded-xl border border-violet-950/80 bg-[#11091d] px-4 py-3.5 text-xl text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-violet-500"
                       rows={5}
                       value={description}
                       onChange={(event) => setDescription(event.target.value)}
@@ -436,7 +436,7 @@ export function ProjectForm() {
               <section className="rounded-2xl border border-violet-900/45 bg-[#17191f]/85 p-6 md:col-span-4">
                 <div className="mb-6 flex items-center gap-2.5">
                   <DeadlineIcon />
-                  <h2 className="text-4xl font-semibold text-white">
+                  <h2 className="text-3xl font-semibold text-white">
                     Deadline
                   </h2>
                 </div>
@@ -447,7 +447,7 @@ export function ProjectForm() {
                       Main Project Deadline
                     </span>
                     <input
-                      className="w-full rounded-xl border border-violet-950/80 bg-[#11091d] px-4 py-3.5 text-[28px] text-slate-100 outline-none transition focus:border-violet-500"
+                      className="w-full rounded-xl border border-violet-950/80 bg-[#11091d] px-4 py-3.5 text-xl text-slate-100 outline-none transition focus:border-violet-500"
                       type="date"
                       value={deadlineDate}
                       onChange={(event) => setDeadlineDate(event.target.value)}
@@ -459,7 +459,7 @@ export function ProjectForm() {
                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
                       Estimated Duration
                     </p>
-                    <p className="mt-1 text-[27px] text-slate-200">
+                    <p className="mt-1 text-lg text-slate-200">
                       {estimatedDurationLabel(remainingDays)}
                     </p>
                   </div>
@@ -523,7 +523,7 @@ export function ProjectForm() {
                           key={milestone.id}
                           className="rounded-xl border border-violet-900/35 bg-black/15 p-3"
                         >
-                          <p className="mb-2 text-[22px] font-semibold text-slate-100">
+                          <p className="mb-2 text-base font-semibold text-slate-100">
                             {milestone.title}
                           </p>
                           <div className="flex items-center justify-between gap-3">
@@ -556,7 +556,7 @@ export function ProjectForm() {
                 <div className="mb-5 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
                     <TeamIcon />
-                    <h2 className="text-4xl font-semibold text-white">
+                    <h2 className="text-3xl font-semibold text-white">
                       Team Roster
                     </h2>
                   </div>
@@ -598,12 +598,12 @@ export function ProjectForm() {
                       className="grid grid-cols-1 items-center gap-3 rounded-xl border border-violet-900/35 bg-black/15 p-3 md:grid-cols-12"
                     >
                       <div className="md:col-span-5">
-                        <p className="text-[26px] text-slate-200">
+                        <p className="text-lg text-slate-200">
                           {member.name || "Unnamed member"}
                         </p>
                       </div>
                       <div className="md:col-span-6">
-                        <p className="text-[25px] text-slate-400">
+                        <p className="text-lg text-slate-400">
                           {member.email || "No email"}
                         </p>
                       </div>
@@ -631,7 +631,7 @@ export function ProjectForm() {
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-violet-900/35">
                     <EmptyRosterIcon />
                   </div>
-                  <p className="text-[23px] text-slate-400">
+                  <p className="text-base text-slate-400">
                     Invite up to {MAX_TEAM_SIZE} team members to this project
                     workspace.
                   </p>
@@ -679,7 +679,7 @@ export function ProjectForm() {
                   <p className="text-xs font-semibold uppercase tracking-[0.12em] text-violet-300">
                     Active Project
                   </p>
-                  <p className="mt-1 text-[22px] font-semibold text-white">
+                  <p className="mt-1 text-lg font-semibold text-white">
                     {project.name}
                   </p>
                   <p className="mt-1 text-xs text-slate-400">
