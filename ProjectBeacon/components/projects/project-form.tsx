@@ -177,7 +177,8 @@ export function ProjectForm() {
   const [newMilestoneDate, setNewMilestoneDate] = useState("");
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isAddingMember, setIsAddingMember] = useState(false);
-  const [newMemberInput, setNewMemberInput] = useState("");
+  const [newMemberName, setNewMemberName] = useState("");
+  const [newMemberEmail, setNewMemberEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [isCopyingLink, setIsCopyingLink] = useState(false);
@@ -306,65 +307,37 @@ export function ProjectForm() {
     );
   }
 
-  function parseMemberInput(input: string): TeamMember | null {
-    const value = input.trim();
-
-    if (!value) {
-      return null;
-    }
-
-    const bracketMatch = value.match(/^(.+?)\s*<(.+?)>$/);
-
-    if (bracketMatch) {
-      return {
-        id: nextId(),
-        name: bracketMatch[1].trim(),
-        email: bracketMatch[2].trim(),
-      };
-    }
-
-    const parts = value
-      .split(",")
-      .map((part) => part.trim())
-      .filter(Boolean);
-
-    if (parts.length >= 2) {
-      return {
-        id: nextId(),
-        name: parts[0],
-        email: parts.slice(1).join(", "),
-      };
-    }
-
-    if (value.includes("@")) {
-      return {
-        id: nextId(),
-        name: value.split("@")[0] ?? value,
-        email: value,
-      };
-    }
-
-    return {
-      id: nextId(),
-      name: value,
-      email: "",
-    };
-  }
-
   function addMemberFromInput() {
     if (teamMembers.length >= MAX_TEAM_SIZE) {
       return;
     }
 
-    const parsedMember = parseMemberInput(newMemberInput);
+    const name = newMemberName.trim();
+    const email = newMemberEmail.trim();
 
-    if (!parsedMember) {
+    if (!name && !email) {
       return;
     }
 
-    setTeamMembers((current) => [...current, parsedMember]);
-    setNewMemberInput("");
+    setTeamMembers((current) => [
+      ...current,
+      {
+        id: nextId(),
+        name: name || "Unnamed member",
+        email,
+      },
+    ]);
+    setNewMemberName("");
+    setNewMemberEmail("");
     setIsAddingMember(false);
+  }
+
+  function updateMember(id: string, updates: Partial<TeamMember>) {
+    setTeamMembers((current) =>
+      current.map((member) =>
+        member.id === id ? { ...member, ...updates } : member,
+      ),
+    );
   }
 
   function removeMember(id: string) {
@@ -572,24 +545,43 @@ export function ProjectForm() {
 
                 <div className="space-y-3">
                   {isAddingMember ? (
-                    <input
-                      className="w-full rounded-xl border border-violet-700/60 bg-[#11091d] px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-violet-500"
-                      type="text"
-                      value={newMemberInput}
-                      onChange={(event) =>
-                        setNewMemberInput(event.target.value)
-                      }
-                      onKeyDown={(event) => {
-                        if (event.key !== "Enter") {
-                          return;
+                    <div className="grid grid-cols-1 gap-2 rounded-xl border border-violet-700/60 bg-[#11091d] p-3 md:grid-cols-2">
+                      <input
+                        className="w-full rounded-lg border border-violet-900/60 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-violet-500"
+                        type="text"
+                        value={newMemberName}
+                        onChange={(event) =>
+                          setNewMemberName(event.target.value)
                         }
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter") {
+                            return;
+                          }
 
-                        event.preventDefault();
-                        addMemberFromInput();
-                      }}
-                      placeholder="Name, email (or name <email>)"
-                      autoFocus
-                    />
+                          event.preventDefault();
+                          addMemberFromInput();
+                        }}
+                        placeholder="Name"
+                        autoFocus
+                      />
+                      <input
+                        className="w-full rounded-lg border border-violet-900/60 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-violet-500"
+                        type="email"
+                        value={newMemberEmail}
+                        onChange={(event) =>
+                          setNewMemberEmail(event.target.value)
+                        }
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter") {
+                            return;
+                          }
+
+                          event.preventDefault();
+                          addMemberFromInput();
+                        }}
+                        placeholder="Email"
+                      />
+                    </div>
                   ) : null}
 
                   {teamMembers.map((member) => (
@@ -598,14 +590,30 @@ export function ProjectForm() {
                       className="grid grid-cols-1 items-center gap-3 rounded-xl border border-violet-900/35 bg-black/15 p-3 md:grid-cols-12"
                     >
                       <div className="md:col-span-5">
-                        <p className="text-lg text-slate-200">
-                          {member.name || "Unnamed member"}
-                        </p>
+                        <input
+                          className="w-full rounded-lg border border-violet-900/50 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-violet-500"
+                          type="text"
+                          value={member.name}
+                          onChange={(event) =>
+                            updateMember(member.id, {
+                              name: event.target.value,
+                            })
+                          }
+                          placeholder="Name"
+                        />
                       </div>
                       <div className="md:col-span-6">
-                        <p className="text-lg text-slate-400">
-                          {member.email || "No email"}
-                        </p>
+                        <input
+                          className="w-full rounded-lg border border-violet-900/50 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none placeholder:text-slate-500 focus:border-violet-500"
+                          type="email"
+                          value={member.email}
+                          onChange={(event) =>
+                            updateMember(member.id, {
+                              email: event.target.value,
+                            })
+                          }
+                          placeholder="Email"
+                        />
                       </div>
                       <div className="flex justify-end md:col-span-1">
                         <button
