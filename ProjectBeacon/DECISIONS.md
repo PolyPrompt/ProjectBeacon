@@ -197,3 +197,16 @@
   - `components/projects/planning-workspace.tsx`
   - `components/projects/context-editor.tsx`
   - `components/projects/project-documents-uploader.tsx`
+
+## 2026-02-22T01:13:27Z
+
+- Decision summary:
+  - Gate onboarding progression at `8` skills while using static, categorized suggestion groups to accelerate profile completion without backend contract changes.
+- Rationale:
+  - `PB-036` requires suggestion-driven onboarding parity and completion-aware `Save & Continue`; deterministic thresholds and predefined categories keep the flow predictable and API-compatible.
+- Alternatives considered:
+  - Keep unlimited free-form entry with no completion gate.
+  - Source suggestions from external resume parsing or AI-generated recommendations.
+- Impact on files or behavior:
+  - `app/profile/page.tsx`
+  - `components/profile/skills-editor.tsx`
