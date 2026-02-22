@@ -1,27 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DocumentPreviewModal } from "@/components/documents/document-preview-modal";
-import type {
-  DocumentAccessDTO,
-  DocumentsListDTO,
-  ProjectDocumentDTO,
-} from "@/types/documents";
+import {
+  PROJECT_DOCUMENT_ACCEPT_ATTR,
+  PROJECT_DOCUMENT_ALLOWED_TYPES_LABEL,
+  isPermittedProjectDocumentFile,
+} from "@/lib/documents/file-types";
+import type { DocumentsListDTO, ProjectDocumentDTO } from "@/types/documents";
 
 type ProjectDocumentsPageProps = {
   projectId: string;
   role: "admin" | "user";
 };
-
-const FALLBACK_DOCUMENTS: ProjectDocumentDTO[] = [
-  {
-    id: "doc_scaffold_1",
-    fileName: "requirements-summary.pdf",
-    mimeType: "application/pdf",
-    sizeBytes: 382_000,
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
 
 function parseDocuments(value: unknown): ProjectDocumentDTO[] {
   if (!value || typeof value !== "object") {
@@ -71,6 +62,40 @@ function toReadableSize(sizeBytes: number): string {
   return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function describeUploadTime(createdAt: string): string {
+  const parsed = new Date(createdAt);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Recently";
+  }
+
+  const elapsedMs = Date.now() - parsed.getTime();
+  const elapsedMinutes = Math.max(1, Math.floor(elapsedMs / 60_000));
+
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes}m ago`;
+  }
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) {
+    return `${elapsedHours}h ago`;
+  }
+
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  return `${elapsedDays}d ago`;
+}
+
+async function resolveApiErrorMessage(
+  response: Response,
+  fallback: string,
+): Promise<string> {
+  try {
+    const payload = (await response.json()) as { error?: { message?: string } };
+    return payload.error?.message ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export function ProjectDocumentsPage({
   projectId,
   role,
@@ -83,9 +108,11 @@ export function ProjectDocumentsPage({
   const [error, setError] = useState<string | null>(null);
   const [selectedDocument, setSelectedDocument] =
     useState<ProjectDocumentDTO | null>(null);
-  const [assignUserId, setAssignUserId] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
+  const [pastedSpecs, setPastedSpecs] = useState("");
+  const [isDragActive, setIsDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isAdmin = role === "admin";
 
@@ -94,38 +121,53 @@ export function ProjectDocumentsPage({
       setLoading(true);
       setError(null);
 
-      const [documentsResponse, planningResponse] = await Promise.all([
-        fetch(`/api/projects/${projectId}/documents`, {
+      const documentsResponse = await fetch(
+        `/api/projects/${projectId}/documents`,
+        {
           method: "GET",
           cache: "no-store",
-        }),
-        fetch(`/api/projects/${projectId}/documents/used-in-planning`, {
-          method: "GET",
-          cache: "no-store",
-        }),
-      ]);
+        },
+      );
 
-      if (!documentsResponse.ok || !planningResponse.ok) {
-        throw new Error(
-          `Documents endpoints returned ${documentsResponse.status}/${planningResponse.status}`,
+      if (!documentsResponse.ok) {
+        const message = await resolveApiErrorMessage(
+          documentsResponse,
+          "Failed to load project documents.",
         );
+        throw new Error(message);
       }
 
       const documentsJson = (await documentsResponse.json()) as unknown;
-      const planningJson = (await planningResponse.json()) as unknown;
-
       const loadedDocuments = parseDocuments(documentsJson);
-      const loadedPlanningDocuments = parseDocuments(planningJson);
-
       setDocuments(loadedDocuments);
-      setPlanningDocuments(loadedPlanningDocuments);
+
+      const planningResponse = await fetch(
+        `/api/projects/${projectId}/documents/used-in-planning`,
+        {
+          method: "GET",
+          cache: "no-store",
+        },
+      );
+
+      if (!planningResponse.ok) {
+        const message = await resolveApiErrorMessage(
+          planningResponse,
+          "Failed to load planning-source documents.",
+        );
+        setPlanningDocuments([]);
+        setError(message);
+        return;
+      }
+
+      const planningJson = (await planningResponse.json()) as unknown;
+      setPlanningDocuments(parseDocuments(planningJson));
     } catch (loadError) {
-      setDocuments(FALLBACK_DOCUMENTS);
-      setPlanningDocuments(FALLBACK_DOCUMENTS);
+      setDocuments([]);
+      setPlanningDocuments([]);
       setError(
         loadError instanceof Error
-          ? `${loadError.message}. Showing scaffold documents.`
-          : "Failed to load documents. Showing scaffold documents.",
+          ? loadError.message
+          : "Failed to load documents.",
       );
     } finally {
       setLoading(false);
@@ -136,11 +178,33 @@ export function ProjectDocumentsPage({
     void loadDocuments();
   }, [loadDocuments]);
 
-  async function handleUpload(formData: FormData) {
-    const file = formData.get("file");
+  async function uploadDocument(
+    file: File | null | undefined,
+    options?: {
+      usedForPlanning?: boolean;
+      successMessage?: string;
+    },
+  ): Promise<boolean> {
     if (!(file instanceof File)) {
       setActionStatus("Select a file first.");
-      return;
+      return false;
+    }
+
+    if (!isAdmin) {
+      setActionStatus("Only admins can upload project documents.");
+      return false;
+    }
+
+    if (
+      !isPermittedProjectDocumentFile({
+        fileName: file.name,
+        mimeType: file.type,
+      })
+    ) {
+      setActionStatus(
+        `Unsupported file type. Allowed types: ${PROJECT_DOCUMENT_ALLOWED_TYPES_LABEL}.`,
+      );
+      return false;
     }
 
     try {
@@ -149,6 +213,9 @@ export function ProjectDocumentsPage({
 
       const uploadFormData = new FormData();
       uploadFormData.set("file", file);
+      if (options?.usedForPlanning) {
+        uploadFormData.set("usedForPlanning", "true");
+      }
 
       const response = await fetch(`/api/projects/${projectId}/documents`, {
         method: "POST",
@@ -156,73 +223,51 @@ export function ProjectDocumentsPage({
       });
 
       if (!response.ok) {
-        throw new Error(`Upload failed with ${response.status}`);
+        const message = await resolveApiErrorMessage(
+          response,
+          `Upload failed with ${response.status}`,
+        );
+        throw new Error(message);
       }
 
-      setActionStatus("Upload complete.");
+      setActionStatus(options?.successMessage ?? "Upload complete.");
       await loadDocuments();
+      return true;
     } catch (uploadError) {
       setActionStatus(
         uploadError instanceof Error
           ? uploadError.message
           : "Upload failed due to an unknown error.",
       );
+      return false;
     } finally {
       setUploading(false);
     }
   }
 
-  async function handleAssign(documentId: string) {
-    const userId = assignUserId[documentId]?.trim();
-    if (!userId) {
-      setActionStatus("Enter a user ID before assigning access.");
+  async function handleSavePastedSpecs() {
+    const trimmedSpecs = pastedSpecs.trim();
+    if (!trimmedSpecs) {
+      setActionStatus("Enter text in Paste Specifications before saving.");
       return;
     }
 
-    try {
-      setActionStatus(null);
-      const accessResponse = await fetch(
-        `/api/projects/${projectId}/documents/${documentId}/access`,
-        {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:]/g, "-")
+      .replace(/[.]/g, "_");
+    const fileName = `pasted-specifications-${timestamp}.txt`;
+    const file = new File([trimmedSpecs], fileName, {
+      type: "text/plain",
+    });
 
-      if (!accessResponse.ok) {
-        throw new Error(
-          `Load document access failed with ${accessResponse.status}`,
-        );
-      }
+    const uploaded = await uploadDocument(file, {
+      usedForPlanning: true,
+      successMessage: "Specifications saved to project documents.",
+    });
 
-      const currentAccess = (await accessResponse.json()) as DocumentAccessDTO;
-      const nextAssignedUserIds = Array.from(
-        new Set([...(currentAccess.assignedUserIds ?? []), userId]),
-      );
-
-      const patchResponse = await fetch(
-        `/api/projects/${projectId}/documents/${documentId}/access`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            isPublic: Boolean(currentAccess.isPublic),
-            assignedUserIds: nextAssignedUserIds,
-          }),
-        },
-      );
-
-      if (!patchResponse.ok) {
-        throw new Error(`Assign access failed with ${patchResponse.status}`);
-      }
-
-      setActionStatus(`Assigned ${documentId} to ${userId}.`);
-    } catch (assignError) {
-      setActionStatus(
-        assignError instanceof Error
-          ? assignError.message
-          : "Failed to assign access.",
-      );
+    if (uploaded) {
+      setPastedSpecs("");
     }
   }
 
@@ -255,169 +300,235 @@ export function ProjectDocumentsPage({
     [planningDocuments],
   );
 
+  const recentDocuments = useMemo(
+    () =>
+      [...documents].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ),
+    [documents],
+  );
+
   return (
-    <section className="space-y-5">
-      <header className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h1 className="text-2xl font-semibold text-slate-900">Documents</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          {isAdmin
-            ? "Manage uploads, sharing, and planning source documents."
-            : "Read-only access: you can preview and download assigned documents."}
+    <section className="space-y-6">
+      <header className="space-y-2">
+        <h1 className="text-4xl font-extrabold tracking-tight text-slate-100">
+          Upload Project Specs
+        </h1>
+        <p className="max-w-2xl text-lg leading-relaxed text-slate-400">
+          Save your project requirements here!
         </p>
         {!isAdmin ? (
-          <span className="mt-3 inline-flex rounded-full border border-slate-300 px-2.5 py-1 text-xs font-semibold uppercase text-slate-700">
+          <span className="inline-flex rounded-full border border-violet-300/30 bg-violet-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-violet-100">
             Read-only user mode
           </span>
         ) : null}
       </header>
 
       {error ? (
-        <p className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
           {error}
         </p>
       ) : null}
 
-      {isAdmin ? (
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Admin Controls
-          </h2>
-          <form
-            action={handleUpload}
-            className="mt-3 flex flex-wrap items-center gap-3"
-          >
-            <input
-              accept=".pdf,.doc,.docx,.txt,image/*"
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              name="file"
-              type="file"
-            />
-            <button
-              className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-70"
-              disabled={uploading}
-              type="submit"
-            >
-              {uploading ? "Uploading..." : "Upload document"}
-            </button>
-          </form>
-        </section>
-      ) : null}
-
       {actionStatus ? (
-        <p className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-800">
+        <p className="rounded-xl border border-slate-700 bg-[#11131d] px-3 py-2 text-sm text-slate-200">
           {actionStatus}
         </p>
       ) : null}
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">
-          Project Documents
-        </h2>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:auto-rows-[minmax(180px,auto)]">
+        <section
+          className={`relative overflow-hidden rounded-2xl border bg-[#171821] p-6 md:col-span-8 md:row-span-2 ${
+            isDragActive
+              ? "border-violet-500/70 ring-2 ring-violet-500/40"
+              : "border-[#2d2638]"
+          }`}
+          onDragEnter={(event) => {
+            event.preventDefault();
+            if (isAdmin && !uploading) {
+              setIsDragActive(true);
+            }
+          }}
+          onDragOver={(event) => {
+            event.preventDefault();
+            if (isAdmin && !uploading) {
+              setIsDragActive(true);
+            }
+          }}
+          onDragLeave={(event) => {
+            event.preventDefault();
+            setIsDragActive(false);
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            setIsDragActive(false);
+            const file = event.dataTransfer.files?.[0];
+            void uploadDocument(file);
+          }}
+        >
+          <div className="pointer-events-none absolute inset-4 rounded-xl border-2 border-dashed border-slate-800" />
+          <div className="relative z-10 flex min-h-[17rem] flex-col items-center justify-center gap-5 text-center">
+            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-violet-500/15 text-sm font-semibold text-violet-200">
+              UP
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-4xl font-bold tracking-tight text-slate-100">
+                Drag and drop files
+              </h2>
+              <p className="text-base text-slate-400">
+                PDF, DOCX, or TXT formats supported (Max 50MB)
+              </p>
+            </div>
+            <input
+              ref={fileInputRef}
+              accept={PROJECT_DOCUMENT_ACCEPT_ATTR}
+              className="hidden"
+              name="file"
+              type="file"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                void uploadDocument(file);
+                event.target.value = "";
+              }}
+            />
+            <button
+              className="rounded-lg bg-violet-600 px-8 py-3 text-sm font-bold text-white shadow-lg shadow-violet-900/40 transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={!isAdmin || uploading}
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {uploading ? "Uploading..." : "Browse Files"}
+            </button>
+            {!isAdmin ? (
+              <p className="text-xs text-slate-500">
+                Only project admins can upload files.
+              </p>
+            ) : null}
+          </div>
+        </section>
 
-        {loading ? (
-          <p className="mt-3 text-sm text-slate-600">Loading documents...</p>
-        ) : documents.length === 0 ? (
-          <p className="mt-3 rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-            No documents available.
+        <section className="flex flex-col gap-4 rounded-2xl border border-[#2d2638] bg-[#171821] p-5 md:col-span-4 md:row-span-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-semibold uppercase tracking-wide">
+              Paste Specifications
+            </span>
+            <button
+              className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-violet-900/40 transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={
+                !isAdmin || uploading || pastedSpecs.trim().length === 0
+              }
+              type="button"
+              onClick={() => {
+                void handleSavePastedSpecs();
+              }}
+            >
+              Save
+            </button>
+          </div>
+          <textarea
+            className="min-h-[16rem] flex-1 resize-none rounded-lg border border-[#2d2638] bg-[#0f1118] p-4 text-sm leading-relaxed text-slate-300 placeholder:text-slate-600 focus:border-violet-400 focus:outline-none"
+            onChange={(event) => setPastedSpecs(event.target.value)}
+            placeholder="Or paste your project specifications directly here... If you have a raw list of requirements or a brief, the AI can parse it from here."
+            value={pastedSpecs}
+          />
+          {!isAdmin ? (
+            <p className="text-xs text-slate-500">
+              Only project admins can save pasted specs.
+            </p>
+          ) : null}
+          <p className="text-xs text-slate-500">
+            {planningDocuments.length} document
+            {planningDocuments.length === 1 ? "" : "s"} currently used for task
+            generation.
           </p>
-        ) : (
-          <ul className="mt-3 space-y-3">
-            {documents.map((document) => (
-              <li
-                key={document.id}
-                className="rounded-xl border border-slate-200 p-3 transition-colors hover:bg-slate-50"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <button
-                    className="text-left"
-                    onClick={() => setSelectedDocument(document)}
-                    type="button"
-                  >
-                    <p className="font-medium text-slate-900">
-                      {document.fileName}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {toReadableSize(document.sizeBytes)} · {document.mimeType}{" "}
-                      · {new Date(document.createdAt).toLocaleString()}
-                    </p>
-                  </button>
+          {planningDocuments.length > 0 ? (
+            <ul className="space-y-2">
+              {planningDocuments.slice(0, 3).map((document) => (
+                <li
+                  key={`planning-${document.id}`}
+                  className="rounded-lg border border-slate-700 bg-[#0f1118] px-3 py-2 text-xs text-slate-300"
+                >
+                  {document.fileName}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    {planningDocumentIds.has(document.id) ? (
-                      <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
-                        Used for planning
-                      </span>
-                    ) : null}
+        <section className="rounded-2xl border border-[#2d2638] bg-[#171821] p-5 md:col-span-8 md:row-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-base font-bold text-slate-100">
+              Recent Uploads
+            </h3>
+            <button
+              className="text-xs font-medium text-violet-300 hover:text-violet-200"
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            >
+              View All
+            </button>
+          </div>
+
+          {loading ? (
+            <p className="rounded-lg border border-slate-700 bg-[#0f1118] px-3 py-2 text-sm text-slate-400">
+              Loading upload history...
+            </p>
+          ) : recentDocuments.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-slate-700 bg-[#0f1118] px-3 py-2 text-sm text-slate-500">
+              No uploaded files yet.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {recentDocuments.map((document) => (
+                <li
+                  key={document.id}
+                  className="rounded-lg border border-slate-700 bg-[#0f1118] px-3 py-2"
+                >
+                  <div className="flex items-center justify-between gap-3">
                     <button
-                      className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                      className="min-w-0 flex-1 text-left"
+                      onClick={() => setSelectedDocument(document)}
+                      type="button"
+                    >
+                      <p className="truncate text-sm font-medium text-slate-100">
+                        {document.fileName}
+                      </p>
+                      <p className="mt-1 text-xs italic text-slate-500">
+                        {planningDocumentIds.has(document.id)
+                          ? "Used for planning"
+                          : `Uploaded ${describeUploadTime(document.createdAt)}`}
+                      </p>
+                    </button>
+                    <button
+                      className="rounded-md border border-slate-600 px-2 py-1 text-xs font-semibold text-slate-200 hover:bg-slate-800"
                       onClick={() => setSelectedDocument(document)}
                       type="button"
                     >
                       Preview
                     </button>
                   </div>
-                </div>
+                  <p className="mt-2 text-xs text-slate-500">
+                    {toReadableSize(document.sizeBytes)} · {document.mimeType}
+                  </p>
 
-                {isAdmin ? (
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <input
-                      className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs"
-                      onChange={(event) =>
-                        setAssignUserId((current) => ({
-                          ...current,
-                          [document.id]: event.target.value,
-                        }))
-                      }
-                      placeholder="User ID to assign"
-                      value={assignUserId[document.id] ?? ""}
-                    />
-                    <button
-                      className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                      onClick={() => void handleAssign(document.id)}
-                      type="button"
-                    >
-                      Assign
-                    </button>
-                    <button
-                      className="rounded-lg border border-rose-300 px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50"
-                      onClick={() => void handleRemove(document.id)}
-                      type="button"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">
-          Used to Generate Tasks
-        </h2>
-        {loading ? (
-          <p className="mt-3 text-sm text-slate-600">
-            Loading generation-source documents...
-          </p>
-        ) : planningDocuments.length === 0 ? (
-          <p className="mt-3 rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-            No generation-source documents recorded yet.
-          </p>
-        ) : (
-          <ul className="mt-3 space-y-2 text-sm text-slate-800">
-            {planningDocuments.map((document) => (
-              <li
-                key={`planning-${document.id}`}
-                className="rounded-lg bg-slate-100 px-3 py-2"
-              >
-                {document.fileName}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                  {isAdmin ? (
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <button
+                        className="rounded-md border border-rose-400/60 px-2.5 py-1 text-xs font-semibold text-rose-200 hover:bg-rose-500/10"
+                        onClick={() => void handleRemove(document.id)}
+                        type="button"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
 
       <DocumentPreviewModal
         document={selectedDocument}

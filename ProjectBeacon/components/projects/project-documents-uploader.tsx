@@ -1,6 +1,11 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import {
+  PROJECT_DOCUMENT_ACCEPT_ATTR,
+  PROJECT_DOCUMENT_ALLOWED_TYPES_LABEL,
+  isPermittedProjectDocumentFile,
+} from "@/lib/documents/file-types";
 
 export type WorkspaceDocumentStatus = "processing" | "analyzed" | "error";
 
@@ -79,6 +84,7 @@ export function ProjectUploadDropzone({
   onUpload,
 }: ProjectUploadDropzoneProps) {
   const [isDragActive, setIsDragActive] = useState(false);
+  const [typeError, setTypeError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   async function submitFile(file: File | null | undefined) {
@@ -86,6 +92,19 @@ export function ProjectUploadDropzone({
       return;
     }
 
+    if (
+      !isPermittedProjectDocumentFile({
+        fileName: file.name,
+        mimeType: file.type,
+      })
+    ) {
+      setTypeError(
+        `Unsupported file type. Allowed types: ${PROJECT_DOCUMENT_ALLOWED_TYPES_LABEL}.`,
+      );
+      return;
+    }
+
+    setTypeError(null);
     await onUpload(file);
   }
 
@@ -138,7 +157,7 @@ export function ProjectUploadDropzone({
             ref={inputRef}
             className="hidden"
             type="file"
-            accept=".pdf,.doc,.docx,.txt,.md,text/plain,application/pdf"
+            accept={PROJECT_DOCUMENT_ACCEPT_ATTR}
             onChange={(event) => {
               const file = event.target.files?.[0];
               void submitFile(file);
@@ -157,9 +176,9 @@ export function ProjectUploadDropzone({
         </div>
       </div>
 
-      {error ? (
+      {error || typeError ? (
         <p className="relative z-10 mt-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-          {error}
+          {typeError ?? error}
         </p>
       ) : null}
     </section>
