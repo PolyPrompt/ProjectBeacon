@@ -1,5 +1,4 @@
-import { TimelinePage } from "@/components/workflow/timeline-page";
-import { requireSessionUser } from "@/lib/auth/session";
+import { redirect } from "next/navigation";
 
 type ProjectTimelineRouteProps = {
   params: Promise<{ projectId: string }>;
@@ -12,18 +11,10 @@ export default async function ProjectTimelineRoute({
 }: ProjectTimelineRouteProps) {
   const { projectId } = await params;
   const { taskId } = await searchParams;
-  const sessionUser = await requireSessionUser(
-    `/projects/${projectId}/timeline`,
-    {
-      projectId,
-    },
-  );
-
-  return (
-    <TimelinePage
-      projectId={projectId}
-      role={sessionUser.role}
-      selectedTaskId={typeof taskId === "string" ? taskId : null}
-    />
-  );
+  if (typeof taskId === "string" && taskId.length > 0) {
+    redirect(
+      `/projects/${projectId}/userflow/timeline?taskId=${encodeURIComponent(taskId)}`,
+    );
+  }
+  redirect(`/projects/${projectId}/userflow/timeline`);
 }

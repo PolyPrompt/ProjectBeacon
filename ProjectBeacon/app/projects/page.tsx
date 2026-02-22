@@ -1,3 +1,5 @@
+import Image from "next/image";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { ProjectsIndexPage } from "@/components/projects/projects-index-page";
@@ -57,6 +59,25 @@ export default async function ProjectsPage() {
         data-page="projects-index"
         className="min-h-screen bg-[radial-gradient(120%_90%_at_50%_0%,#1b1434_0%,#0f0a1d_55%,#0b0718_100%)]"
       >
+        <header className="sticky top-0 z-30 border-b border-white/10 bg-[linear-gradient(90deg,#16112B_0%,#17142F_45%,#12172E_100%)]">
+          <div className="mx-auto flex w-full max-w-6xl items-center px-5 py-3 sm:px-6">
+            <Link
+              className="flex items-center gap-2 text-slate-100 transition-opacity hover:opacity-90"
+              href="/projects"
+            >
+              <Image
+                alt="TaskLogger beaver logo"
+                height={24}
+                priority
+                src="/beaver.png"
+                width={24}
+              />
+              <span className="text-xl font-semibold leading-none sm:text-3xl">
+                TaskLogger
+              </span>
+            </Link>
+          </div>
+        </header>
         <ProjectsIndexPage
           projects={projects.map((project) => ({
             id: project.id,
