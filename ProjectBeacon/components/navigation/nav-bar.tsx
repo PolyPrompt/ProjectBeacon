@@ -1,5 +1,6 @@
 "use client";
 
+import { UserButton } from "@clerk/nextjs";
 import Image from "next/image";
 import Link from "next/link";
 import type { ProjectRole } from "@/lib/auth/session";
@@ -11,6 +12,7 @@ type ProjectNavBarProps = {
   projectId: string;
   pathname: string;
   onSignOut: () => Promise<void>;
+  useClerkUserButton: boolean;
 };
 
 type PublicNavBarProps = {
@@ -45,7 +47,7 @@ function getUserInitials(userId: string): string {
 export function NavBar(props: NavBarProps) {
   const pathname = props.pathname;
 
-  let brandHref = "/";
+  const brandHref = "/projects";
   let userInitials = "";
   let navItems: NavItem[] = [
     {
@@ -71,7 +73,6 @@ export function NavBar(props: NavBarProps) {
   ];
 
   if (props.mode === "project") {
-    brandHref = `/projects/${props.projectId}`;
     userInitials = getUserInitials(props.userId);
     navItems = [
       {
@@ -148,16 +149,31 @@ export function NavBar(props: NavBarProps) {
               <span className="hidden rounded-full border border-violet-300/40 bg-violet-500/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-violet-100 sm:inline-block">
                 {props.role}
               </span>
-              <form action={props.onSignOut}>
-                <button
-                  aria-label="Sign out"
-                  className="grid h-10 w-10 place-items-center rounded-full border border-violet-300/50 bg-white/5 text-xs font-semibold text-slate-100 transition-colors hover:bg-white/10"
-                  title="Sign out"
-                  type="submit"
-                >
-                  {userInitials}
-                </button>
-              </form>
+              {props.useClerkUserButton ? (
+                <div className="grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-violet-300/50 bg-white/5">
+                  <UserButton
+                    afterSignOutUrl="/sign-in"
+                    appearance={{
+                      elements: {
+                        avatarBox: "h-10 w-10",
+                        userButtonTrigger:
+                          "h-10 w-10 rounded-full border-0 bg-transparent shadow-none hover:bg-white/10",
+                      },
+                    }}
+                  />
+                </div>
+              ) : (
+                <form action={props.onSignOut}>
+                  <button
+                    aria-label="Sign out"
+                    className="grid h-10 w-10 place-items-center rounded-full border border-violet-300/50 bg-white/5 text-xs font-semibold text-slate-100 transition-colors hover:bg-white/10"
+                    title="Sign out"
+                    type="submit"
+                  >
+                    {userInitials}
+                  </button>
+                </form>
+              )}
             </>
           )}
         </div>
