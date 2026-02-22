@@ -2,11 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import {
+  INVENTORY_CATEGORY_ORDER,
+  inferInventoryCategories,
+  isInventoryCategory,
+  type InventoryCategory,
+} from "@/lib/tasks/inventory-categories";
 import type { WorkflowBoardDTO, WorkflowBoardTaskDTO } from "@/types/workflow";
 
 type PlanningStatus = "draft" | "locked" | "assigned";
 type InventoryMode = "review" | "edit";
-type InventoryCategory = "Frontend" | "Backend" | "DevOps" | "QA & Testing";
 type InventoryPriority = "low" | "medium" | "high";
 
 type TaskInventoryBlueprintProps = {
@@ -19,7 +24,7 @@ type TaskInventoryBlueprintProps = {
 
 type InventoryTask = {
   assignee: string;
-  category: InventoryCategory;
+  categories: InventoryCategory[];
   id: string;
   phase: WorkflowBoardTaskDTO["phase"];
   priority: InventoryPriority;
@@ -27,13 +32,6 @@ type InventoryTask = {
   status: WorkflowBoardTaskDTO["status"];
   title: string;
 };
-
-const CATEGORY_ORDER: InventoryCategory[] = [
-  "Frontend",
-  "Backend",
-  "DevOps",
-  "QA & Testing",
-];
 
 const CATEGORY_COLORS: Record<InventoryPriority, string> = {
   low: "bg-emerald-400",
@@ -64,47 +62,6 @@ function mapDifficultyToPriority(
   return "high";
 }
 
-function inferCategory(task: WorkflowBoardTaskDTO): InventoryCategory {
-  const normalized = task.title.toLowerCase();
-
-  if (
-    /(ui|frontend|component|design|layout|dashboard|theme|css|tailwind|react)/.test(
-      normalized,
-    )
-  ) {
-    return "Frontend";
-  }
-
-  if (
-    /(api|backend|database|auth|schema|service|migration|endpoint|server|oauth|redis)/.test(
-      normalized,
-    )
-  ) {
-    return "Backend";
-  }
-
-  if (
-    /(devops|pipeline|deploy|docker|infra|infrastructure|ci\/cd|kubernetes|build)/.test(
-      normalized,
-    )
-  ) {
-    return "DevOps";
-  }
-
-  if (/(test|qa|quality|cypress|smoke|e2e|validation)/.test(normalized)) {
-    return "QA & Testing";
-  }
-
-  if (task.phase === "beginning") {
-    return "Frontend";
-  }
-  if (task.phase === "middle") {
-    return "Backend";
-  }
-
-  return "DevOps";
-}
-
 function parseBoardPayload(payload: unknown): WorkflowBoardDTO | null {
   if (!payload || typeof payload !== "object") {
     return null;
@@ -133,7 +90,7 @@ function toInventoryTasks(board: WorkflowBoardDTO): InventoryTask[] {
   const assigned = board.columns.flatMap((column) =>
     column.tasks.map((task) => ({
       assignee: column.name,
-      category: inferCategory(task),
+      categories: inferInventoryCategories(task),
       id: task.id,
       phase: task.phase,
       priority: mapDifficultyToPriority(task.difficultyPoints),
@@ -145,7 +102,7 @@ function toInventoryTasks(board: WorkflowBoardDTO): InventoryTask[] {
 
   const unassigned = board.unassigned.map((task) => ({
     assignee: "Unassigned",
-    category: inferCategory(task),
+    categories: inferInventoryCategories(task),
     id: task.id,
     phase: task.phase,
     priority: mapDifficultyToPriority(task.difficultyPoints),
@@ -160,7 +117,7 @@ function toInventoryTasks(board: WorkflowBoardDTO): InventoryTask[] {
 }
 
 function cloneTasks(tasks: InventoryTask[]): InventoryTask[] {
-  return tasks.map((task) => ({ ...task }));
+  return tasks.map((task) => ({ ...task, categories: [...task.categories] }));
 }
 
 function validateTasks(tasks: InventoryTask[]): string[] {
@@ -177,7 +134,13 @@ function validateTasks(tasks: InventoryTask[]): string[] {
       );
     }
 
-    if (!CATEGORY_ORDER.includes(task.category)) {
+    if (task.categories.length === 0) {
+      errors.push(
+        `Task \"${task.title || task.id}\" must include at least one category.`,
+      );
+    }
+
+    if (!task.categories.every((category) => isInventoryCategory(category))) {
       errors.push(
         `Task \"${task.title || task.id}\" is missing a valid category.`,
       );
@@ -283,9 +246,9 @@ export default function TaskInventoryBlueprint({
   const activeTasks = mode === "edit" ? draftTasks : committedTasks;
   const groupedTasks = useMemo(
     () =>
-      CATEGORY_ORDER.map((category) => ({
+      INVENTORY_CATEGORY_ORDER.map((category) => ({
         category,
-        tasks: activeTasks.filter((task) => task.category === category),
+        tasks: activeTasks.filter((task) => task.categories.includes(category)),
       })),
     [activeTasks],
   );
@@ -327,7 +290,7 @@ export default function TaskInventoryBlueprint({
   function addTask(category: InventoryCategory): void {
     const newTask: InventoryTask = {
       assignee: "Unassigned",
-      category,
+      categories: [category],
       id: createDraftId(),
       phase: "middle",
       priority: "medium",
@@ -351,13 +314,29 @@ export default function TaskInventoryBlueprint({
 
   function updateDraftTask(
     taskId: string,
-    patch: Partial<Pick<InventoryTask, "priority" | "title">>,
+    patch: Partial<Pick<InventoryTask, "categories" | "priority" | "title">>,
   ): void {
     setDraftTasks((previous) =>
       previous.map((task) =>
         task.id === taskId ? { ...task, ...patch } : task,
       ),
     );
+  }
+
+  function toggleDraftTaskCategory(
+    taskId: string,
+    category: InventoryCategory,
+  ): void {
+    const target = draftTasks.find((task) => task.id === taskId);
+    if (!target) {
+      return;
+    }
+
+    const nextCategories = target.categories.includes(category)
+      ? target.categories.filter((value) => value !== category)
+      : [...target.categories, category];
+
+    updateDraftTask(taskId, { categories: nextCategories });
   }
 
   function saveChanges(): void {
@@ -468,7 +447,7 @@ export default function TaskInventoryBlueprint({
               ) : (
                 tasks.map((task) => (
                   <article
-                    key={task.id}
+                    key={`${category}-${task.id}`}
                     className="rounded-lg border border-slate-700 bg-slate-950/30 px-3 py-2"
                   >
                     {mode === "edit" ? (
@@ -514,6 +493,27 @@ export default function TaskInventoryBlueprint({
                             </select>
                           </label>
                         </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {INVENTORY_CATEGORY_ORDER.map((option) => {
+                            const selected = task.categories.includes(option);
+                            return (
+                              <button
+                                key={`${task.id}-${option}`}
+                                type="button"
+                                className={`rounded-full border px-2 py-1 text-[10px] font-medium ${
+                                  selected
+                                    ? "border-violet-400/70 bg-violet-500/20 text-violet-100"
+                                    : "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+                                }`}
+                                onClick={() =>
+                                  toggleDraftTaskCategory(task.id, option)
+                                }
+                              >
+                                {option}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     ) : (
                       <div className="flex items-start justify-between gap-2">
@@ -521,6 +521,16 @@ export default function TaskInventoryBlueprint({
                           <p className="text-sm font-medium text-slate-100">
                             {task.title}
                           </p>
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {task.categories.map((taskCategory) => (
+                              <span
+                                key={`${task.id}-${taskCategory}`}
+                                className="rounded-full border border-slate-700 px-2 py-0.5 text-[10px] text-slate-300"
+                              >
+                                {taskCategory}
+                              </span>
+                            ))}
+                          </div>
                           <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-slate-500">
                             {task.assignee} · {task.status.replace("_", " ")}
                           </p>
