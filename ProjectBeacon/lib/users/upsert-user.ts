@@ -68,13 +68,35 @@ export async function upsertUserFromClerk(
     );
   }
 
-  const created = !existingRow;
+  let resolvedExistingRow = existingRow;
+
+  if (!resolvedExistingRow) {
+    // Handle legacy rows created before clerk_user_id existed.
+    const { data: emailMatchedRow, error: emailMatchError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (emailMatchError) {
+      throw new ApiHttpError(
+        500,
+        "DB_ERROR",
+        "Failed matching existing user by email",
+        emailMatchError.message,
+      );
+    }
+
+    resolvedExistingRow = emailMatchedRow;
+  }
+
+  const created = !resolvedExistingRow;
 
   const { data: upserted, error: upsertError } = await supabase
     .from("users")
     .upsert(
       {
-        ...(existingRow ? { id: existingRow.id } : {}),
+        ...(resolvedExistingRow ? { id: resolvedExistingRow.id } : {}),
         clerk_user_id: clerkUserId,
         email,
         name,

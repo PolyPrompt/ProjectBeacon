@@ -31,7 +31,11 @@ Important: for this subtree, most product code changes should happen in this dir
 
 ## Agent Identity Guard
 
-- Use `AGENT_ID` from environment to determine current role (`agent1`, `agent2`, or `agent3`).
+- Use `AGENT_ID` from environment to determine current role.
+- Valid roles are:
+  - task agents: `agent1`, `agent2`, `agent3`
+  - UI agent: `agent_ui`
+  - QA agent: `agent_qa`
 - At the start of every new task/issue, verify `AGENT_ID` matches the assigned owner role before making changes.
 - During long autonomous runs, re-check `AGENT_ID` at each task boundary (and at least once every hour) to prevent role drift.
 - If `AGENT_ID` is missing/invalid or mismatched with task ownership, stop and report the mismatch in `HANDOFF.local.md`.

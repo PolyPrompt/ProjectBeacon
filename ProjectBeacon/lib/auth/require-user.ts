@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 
 import { ApiHttpError } from "@/lib/api/errors";
 import { getServiceSupabaseClient } from "@/lib/supabase/server";
+import { upsertUserFromClerk } from "@/lib/users/upsert-user";
 
 export type AuthenticatedUser = {
   userId: string;
@@ -33,11 +34,12 @@ export async function requireUser(): Promise<AuthenticatedUser> {
   }
 
   if (!data) {
-    throw new ApiHttpError(
-      401,
-      "USER_NOT_BOOTSTRAPPED",
-      "User is not yet initialized",
-    );
+    const bootstrapped = await upsertUserFromClerk(clerkUserId);
+
+    return {
+      userId: bootstrapped.userId,
+      clerkUserId,
+    };
   }
 
   return {
