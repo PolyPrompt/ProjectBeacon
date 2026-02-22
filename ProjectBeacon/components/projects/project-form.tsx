@@ -195,11 +195,12 @@ export function ProjectForm() {
   const [editingMemberIds, setEditingMemberIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+  const [isGeneratingShareLink, setIsGeneratingShareLink] = useState(false);
   const [isCopyingLink, setIsCopyingLink] = useState(false);
+  const [hasPressedShareProject, setHasPressedShareProject] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
   const [project, setProject] = useState<ProjectResponse | null>(null);
-  const [joinLink, setJoinLink] = useState<ProjectJoinLink | null>(null);
 
   const rosterEmails = useMemo(
     () =>
@@ -214,9 +215,15 @@ export function ProjectForm() {
   );
 
   const remainingDays = daysUntil(deadlineDate);
+  const canCreateProject = name.trim().length > 0 && deadlineDate.length > 0;
+  const isShareProjectDisabled = project
+    ? isGeneratingLink
+    : isSubmitting || !canCreateProject;
+  const showShareProjectTooltip = !project && !canCreateProject;
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setHasPressedShareProject(true);
 
     if (!deadlineDate) {
       setError("Select a project deadline");
@@ -249,7 +256,6 @@ export function ProjectForm() {
 
       const createdProject = data as ProjectResponse;
       setProject(createdProject);
-      setJoinLink(null);
 
       if (rosterEmails.length > 0) {
         await sendRosterInvites(createdProject.id);
@@ -262,11 +268,71 @@ export function ProjectForm() {
   }
 
   async function generateShareLink() {
+    setHasPressedShareProject(true);
+
     if (!project) {
       return;
     }
 
     await sendRosterInvites(project.id);
+  }
+
+  async function generateJoinLink() {
+    if (!project) {
+      return;
+    }
+
+    setIsGeneratingShareLink(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/projects/${project.id}/share-link`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = (await response.json()) as
+        | {
+            error?: { message?: string };
+          }
+        | ProjectJoinLink;
+
+      if (!response.ok) {
+        if ("error" in data && data.error?.message) {
+          setError(data.error.message);
+          return;
+        }
+
+        setError("Failed to generate share link");
+        return;
+      }
+
+      if (
+        "projectId" in data &&
+        "token" in data &&
+        "expiresAt" in data &&
+        "joinUrl" in data
+      ) {
+        try {
+          await navigator.clipboard.writeText(data.joinUrl);
+          setIsCopyingLink(true);
+          setShareStatus("Share link copied to clipboard.");
+          setTimeout(() => {
+            setIsCopyingLink(false);
+          }, 1200);
+        } catch {
+          setShareStatus("Share link generated, but failed to copy.");
+        }
+      } else {
+        setError("Failed to generate share link");
+      }
+    } catch {
+      setError("Failed to generate share link");
+    } finally {
+      setIsGeneratingShareLink(false);
+    }
   }
 
   async function sendRosterInvites(projectId: string) {
@@ -313,17 +379,6 @@ export function ProjectForm() {
             .join(", ")
         : "";
 
-      if (data.token && data.expiresAt && data.joinUrl) {
-        setJoinLink({
-          projectId,
-          token: data.token,
-          expiresAt: data.expiresAt,
-          joinUrl: data.joinUrl,
-        });
-      } else {
-        setJoinLink(null);
-      }
-
       if (failedCount > 0) {
         setShareStatus(
           `Sent ${sentCount} invite(s). Failed ${failedCount}: ${failedEmails || "some recipients"}.`,
@@ -335,22 +390,6 @@ export function ProjectForm() {
       setError("Failed to send invite emails");
     } finally {
       setIsGeneratingLink(false);
-    }
-  }
-
-  async function copyJoinLink() {
-    if (!joinLink) {
-      return;
-    }
-
-    setIsCopyingLink(true);
-
-    try {
-      await navigator.clipboard.writeText(joinLink.joinUrl);
-    } finally {
-      setTimeout(() => {
-        setIsCopyingLink(false);
-      }, 1200);
     }
   }
 
@@ -881,31 +920,54 @@ export function ProjectForm() {
 
             <section className="flex flex-col gap-4 md:col-span-5">
               <div className="rounded-2xl border border-violet-700/40 bg-violet-900/15 p-4">
-                <button
-                  className="group flex w-full items-center justify-center gap-2 rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-violet-600 disabled:cursor-default disabled:opacity-55"
-                  type={project ? "button" : "submit"}
-                  form={project ? undefined : "project-setup-form"}
-                  onClick={project ? generateShareLink : undefined}
-                  disabled={project ? isGeneratingLink : isSubmitting}
-                >
-                  <span>
-                    {project
-                      ? isGeneratingLink
-                        ? "Sending Invites..."
-                        : "Share Project"
-                      : isSubmitting
-                        ? "Creating Project..."
-                        : "Share Project"}
-                  </span>
-                  <span className="transition-transform group-hover:translate-x-1">
-                    <ShareIcon />
-                  </span>
-                </button>
+                <div className="group relative">
+                  <button
+                    className="group flex w-full items-center justify-center gap-2 rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-violet-600 disabled:cursor-default disabled:opacity-55"
+                    type={project ? "button" : "submit"}
+                    form={project ? undefined : "project-setup-form"}
+                    onClick={project ? generateShareLink : undefined}
+                    disabled={isShareProjectDisabled}
+                  >
+                    <span>
+                      {project
+                        ? isGeneratingLink
+                          ? "Sending Invites..."
+                          : "Share Project"
+                        : isSubmitting
+                          ? "Creating Project..."
+                          : "Share Project"}
+                    </span>
+                    <span className="transition-transform group-hover:translate-x-1">
+                      <ShareIcon />
+                    </span>
+                  </button>
+
+                  {showShareProjectTooltip ? (
+                    <div className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 hidden -translate-x-1/2 rounded-lg border border-violet-500/40 bg-[#11091d] px-3 py-1.5 text-[11px] text-violet-100 group-hover:block">
+                      Fill project name and deadline first.
+                    </div>
+                  ) : null}
+                </div>
 
                 <p className="mt-3 text-center text-xs italic text-slate-400">
                   * Invitations will be sent automatically to the email
                   addresses listed in the team roster.
                 </p>
+
+                {hasPressedShareProject ? (
+                  <button
+                    className="mt-3 w-full rounded-xl border border-violet-500/60 bg-transparent px-4 py-2.5 text-sm font-semibold uppercase tracking-[0.08em] text-violet-100 transition hover:bg-violet-700/30 disabled:cursor-default disabled:opacity-55"
+                    type="button"
+                    onClick={generateJoinLink}
+                    disabled={!project || isGeneratingShareLink}
+                  >
+                    {isGeneratingShareLink
+                      ? "Generating Link..."
+                      : isCopyingLink
+                        ? "Link Copied"
+                        : "Share by Link"}
+                  </button>
+                ) : null}
               </div>
 
               {error ? (
