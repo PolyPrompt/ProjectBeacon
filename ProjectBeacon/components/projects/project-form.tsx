@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import { ShareEmailForm } from "@/components/projects/share-email-form";
-
 type ProjectResponse = {
   id: string;
   name: string;
@@ -908,38 +906,6 @@ export function ProjectForm() {
                   invite links to the team roster.
                 </div>
               )}
-
-              {project && joinLink ? (
-                <div className="rounded-2xl border border-violet-700/35 bg-[#17191f]/85 p-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-violet-300">
-                      Share URL
-                    </p>
-                    <p className="mt-1 break-all text-sm text-slate-100">
-                      {joinLink.joinUrl}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-400">
-                      Expires: {new Date(joinLink.expiresAt).toLocaleString()}
-                    </p>
-                  </div>
-
-                  <button
-                    className="mt-3 rounded-lg border border-violet-500/55 bg-violet-600/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-violet-100 transition hover:bg-violet-600/35"
-                    type="button"
-                    onClick={copyJoinLink}
-                  >
-                    {isCopyingLink ? "Copied" : "Copy Link"}
-                  </button>
-
-                  <div className="mt-4 rounded-xl border border-violet-900/45 bg-black/20 p-3">
-                    <ShareEmailForm
-                      projectId={project.id}
-                      joinUrl={joinLink.joinUrl}
-                      suggestedEmails={rosterEmails}
-                    />
-                  </div>
-                </div>
-              ) : null}
             </section>
           </div>
         </main>
