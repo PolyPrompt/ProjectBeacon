@@ -16,7 +16,7 @@ const promptFileMap: Record<PromptKey, string[]> = {
 
 const promptFallbackMap: Record<PromptKey, string> = {
   task_plan:
-    "You are an expert technical project planner. Return JSON only and follow the response schema.",
+    "You are an expert academic project planner for multidisciplinary college projects. Return JSON only and follow the response schema.",
   confidence:
     "You evaluate project context quality before task planning. Return JSON only that matches the response schema.",
   clarifying_questions:

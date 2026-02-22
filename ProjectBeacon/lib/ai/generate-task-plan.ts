@@ -156,44 +156,44 @@ const DEFAULT_PLAN_TEMPLATES: Array<{
   skillHint: string;
 }> = [
   {
-    title: "Finalize requirements and acceptance criteria",
+    title: "Confirm deliverables, rubric, and success criteria",
     description:
-      "Consolidate scope and define explicit acceptance criteria with team sign-off.",
+      "Review assignment requirements, define scope boundaries, and agree on measurable completion criteria.",
     difficultyPoints: 2,
-    skillHint: "Product Planning",
+    skillHint: "Planning",
   },
   {
-    title: "Set up project architecture and repo workflows",
+    title: "Collect sources, data, and reference materials",
     description:
-      "Establish architecture decisions, coding standards, and CI baseline.",
+      "Gather required literature, datasets, lab resources, or references needed to execute the project.",
     difficultyPoints: 3,
-    skillHint: "Architecture",
+    skillHint: "Research",
   },
   {
-    title: "Implement core feature slice",
+    title: "Build first complete draft or prototype",
     description:
-      "Build the highest-value vertical slice that validates end-to-end behavior.",
+      "Produce the first end-to-end version of the core project artifact, report section, or implementation output.",
     difficultyPoints: 5,
-    skillHint: "Full Stack Development",
+    skillHint: "Execution",
   },
   {
-    title: "Implement secondary feature slice",
+    title: "Analyze outcomes and close quality gaps",
     description:
-      "Build supporting functionality and integrate with existing core slice.",
+      "Evaluate results, test assumptions, and revise weak sections based on findings or feedback.",
     difficultyPoints: 3,
-    skillHint: "Application Development",
+    skillHint: "Analysis",
   },
   {
-    title: "Quality pass and hardening",
+    title: "Finalize written materials and documentation",
     description:
-      "Run tests, fix defects, and improve reliability for demo readiness.",
+      "Complete final writing, citations, method notes, and documentation required for grading or review.",
     difficultyPoints: 2,
-    skillHint: "QA",
+    skillHint: "Writing",
   },
   {
-    title: "Prepare final demo and delivery artifacts",
+    title: "Prepare presentation and submission package",
     description:
-      "Package deployment, demo flow, and final documentation for submission.",
+      "Assemble slides/poster/demo assets and ensure all required submission artifacts are complete.",
     difficultyPoints: 2,
     skillHint: "Communication",
   },
@@ -206,46 +206,46 @@ const PROVISIONAL_PLAN_TEMPLATES: Array<{
   skillHint: string;
 }> = [
   {
-    title: "Identify ambiguity gaps and research questions",
+    title: "Identify ambiguity gaps and open questions",
     description:
-      "Document open questions, unknown assumptions, and data needed to unblock implementation planning.",
+      "Capture unresolved requirements, assumptions, and missing inputs that block reliable planning.",
     difficultyPoints: 2,
-    skillHint: "Product Planning",
+    skillHint: "Planning",
   },
   {
-    title: "Run technical discovery and feasibility spikes",
+    title: "Run discovery and feasibility checks",
     description:
-      "Evaluate architecture options, integration risks, and tooling constraints for unresolved requirements.",
+      "Evaluate candidate approaches, evidence needs, and practical constraints for unclear project directions.",
     difficultyPoints: 3,
-    skillHint: "Architecture",
+    skillHint: "Research",
   },
   {
-    title: "Create provisional architecture and delivery baseline",
+    title: "Draft provisional plan and milestone baseline",
     description:
-      "Draft a first-pass architecture and sequence with explicit assumption markers for later revision.",
+      "Create an initial sequence of work with explicit assumption markers so the team can revise safely.",
     difficultyPoints: 3,
-    skillHint: "System Design",
+    skillHint: "Planning",
   },
   {
-    title: "Implement low-risk foundation tasks",
+    title: "Execute low-risk foundation tasks",
     description:
-      "Execute setup, scaffolding, and reusable baseline work that remains valid even if requirements evolve.",
+      "Complete baseline work that is useful even if details change, such as source collection, templates, or environment setup.",
     difficultyPoints: 3,
-    skillHint: "Full Stack Development",
+    skillHint: "Execution",
   },
   {
     title: "Validate assumptions with stakeholders",
     description:
-      "Review discovery findings, confirm priorities, and convert assumptions into explicit acceptance criteria.",
+      "Review findings with stakeholders, confirm priorities, and convert assumptions into explicit requirements.",
     difficultyPoints: 2,
     skillHint: "Communication",
   },
   {
-    title: "Replan backlog from validated findings",
+    title: "Regenerate plan from validated findings",
     description:
-      "Recompute confidence and generate refined implementation tasks using updated context and confirmed constraints.",
+      "Recompute confidence and replace provisional work with refined execution tasks using confirmed context.",
     difficultyPoints: 2,
-    skillHint: "Product Planning",
+    skillHint: "Planning",
   },
 ];
 
@@ -259,7 +259,7 @@ function buildFallbackTaskPlan(input: GenerateTaskPlanInput): AITaskPlanOutput {
       skill.toLowerCase().includes(hint.toLowerCase()),
     ) ??
     input.availableSkills[0] ??
-    "General Engineering";
+    "General Collaboration";
 
   return {
     tasks: templates.map((template, index) => {
