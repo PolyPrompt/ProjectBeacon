@@ -579,25 +579,39 @@
   - `components/projects/planning-workspace.tsx`
   - `components/projects/context-editor.tsx`
   - `components/projects/project-documents-uploader.tsx`
+
+## 2026-02-22T01:13:27Z - PB-036 Milestone (Agent3)
+
+- Issue: `#86` `[PB-036] Implement skill profiling onboarding parity with suggestion-driven proficiency UI`.
+- Completed:
+  - Rebuilt `/profile` into a reference-style onboarding step with hero framing and progression context.
+  - Reworked `SkillsEditor` into a two-column onboarding layout:
+    - manual add input + level selector
+    - categorized one-click suggestions (`Core Backend`, `AI & Data`, `Engineering Tools`)
+    - grouped proficiency matrix (`Hard Skills` / `Soft Skills`) with level bars and editable levels
+    - completion meter and threshold-gated `Save & Continue`.
+  - Preserved API CRUD contract behavior through `/api/me/skills` (`GET`, `POST`, `PATCH`, `DELETE`) with client-side error handling.
+  - Implemented `Save & Continue` gating at `8` skills and routed continuation to `/projects/new` once threshold is met.
+- Files changed:
+  - `app/profile/page.tsx`
+  - `components/profile/skills-editor.tsx`
   - `DECISIONS.md`
   - `HANDOFF.md`
 - Commands and results:
   - `npm run format:check` -> pass
   - `npm run lint` -> pass
   - `npm run build` -> pass
-  - `npm run dev` + Playwright (`/projects/:projectId/workspace`) -> pass for layout/state rendering and upload error-state row behavior.
-- Notes:
-  - `GET /api/projects/:projectId/documents` currently returns `500` in this environment; UI now renders explicit empty/error states instead of silent failure.
+  - `npm run dev` + Playwright on `/profile` -> pass (suggested/manual add, level update, remove, `Save & Continue` threshold enablement and navigation).
 
 ## 2026-02-22T00:41:23Z - PB-030 Milestone (Agent1)
 
 - Issue: `#71` `[PB-030] Align Document Access Schema With V0 API Contracts`.
 - Completed:
-  - Added migration to align schema with document access APIs:
-    - `project_documents.is_public` (`boolean`, default `false`, not null)
-    - `project_documents.used_for_planning` (`boolean`, default `false`, not null)
-    - `project_document_access` table with FKs, unique constraint, and supporting indexes.
-  - Updated `types/db.ts` to include the new `project_documents` fields and `project_document_access` table definitions.
+- Added migration to align schema with document access APIs:
+  - `project_documents.is_public` (`boolean`, default `false`, not null)
+  - `project_documents.used_for_planning` (`boolean`, default `false`, not null)
+  - `project_document_access` table with FKs, unique constraint, and supporting indexes.
+- Updated `types/db.ts` to include the new `project_documents` fields and `project_document_access` table definitions.
 - Files changed:
   - `supabase/migrations/20260222_000002_document_access_alignment.sql`
   - `types/db.ts`

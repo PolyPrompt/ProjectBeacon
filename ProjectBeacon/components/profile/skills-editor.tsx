@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type UserSkill = {
   id: string;
@@ -9,145 +10,471 @@ type UserSkill = {
   level: number;
 };
 
+type SuggestedSkillGroup = {
+  groupName: string;
+  skills: string[];
+};
+
+const REQUIRED_SKILL_COUNT = 8;
+
+const SUGGESTED_GROUPS: SuggestedSkillGroup[] = [
+  {
+    groupName: "Core Backend",
+    skills: ["Node.js", "Docker", "Redis"],
+  },
+  {
+    groupName: "AI & Data",
+    skills: ["PyTorch", "Pandas", "Scikit-learn"],
+  },
+  {
+    groupName: "Engineering Tools",
+    skills: ["Git", "Kubernetes", "CI/CD"],
+  },
+];
+
+const SOFT_SKILLS = new Set([
+  "Communication",
+  "Collaboration",
+  "Leadership",
+  "Technical Writing",
+  "Team Leadership",
+  "Project Management",
+  "Mentoring",
+]);
+
+function normalizeSkillName(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function levelToLabel(level: number): string {
+  switch (level) {
+    case 1:
+      return "Beginner";
+    case 2:
+      return "Foundational";
+    case 3:
+      return "Intermediate";
+    case 4:
+      return "Advanced";
+    default:
+      return "Expert";
+  }
+}
+
+function isSoftSkill(skillName: string): boolean {
+  return SOFT_SKILLS.has(skillName.trim());
+}
+
+function SkillLevelBar({ level }: { level: number }) {
+  return (
+    <div className="mt-2 grid grid-cols-5 gap-1">
+      {Array.from({ length: 5 }).map((_, index) => {
+        const isActive = index < level;
+        return (
+          <div
+            key={index}
+            className={`h-1.5 rounded ${
+              isActive ? "bg-violet-500" : "bg-slate-700"
+            }`}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 export function SkillsEditor() {
+  const router = useRouter();
   const [skills, setSkills] = useState<UserSkill[]>([]);
-  const [skillName, setSkillName] = useState("");
-  const [level, setLevel] = useState(3);
+  const [manualSkillName, setManualSkillName] = useState("");
+  const [manualLevel, setManualLevel] = useState(3);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const loadSkills = useCallback(async () => {
-    const response = await fetch("/api/me/skills");
+    setIsLoading(true);
+    const response = await fetch("/api/me/skills", { cache: "no-store" });
     const data = await response.json();
 
     if (!response.ok) {
       setError(data?.error?.message ?? "Failed to load skills");
+      setIsLoading(false);
       return;
     }
 
     setSkills(data.skills ?? []);
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadSkills();
   }, [loadSkills]);
 
-  async function addSkill(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
+  const completionPercent = useMemo(
+    () =>
+      Math.min(100, Math.round((skills.length / REQUIRED_SKILL_COUNT) * 100)),
+    [skills.length],
+  );
+  const isReadyToContinue = skills.length >= REQUIRED_SKILL_COUNT;
 
-    const response = await fetch("/api/me/skills", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ skillName, level }),
-    });
+  const normalizedSkillNames = useMemo(
+    () => new Set(skills.map((skill) => normalizeSkillName(skill.skillName))),
+    [skills],
+  );
 
-    const data = await response.json();
+  const hardSkills = useMemo(
+    () =>
+      skills
+        .filter((skill) => !isSoftSkill(skill.skillName))
+        .sort((a, b) => a.skillName.localeCompare(b.skillName)),
+    [skills],
+  );
+  const softSkills = useMemo(
+    () =>
+      skills
+        .filter((skill) => isSoftSkill(skill.skillName))
+        .sort((a, b) => a.skillName.localeCompare(b.skillName)),
+    [skills],
+  );
 
-    if (!response.ok) {
-      setError(data?.error?.message ?? "Failed to save skill");
+  async function saveSkill(input: { skillName: string; level: number }) {
+    const normalizedName = normalizeSkillName(input.skillName);
+    if (!normalizedName) {
       return;
     }
 
-    setSkillName("");
-    setLevel(3);
-    await loadSkills();
+    setError(null);
+    setIsSaving(true);
+
+    try {
+      const response = await fetch("/api/me/skills", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          skillName: input.skillName.trim(),
+          level: input.level,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data?.error?.message ?? "Failed to save skill");
+        return;
+      }
+
+      setSkills((previous) => {
+        const withoutDuplicate = previous.filter(
+          (item) => normalizeSkillName(item.skillName) !== normalizedName,
+        );
+        return [...withoutDuplicate, data];
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function addManualSkill(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    await saveSkill({
+      skillName: manualSkillName,
+      level: manualLevel,
+    });
+    setManualSkillName("");
+    setManualLevel(3);
+  }
+
+  async function addSuggestedSkill(skillName: string) {
+    if (normalizedSkillNames.has(normalizeSkillName(skillName))) {
+      return;
+    }
+
+    await saveSkill({
+      skillName,
+      level: 3,
+    });
   }
 
   async function updateSkillLevel(id: string, nextLevel: number) {
+    setError(null);
+
     const response = await fetch("/api/me/skills", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, level: nextLevel }),
     });
 
-    if (response.ok) {
-      await loadSkills();
+    const data = await response.json();
+    if (!response.ok) {
+      setError(data?.error?.message ?? "Failed to update skill");
       return;
     }
 
-    const data = await response.json();
-    setError(data?.error?.message ?? "Failed to update skill");
+    setSkills((previous) =>
+      previous.map((skill) =>
+        skill.id === id ? { ...skill, level: nextLevel } : skill,
+      ),
+    );
   }
 
   async function removeSkill(id: string) {
+    setError(null);
+
     const response = await fetch("/api/me/skills", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
 
-    if (response.ok) {
-      await loadSkills();
+    const data = await response.json();
+    if (!response.ok) {
+      setError(data?.error?.message ?? "Failed to delete skill");
       return;
     }
 
-    const data = await response.json();
-    setError(data?.error?.message ?? "Failed to delete skill");
+    setSkills((previous) => previous.filter((skill) => skill.id !== id));
   }
 
   return (
-    <section className="space-y-4 rounded border border-black/10 bg-white p-6">
-      <h2 className="text-xl font-semibold">Profile Skills</h2>
-      <form
-        className="grid gap-3 sm:grid-cols-[1fr_120px_auto]"
-        onSubmit={addSkill}
-      >
-        <input
-          className="rounded border border-black/20 px-3 py-2"
-          placeholder="Skill name"
-          value={skillName}
-          onChange={(event) => setSkillName(event.target.value)}
-          required
-        />
-        <select
-          className="rounded border border-black/20 px-3 py-2"
-          value={level}
-          onChange={(event) => setLevel(Number(event.target.value))}
-        >
-          {[1, 2, 3, 4, 5].map((value) => (
-            <option key={value} value={value}>
-              Level {value}
-            </option>
-          ))}
-        </select>
-        <button className="rounded bg-black px-4 py-2 text-white" type="submit">
-          Save
-        </button>
-      </form>
+    <section className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-12">
+        <section className="rounded-2xl border border-violet-500/30 bg-[#1a1426] p-5 lg:col-span-4">
+          <h2 className="text-lg font-bold text-white">Add Manually</h2>
+          <form className="mt-4 space-y-3" onSubmit={addManualSkill}>
+            <input
+              className="w-full rounded-lg border border-violet-500/30 bg-[#120f1b] px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-violet-400 focus:outline-none"
+              placeholder="Search skills (e.g. AWS, Figma...)"
+              value={manualSkillName}
+              onChange={(event) => setManualSkillName(event.target.value)}
+              required
+            />
+            <div className="flex gap-2">
+              <select
+                className="rounded-lg border border-violet-500/30 bg-[#120f1b] px-3 py-2 text-sm text-slate-100"
+                value={manualLevel}
+                onChange={(event) => setManualLevel(Number(event.target.value))}
+              >
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <option key={value} value={value}>
+                    Level {value}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:opacity-50"
+                type="submit"
+                disabled={isSaving}
+              >
+                Add
+              </button>
+            </div>
+          </form>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+          <div className="mt-6 space-y-5">
+            <h3 className="text-base font-bold text-white">Suggestions</h3>
+            {SUGGESTED_GROUPS.map((group) => (
+              <div key={group.groupName} className="space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  {group.groupName}
+                </p>
+                <ul className="space-y-2">
+                  {group.skills.map((skillName) => {
+                    const isAdded = normalizedSkillNames.has(
+                      normalizeSkillName(skillName),
+                    );
+                    return (
+                      <li key={skillName}>
+                        <button
+                          type="button"
+                          className="flex w-full items-center justify-between rounded-lg border border-violet-500/20 bg-violet-500/5 px-3 py-2 text-left text-sm text-slate-100 transition hover:border-violet-400/50 hover:bg-violet-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+                          onClick={() => void addSuggestedSkill(skillName)}
+                          disabled={isSaving || isAdded}
+                        >
+                          <span>{skillName}</span>
+                          <span className="text-violet-300">
+                            {isAdded ? "Added" : "+"}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
 
-      <ul className="space-y-2">
-        {skills.map((skill) => (
-          <li
-            key={skill.id}
-            className="flex flex-wrap items-center gap-3 rounded border border-black/10 p-3"
-          >
-            <span className="min-w-32 font-medium">{skill.skillName}</span>
-            <select
-              className="rounded border border-black/20 px-2 py-1"
-              value={skill.level}
-              onChange={(event) =>
-                updateSkillLevel(skill.id, Number(event.target.value))
-              }
-            >
-              {[1, 2, 3, 4, 5].map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-            <button
-              className="text-sm text-red-600"
-              type="button"
-              onClick={() => removeSkill(skill.id)}
-            >
-              Remove
-            </button>
-          </li>
-        ))}
-      </ul>
+        <section className="rounded-2xl border border-violet-500/30 bg-[#1a1426] p-6 lg:col-span-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-2xl font-bold text-white">Skill Proficiency</h2>
+            <span className="rounded-full bg-violet-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-violet-200">
+              {skills.length}/{REQUIRED_SKILL_COUNT} skills added
+            </span>
+          </div>
+
+          {isLoading ? (
+            <p className="mt-6 rounded-lg border border-violet-500/20 bg-violet-500/5 px-3 py-2 text-sm text-slate-300">
+              Loading skill profile...
+            </p>
+          ) : null}
+
+          {!isLoading && skills.length === 0 ? (
+            <p className="mt-6 rounded-lg border border-dashed border-violet-500/30 bg-violet-500/5 px-3 py-2 text-sm text-slate-300">
+              Add skills manually or use suggestions to start building your
+              profile.
+            </p>
+          ) : null}
+
+          {!isLoading && skills.length > 0 ? (
+            <div className="mt-6 space-y-8">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300">
+                  Hard Skills
+                </p>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  {hardSkills.map((skill) => (
+                    <article
+                      key={skill.id}
+                      className="rounded-lg bg-[#120f1b] p-3"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="font-medium text-slate-100">
+                          {skill.skillName}
+                        </p>
+                        <span className="rounded bg-violet-500/20 px-2 py-0.5 text-xs font-semibold text-violet-200">
+                          {levelToLabel(skill.level)}
+                        </span>
+                      </div>
+                      <SkillLevelBar level={skill.level} />
+                      <div className="mt-2 flex items-center gap-2">
+                        <select
+                          className="rounded border border-violet-500/30 bg-[#1b1629] px-2 py-1 text-xs text-slate-100"
+                          value={skill.level}
+                          onChange={(event) =>
+                            void updateSkillLevel(
+                              skill.id,
+                              Number(event.target.value),
+                            )
+                          }
+                        >
+                          {[1, 2, 3, 4, 5].map((value) => (
+                            <option key={value} value={value}>
+                              {value}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          className="text-xs text-red-300 hover:text-red-200"
+                          onClick={() => void removeSkill(skill.id)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300">
+                  Soft Skills
+                </p>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  {softSkills.length === 0 ? (
+                    <p className="rounded-lg border border-dashed border-violet-500/20 bg-violet-500/5 px-3 py-2 text-sm text-slate-300 md:col-span-2">
+                      No soft skills added yet.
+                    </p>
+                  ) : (
+                    softSkills.map((skill) => (
+                      <article
+                        key={skill.id}
+                        className="rounded-lg bg-[#120f1b] p-3"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="font-medium text-slate-100">
+                            {skill.skillName}
+                          </p>
+                          <span className="rounded bg-violet-500/20 px-2 py-0.5 text-xs font-semibold text-violet-200">
+                            {levelToLabel(skill.level)}
+                          </span>
+                        </div>
+                        <SkillLevelBar level={skill.level} />
+                        <div className="mt-2 flex items-center gap-2">
+                          <select
+                            className="rounded border border-violet-500/30 bg-[#1b1629] px-2 py-1 text-xs text-slate-100"
+                            value={skill.level}
+                            onChange={(event) =>
+                              void updateSkillLevel(
+                                skill.id,
+                                Number(event.target.value),
+                              )
+                            }
+                          >
+                            {[1, 2, 3, 4, 5].map((value) => (
+                              <option key={value} value={value}>
+                                {value}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            className="text-xs text-red-300 hover:text-red-200"
+                            onClick={() => void removeSkill(skill.id)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </article>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <section className="mt-8 rounded-xl border border-violet-500/30 bg-violet-500/10 p-4">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-lg font-semibold text-slate-100">
+                  Profile Completion
+                </p>
+                <p className="mt-1 text-xs text-slate-300">
+                  Add at least {REQUIRED_SKILL_COUNT} skills to unlock
+                  AI-powered project matching.
+                </p>
+              </div>
+              <p className="text-xl font-black text-violet-200">
+                {completionPercent}%
+              </p>
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-violet-500/20">
+              <div
+                className="h-full bg-violet-500 transition-all"
+                style={{ width: `${completionPercent}%` }}
+              />
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                className="rounded-xl bg-violet-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:bg-violet-900/60 disabled:text-violet-200/70"
+                disabled={!isReadyToContinue || isSaving}
+                onClick={() => router.push("/projects/new")}
+              >
+                Save & Continue
+              </button>
+            </div>
+          </section>
+        </section>
+      </div>
+
+      {error ? (
+        <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+          {error}
+        </p>
+      ) : null}
     </section>
   );
 }
