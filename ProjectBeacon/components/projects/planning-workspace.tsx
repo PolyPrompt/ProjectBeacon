@@ -15,6 +15,7 @@ import {
   ProjectUploadDropzone,
   type WorkspaceDocument,
 } from "@/components/projects/project-documents-uploader";
+import TaskInventoryBlueprint from "@/components/projects/task-inventory-blueprint";
 
 type PlanningStatus = "draft" | "locked" | "assigned";
 
@@ -232,6 +233,9 @@ export default function PlanningWorkspace({
     useState<GenerationMetadata | null>(null);
   const intakeSectionRef = useRef<HTMLDivElement | null>(null);
   const reviewSectionRef = useRef<HTMLElement | null>(null);
+  const [inventoryRefreshToken, setInventoryRefreshToken] = useState(0);
+  const [isDelegatingFromInventory, setIsDelegatingFromInventory] =
+    useState(false);
 
   const canLock = planningStatus === "draft" && taskCount > 0;
   const canAssign = planningStatus === "locked";
@@ -618,6 +622,7 @@ export default function PlanningWorkspace({
       }
 
       setTaskCount(generatedCount);
+      setInventoryRefreshToken((previous) => previous + 1);
       if (mode === "fallback") {
         const reason =
           typeof payload.generation?.reason === "string"
@@ -642,9 +647,9 @@ export default function PlanningWorkspace({
     }
   }
 
-  async function runLock() {
+  async function runLock(): Promise<PlanningStatus | null> {
     if (!canLock) {
-      return;
+      return null;
     }
 
     setIsLocking(true);
@@ -678,18 +683,22 @@ export default function PlanningWorkspace({
         }),
       }));
       setActionStatus("Planning status set to locked.");
+      return nextStatus;
     } catch (error) {
       setActionError(
         error instanceof Error ? error.message : "Failed to lock planning.",
       );
+      return null;
     } finally {
       setIsLocking(false);
     }
   }
 
-  async function runAssign() {
+  async function runAssign(force = false): Promise<PlanningStatus | null> {
     if (!canAssign) {
-      return;
+      if (!force) {
+        return null;
+      }
     }
 
     setIsAssigning(true);
@@ -730,10 +739,12 @@ export default function PlanningWorkspace({
         typeof payload.assignedCount === "number" ? payload.assignedCount : 0,
       );
       setActionStatus("Assignments generated for current plan.");
+      return nextStatus;
     } catch (error) {
       setActionError(
         error instanceof Error ? error.message : "Failed to assign tasks.",
       );
+      return null;
     } finally {
       setIsAssigning(false);
     }
@@ -759,6 +770,37 @@ export default function PlanningWorkspace({
       behavior: "smooth",
       block: "start",
     });
+  }
+
+  async function handleProceedToDelegationFromInventory() {
+    if (isDelegatingFromInventory || isLocking || isAssigning) {
+      return;
+    }
+
+    setIsDelegatingFromInventory(true);
+    setActionError(null);
+    setActionStatus(null);
+
+    try {
+      if (planningStatus === "draft") {
+        const nextStatus = await runLock();
+        if (nextStatus === "locked") {
+          setActionStatus(
+            "Blueprint validated and plan locked. Continue once to run final assignment.",
+          );
+        }
+        return;
+      }
+
+      if (planningStatus === "locked") {
+        await runAssign(true);
+        return;
+      }
+
+      setActionStatus("Delegation is already complete for this project.");
+    } finally {
+      setIsDelegatingFromInventory(false);
+    }
   }
 
   const startActionEnabled = useMemo(
@@ -899,42 +941,42 @@ export default function PlanningWorkspace({
         />
       </section>
 
+      <TaskInventoryBlueprint
+        isProceeding={isDelegatingFromInventory || isLocking || isAssigning}
+        onProceedToDelegation={handleProceedToDelegationFromInventory}
+        planningStatus={planningStatus}
+        projectId={projectId}
+        refreshToken={inventoryRefreshToken}
+      />
+
       <section
         ref={reviewSectionRef}
         className="space-y-3 rounded-2xl border border-slate-800 bg-[#171821] p-4"
       >
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
-          Review, Lock, and Assign
-        </h3>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
+            Delegation Output
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/projects/${projectId}/board`}
+              className="rounded-lg border border-slate-600 px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-700/60"
+            >
+              Open Board
+            </Link>
+            <Link
+              href={`/projects/${projectId}/timeline`}
+              className="rounded-lg border border-slate-600 px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-700/60"
+            >
+              Open Timeline
+            </Link>
+          </div>
+        </div>
         <p className="text-sm text-slate-400">
           {taskCount > 0
-            ? `${taskCount} tasks currently in the draft board.`
+            ? `${taskCount} tasks currently loaded in the generated draft set.`
             : "No generated tasks yet. Start with AI breakdown once ready."}
         </p>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={`/projects/${projectId}/board`}
-            className="rounded-lg border border-slate-600 px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-700/60"
-          >
-            Review and edit tasks
-          </Link>
-          <button
-            type="button"
-            className="rounded-lg border border-slate-500 px-3 py-2 text-sm text-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-            onClick={runLock}
-            disabled={!canLock || isLocking}
-          >
-            {isLocking ? "Locking..." : "Lock plan"}
-          </button>
-          <button
-            type="button"
-            className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300"
-            onClick={runAssign}
-            disabled={!canAssign || isAssigning}
-          >
-            {isAssigning ? "Assigning..." : "Run final assignment"}
-          </button>
-        </div>
         {generationMetadata ? (
           <p className="rounded-lg border border-slate-700 bg-[#11121a] px-3 py-2 text-xs text-slate-300">
             Mode:{" "}
