@@ -312,20 +312,6 @@ function deadlineCountdown(deadlineIso: string, nowMs: number | null): string {
   return `${String(days).padStart(2, "0")}d : ${String(hours).padStart(2, "0")}h : ${String(minutes).padStart(2, "0")}m`;
 }
 
-function initialsFromName(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-
-  if (parts.length === 0) {
-    return "U";
-  }
-
-  if (parts.length === 1) {
-    return parts[0].slice(0, 2).toUpperCase();
-  }
-
-  return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
-}
-
 function flattenBoard(
   columns: WorkflowBoardColumnDTO[],
   unassigned: WorkflowBoardTaskDTO[],
@@ -555,8 +541,6 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [draggedTask, setDraggedTask] = useState<DraggedTask | null>(null);
   const [dropLaneId, setDropLaneId] = useState<string | null>(null);
-  const [isFinalizing, setIsFinalizing] = useState(false);
-  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     setNowMs(Date.now());
@@ -642,7 +626,7 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
       cancelled = true;
       controller.abort();
     };
-  }, [projectId, role, viewerUserId, reloadToken]);
+  }, [projectId, role, viewerUserId]);
 
   const isDraftPlanning = project.planningStatus === "draft";
   const modeOptions = isDraftPlanning
@@ -745,10 +729,6 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
   const canRunDelegationActions = capability.canEditWorkflow;
   const groupedMode =
     !isDraftPlanning && (mode === "categorized" || mode === "finalized");
-  const viewerName =
-    columns.find((column) => column.userId === viewerUserId)?.name ??
-    "Team Member";
-  const viewerInitials = initialsFromName(viewerName);
 
   async function readErrorMessage(response: Response): Promise<string> {
     try {
@@ -827,135 +807,10 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
     }
   }
 
-  async function finalizeAndSend() {
-    if (!canRunDelegationActions || totalTasks === 0 || isFinalizing) {
-      return;
-    }
-
-    setIsFinalizing(true);
-    setError(null);
-    setActionMessage(null);
-
-    try {
-      let workingStatus = project.planningStatus;
-
-      if (workingStatus === "draft") {
-        const lockResponse = await fetch(
-          `/api/projects/${projectId}/planning/lock`,
-          {
-            method: "POST",
-          },
-        );
-
-        if (!lockResponse.ok) {
-          throw new Error(await readErrorMessage(lockResponse));
-        }
-
-        workingStatus = "locked";
-      }
-
-      if (workingStatus === "locked") {
-        const assignResponse = await fetch(
-          `/api/projects/${projectId}/assignments/run`,
-          {
-            method: "POST",
-          },
-        );
-
-        if (!assignResponse.ok) {
-          throw new Error(await readErrorMessage(assignResponse));
-        }
-      }
-
-      setActionMessage("Delegation package finalized and sent to the group.");
-      setReloadToken((current) => current + 1);
-    } catch (finalizeError) {
-      setError(
-        finalizeError instanceof Error
-          ? finalizeError.message
-          : "Failed to finalize and send delegation.",
-      );
-    } finally {
-      setIsFinalizing(false);
-    }
-  }
-
   return (
-    <section className="h-screen overflow-hidden bg-[#18131f] text-slate-100">
-      <div className="flex h-full overflow-hidden">
-        <aside className="hidden w-64 shrink-0 border-r border-violet-500/20 bg-[#161220] px-4 py-6 lg:flex lg:flex-col">
-          <div className="mb-10 flex items-center gap-3 px-2">
-            <div className="grid h-8 w-8 place-items-center rounded-lg bg-violet-600 text-sm font-bold text-white">
-              NU
-            </div>
-            <p className="text-2xl font-extrabold tracking-tight">Nexus UI</p>
-          </div>
-
-          <nav className="space-y-2">
-            <div className="flex items-center gap-3 rounded-lg bg-violet-500/20 px-3 py-3 text-violet-200">
-              <span className="text-xs font-bold">TB</span>
-              <span className="font-semibold">Team Board</span>
-            </div>
-            <div className="flex items-center gap-3 rounded-lg px-3 py-3 text-slate-400">
-              <span className="text-xs font-bold">IN</span>
-              <span className="font-semibold">Insights</span>
-            </div>
-            <div className="flex items-center gap-3 rounded-lg px-3 py-3 text-slate-400">
-              <span className="text-xs font-bold">DR</span>
-              <span className="font-semibold">Directory</span>
-            </div>
-            <div className="flex items-center gap-3 rounded-lg px-3 py-3 text-slate-400">
-              <span className="text-xs font-bold">DS</span>
-              <span className="font-semibold">Discussions</span>
-            </div>
-          </nav>
-
-          <div className="mt-auto border-t border-violet-500/15 pt-5">
-            <div className="flex items-center gap-3 rounded-lg px-3 py-3 text-slate-400">
-              <span className="text-xs font-bold">ST</span>
-              <span className="font-semibold">Settings</span>
-            </div>
-          </div>
-        </aside>
-
+    <section className="h-full overflow-hidden bg-[#18131f] text-slate-100">
+      <div className="h-full overflow-hidden">
         <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <header className="flex h-16 items-center justify-between border-b border-violet-500/20 bg-[#161220]/70 px-6 backdrop-blur lg:px-8">
-            <div className="flex items-center gap-6">
-              <h2 className="text-lg font-bold tracking-tight">
-                {project.name}
-              </h2>
-              <div className="hidden items-center gap-2 rounded-lg border border-violet-500/25 bg-violet-500/10 px-3 py-1.5 md:flex">
-                <span className="text-xs text-slate-400">Search</span>
-                <input
-                  className="w-44 bg-transparent text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none"
-                  placeholder="Find a task..."
-                  type="text"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <button
-                aria-label="Notifications"
-                className="relative rounded-lg p-2 text-slate-300 hover:bg-violet-500/10"
-                type="button"
-              >
-                <span className="text-base font-bold">!</span>
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500" />
-              </button>
-              <div className="h-8 w-px bg-violet-500/20" />
-              <div className="hidden text-right sm:block">
-                <p className="text-xs font-bold leading-none">{viewerName}</p>
-                <p className="text-[10px] text-slate-500">
-                  {capability.role === "admin" ? "Admin View" : "Member View"}
-                </p>
-              </div>
-              <div className="grid h-9 w-9 place-items-center rounded-full border-2 border-violet-400/40 bg-[#241d2f] text-xs font-bold text-slate-100">
-                {viewerInitials}
-              </div>
-            </div>
-          </header>
-
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className="space-y-4 px-6 pb-4 pt-6 lg:px-8">
               <div className="flex flex-wrap items-end justify-between gap-4">
@@ -963,9 +818,6 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                   <h1 className="text-5xl font-black tracking-tight text-slate-100">
                     Team Task Overview
                   </h1>
-                  <p className="mt-1 text-2xl font-medium text-slate-400">
-                    Standard internal view • Updated 5 mins ago
-                  </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
@@ -988,20 +840,6 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                       {countdown}
                     </p>
                   </article>
-                  {project.planningStatus !== "assigned" ? (
-                    <button
-                      type="button"
-                      className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-violet-900/40 disabled:cursor-not-allowed disabled:bg-slate-700"
-                      disabled={
-                        !canRunDelegationActions ||
-                        totalTasks === 0 ||
-                        isFinalizing
-                      }
-                      onClick={() => void finalizeAndSend()}
-                    >
-                      {isFinalizing ? "Sending..." : "Complete and Send Out"}
-                    </button>
-                  ) : null}
                 </div>
               </div>
 
@@ -1041,13 +879,13 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
 
                 <div className="flex rounded-lg border border-slate-700 bg-[#17141f] p-1">
                   <Link
-                    href={`/projects/${projectId}/board`}
+                    href={`/projects/${projectId}/userflow/board`}
                     className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white"
                   >
                     Board
                   </Link>
                   <Link
-                    href={`/projects/${projectId}/timeline`}
+                    href={`/projects/${projectId}/userflow/timeline`}
                     className="rounded-md px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-800"
                   >
                     Timeline

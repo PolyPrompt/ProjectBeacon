@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 
-type ProjectBoardRouteProps = {
+type ProjectUserflowRouteProps = {
   params: Promise<{ projectId: string }>;
 };
 
-export default async function ProjectBoardRoute({
+export default async function ProjectUserflowRoute({
   params,
-}: ProjectBoardRouteProps) {
+}: ProjectUserflowRouteProps) {
   const { projectId } = await params;
   redirect(`/projects/${projectId}/userflow/board`);
 }
