@@ -2,7 +2,10 @@ import {
   aiTaskPlanOutputSchema,
   type AITaskPlanOutput,
 } from "@/types/ai-output";
-import { getTaskPlanSystemPrompt } from "@/lib/ai/prompt-registry";
+import {
+  getTaskPlanSystemPrompt,
+  getTaskReplanSystemPrompt,
+} from "@/lib/ai/prompt-registry";
 import { resolveOpenAIModelForOperation } from "@/lib/ai/model-selection";
 import { getOpenAIChatRequestTuning } from "@/lib/ai/openai-chat-options";
 import { ApiHttpError } from "@/lib/server/errors";
@@ -14,6 +17,7 @@ export type GenerateTaskPlanInput = {
   projectDeadline: string;
   contextBlocks: Array<{ contextType: string; textContent: string }>;
   availableSkills: string[];
+  promptVariant?: "task_plan" | "task_replan";
   planningMode?: "standard" | "provisional";
   clarification?: {
     confidence: number;
@@ -328,7 +332,10 @@ async function callOpenAITaskPlan(
     .map((context) => `[${context.contextType}] ${context.textContent}`)
     .join("\n\n");
   const model = resolveOpenAIModelForOperation(env, "task_plan");
-  const systemPrompt = getTaskPlanSystemPrompt();
+  const systemPrompt =
+    input.promptVariant === "task_replan"
+      ? getTaskReplanSystemPrompt()
+      : getTaskPlanSystemPrompt();
   const planningMode = input.planningMode ?? "standard";
   const requestStartedAt = nowMs();
 

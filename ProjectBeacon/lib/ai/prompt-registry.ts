@@ -3,12 +3,14 @@ import path from "node:path";
 
 type PromptKey =
   | "task_plan"
+  | "task_replan"
   | "confidence"
   | "clarifying_questions"
   | "task_assignment";
 
 const promptFileMap: Record<PromptKey, string[]> = {
   task_plan: ["TASK_PLAN.md"],
+  task_replan: ["TASK_REPLAN.md"],
   confidence: ["CONFIDENCE_PROMPT.md"],
   clarifying_questions: ["CLARIFYING_Q_GEN.md"],
   task_assignment: ["TASK_ASSIGNMENT.md"],
@@ -17,6 +19,8 @@ const promptFileMap: Record<PromptKey, string[]> = {
 const promptFallbackMap: Record<PromptKey, string> = {
   task_plan:
     "You are an expert academic project planner for multidisciplinary college projects. Return JSON only and follow the response schema.",
+  task_replan:
+    "You are an expert project re-planning engine. Compare new context against existing tasks and output only net-new gap-closing tasks. Return JSON only and follow the response schema.",
   confidence:
     "You evaluate project context quality before task planning. Return JSON only that matches the response schema.",
   clarifying_questions:
@@ -96,6 +100,10 @@ function loadPrompt(key: PromptKey): string {
 
 export function getTaskPlanSystemPrompt(): string {
   return loadPrompt("task_plan");
+}
+
+export function getTaskReplanSystemPrompt(): string {
+  return loadPrompt("task_replan");
 }
 
 export function getConfidenceSystemPrompt(): string {

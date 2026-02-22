@@ -359,6 +359,7 @@ export async function POST(
         projectDeadline: access.project.deadline,
         contextBlocks,
         availableSkills: existingSkills.map((skill) => skill.name),
+        promptVariant: "task_replan",
       },
       { strictMode },
     );
