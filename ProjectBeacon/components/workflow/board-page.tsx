@@ -1146,7 +1146,6 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                   </div>
                 )}
 
-                <div className="flex items-center gap-2">
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
