@@ -175,10 +175,12 @@ export function ProjectForm() {
   const [isAddingMilestone, setIsAddingMilestone] = useState(false);
   const [newMilestoneTitle, setNewMilestoneTitle] = useState("");
   const [newMilestoneDate, setNewMilestoneDate] = useState("");
+  const [editingMilestoneIds, setEditingMilestoneIds] = useState<string[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
+  const [editingMemberIds, setEditingMemberIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [isCopyingLink, setIsCopyingLink] = useState(false);
@@ -288,7 +290,7 @@ export function ProjectForm() {
     const title = newMilestoneTitle.trim();
     const date = newMilestoneDate.trim();
 
-    if (!date) {
+    if (!title && !date) {
       return;
     }
 
@@ -301,6 +303,17 @@ export function ProjectForm() {
     setIsAddingMilestone(false);
   }
 
+  function handleMilestoneComposerKeyDown(
+    event: React.KeyboardEvent<HTMLDivElement>,
+  ) {
+    if (event.key !== "Enter") {
+      return;
+    }
+
+    event.preventDefault();
+    addMilestoneFromInput();
+  }
+
   function updateMilestone(id: string, updates: Partial<Milestone>) {
     setMilestones((current) =>
       current.map((milestone) =>
@@ -310,6 +323,9 @@ export function ProjectForm() {
   }
 
   function removeMilestone(id: string) {
+    setEditingMilestoneIds((current) =>
+      current.filter((milestoneId) => milestoneId !== id),
+    );
     setMilestones((current) =>
       current.filter((milestone) => milestone.id !== id),
     );
@@ -349,6 +365,9 @@ export function ProjectForm() {
   }
 
   function removeMember(id: string) {
+    setEditingMemberIds((current) =>
+      current.filter((memberId) => memberId !== id),
+    );
     setTeamMembers((current) => current.filter((member) => member.id !== id));
   }
 
@@ -461,7 +480,10 @@ export function ProjectForm() {
 
                     <div className="space-y-2.5">
                       {isAddingMilestone ? (
-                        <div className="space-y-2 rounded-xl border border-violet-700/60 bg-[#11091d] p-3">
+                        <div
+                          className="space-y-2 rounded-xl border border-violet-700/60 bg-[#11091d] p-3"
+                          onKeyDown={handleMilestoneComposerKeyDown}
+                        >
                           <input
                             className="w-full bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-500"
                             type="text"
@@ -469,14 +491,6 @@ export function ProjectForm() {
                             onChange={(event) =>
                               setNewMilestoneTitle(event.target.value)
                             }
-                            onKeyDown={(event) => {
-                              if (event.key !== "Enter") {
-                                return;
-                              }
-
-                              event.preventDefault();
-                              addMilestoneFromInput();
-                            }}
                             placeholder="Milestone title"
                             autoFocus
                           />
@@ -487,15 +501,27 @@ export function ProjectForm() {
                             onChange={(event) =>
                               setNewMilestoneDate(event.target.value)
                             }
-                            onKeyDown={(event) => {
-                              if (event.key !== "Enter") {
-                                return;
-                              }
-
-                              event.preventDefault();
-                              addMilestoneFromInput();
-                            }}
                           />
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-400 transition hover:text-slate-200"
+                              type="button"
+                              onClick={() => {
+                                setNewMilestoneTitle("");
+                                setNewMilestoneDate("");
+                                setIsAddingMilestone(false);
+                              }}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              className="rounded-md border border-violet-500/60 bg-violet-600/20 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-violet-100 transition hover:bg-violet-600/35"
+                              type="button"
+                              onClick={addMilestoneFromInput}
+                            >
+                              Add
+                            </button>
+                          </div>
                         </div>
                       ) : null}
 
@@ -504,37 +530,91 @@ export function ProjectForm() {
                           key={milestone.id}
                           className="rounded-xl border border-violet-900/35 bg-black/15 p-3"
                         >
-                          <input
-                            className="mb-2 w-full rounded-lg border border-violet-900/50 bg-black/20 px-3 py-2 text-sm font-semibold text-slate-100 outline-none placeholder:text-slate-500 focus:border-violet-500"
-                            type="text"
-                            value={milestone.title}
-                            onChange={(event) =>
-                              updateMilestone(milestone.id, {
-                                title: event.target.value,
-                              })
-                            }
-                            placeholder="Milestone title"
-                          />
-                          <div className="flex items-center justify-between gap-3">
-                            <input
-                              className="w-full rounded-lg border border-violet-900/50 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none focus:border-violet-500"
-                              type="date"
-                              value={milestone.date}
-                              onChange={(event) =>
-                                updateMilestone(milestone.id, {
-                                  date: event.target.value,
-                                })
-                              }
-                            />
-                            <button
-                              className="text-slate-500 transition hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
-                              type="button"
-                              onClick={() => removeMilestone(milestone.id)}
-                              aria-label="Remove milestone"
-                            >
-                              ×
-                            </button>
-                          </div>
+                          {editingMilestoneIds.includes(milestone.id) ? (
+                            <>
+                              <input
+                                className="mb-2 w-full rounded-lg border border-violet-900/50 bg-black/20 px-3 py-2 text-sm font-semibold text-slate-100 outline-none placeholder:text-slate-500 focus:border-violet-500"
+                                type="text"
+                                value={milestone.title}
+                                onChange={(event) =>
+                                  updateMilestone(milestone.id, {
+                                    title: event.target.value,
+                                  })
+                                }
+                                placeholder="Milestone title"
+                              />
+                              <div className="flex items-center gap-3">
+                                <input
+                                  className="w-full rounded-lg border border-violet-900/50 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none focus:border-violet-500"
+                                  type="date"
+                                  value={milestone.date}
+                                  onChange={(event) =>
+                                    updateMilestone(milestone.id, {
+                                      date: event.target.value,
+                                    })
+                                  }
+                                />
+                                <button
+                                  className="text-xs font-semibold uppercase tracking-[0.1em] text-violet-300 transition hover:text-violet-200"
+                                  type="button"
+                                  onClick={() =>
+                                    setEditingMilestoneIds((current) =>
+                                      current.filter(
+                                        (milestoneId) =>
+                                          milestoneId !== milestone.id,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  Done
+                                </button>
+                                <button
+                                  className="text-slate-500 transition hover:text-red-400"
+                                  type="button"
+                                  onClick={() => removeMilestone(milestone.id)}
+                                  aria-label="Remove milestone"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <p className="mb-2 text-sm font-semibold text-slate-100">
+                                {milestone.title}
+                              </p>
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="text-sm text-slate-300">
+                                  {milestone.date || "No date"}
+                                </p>
+                                <div className="flex items-center gap-3">
+                                  <button
+                                    className="text-xs font-semibold uppercase tracking-[0.1em] text-violet-300 transition hover:text-violet-200"
+                                    type="button"
+                                    onClick={() =>
+                                      setEditingMilestoneIds((current) =>
+                                        current.includes(milestone.id)
+                                          ? current
+                                          : [...current, milestone.id],
+                                      )
+                                    }
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    className="text-slate-500 transition hover:text-red-400"
+                                    type="button"
+                                    onClick={() =>
+                                      removeMilestone(milestone.id)
+                                    }
+                                    aria-label="Remove milestone"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
                       ))}
 
@@ -613,34 +693,63 @@ export function ProjectForm() {
                       className="grid grid-cols-1 items-center gap-3 rounded-xl border border-violet-900/35 bg-black/15 p-3 md:grid-cols-12"
                     >
                       <div className="md:col-span-5">
-                        <input
-                          className="w-full rounded-lg border border-violet-900/50 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-violet-500"
-                          type="text"
-                          value={member.name}
-                          onChange={(event) =>
-                            updateMember(member.id, {
-                              name: event.target.value,
-                            })
-                          }
-                          placeholder="Name"
-                        />
+                        {editingMemberIds.includes(member.id) ? (
+                          <input
+                            className="w-full rounded-lg border border-violet-900/50 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-violet-500"
+                            type="text"
+                            value={member.name}
+                            onChange={(event) =>
+                              updateMember(member.id, {
+                                name: event.target.value,
+                              })
+                            }
+                            placeholder="Name"
+                          />
+                        ) : (
+                          <p className="text-sm text-slate-100">
+                            {member.name || "Unnamed member"}
+                          </p>
+                        )}
                       </div>
                       <div className="md:col-span-6">
-                        <input
-                          className="w-full rounded-lg border border-violet-900/50 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none placeholder:text-slate-500 focus:border-violet-500"
-                          type="email"
-                          value={member.email}
-                          onChange={(event) =>
-                            updateMember(member.id, {
-                              email: event.target.value,
-                            })
-                          }
-                          placeholder="Email"
-                        />
+                        {editingMemberIds.includes(member.id) ? (
+                          <input
+                            className="w-full rounded-lg border border-violet-900/50 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none placeholder:text-slate-500 focus:border-violet-500"
+                            type="email"
+                            value={member.email}
+                            onChange={(event) =>
+                              updateMember(member.id, {
+                                email: event.target.value,
+                              })
+                            }
+                            placeholder="Email"
+                          />
+                        ) : (
+                          <p className="text-sm text-slate-300">
+                            {member.email || "No email"}
+                          </p>
+                        )}
                       </div>
-                      <div className="flex justify-end md:col-span-1">
+                      <div className="flex items-center justify-end gap-3 md:col-span-1">
                         <button
-                          className="text-slate-500 transition hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
+                          className="text-xs font-semibold uppercase tracking-[0.1em] text-violet-300 transition hover:text-violet-200"
+                          type="button"
+                          onClick={() =>
+                            setEditingMemberIds((current) =>
+                              current.includes(member.id)
+                                ? current.filter(
+                                    (memberId) => memberId !== member.id,
+                                  )
+                                : [...current, member.id],
+                            )
+                          }
+                        >
+                          {editingMemberIds.includes(member.id)
+                            ? "Done"
+                            : "Edit"}
+                        </button>
+                        <button
+                          className="text-slate-500 transition hover:text-red-400"
                           type="button"
                           onClick={() => removeMember(member.id)}
                           aria-label="Remove team member"
