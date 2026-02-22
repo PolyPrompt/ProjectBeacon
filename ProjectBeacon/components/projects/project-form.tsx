@@ -185,6 +185,7 @@ export function ProjectForm() {
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [isCopyingLink, setIsCopyingLink] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shareStatus, setShareStatus] = useState<string | null>(null);
   const [project, setProject] = useState<ProjectResponse | null>(null);
   const [joinLink, setJoinLink] = useState<ProjectJoinLink | null>(null);
 
@@ -212,6 +213,7 @@ export function ProjectForm() {
 
     setIsSubmitting(true);
     setError(null);
+    setShareStatus(null);
 
     try {
       const response = await fetch("/api/projects", {
@@ -233,8 +235,13 @@ export function ProjectForm() {
         return;
       }
 
-      setProject(data as ProjectResponse);
+      const createdProject = data as ProjectResponse;
+      setProject(createdProject);
       setJoinLink(null);
+
+      if (rosterEmails.length > 0) {
+        await sendRosterInvites(createdProject.id);
+      }
     } catch {
       setError("Failed to create project");
     } finally {
@@ -247,24 +254,69 @@ export function ProjectForm() {
       return;
     }
 
+    await sendRosterInvites(project.id);
+  }
+
+  async function sendRosterInvites(projectId: string) {
+    if (rosterEmails.length === 0) {
+      setError("Add at least one team member email before sharing.");
+      return;
+    }
+
     setIsGeneratingLink(true);
     setError(null);
+    setShareStatus(null);
 
     try {
-      const response = await fetch(`/api/projects/${project.id}/share-link`, {
+      const projectUrl = `http://localhost:3000/projects/${projectId}`;
+
+      const response = await fetch(`/api/projects/${projectId}/share-email`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          emails: rosterEmails,
+          projectUrl,
+        }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as {
+        error?: { message?: string };
+        failed?: Array<{ email?: string; reason?: string }>;
+        sent?: Array<{ email?: string; status?: string }>;
+      };
 
       if (!response.ok) {
-        setError(data?.error?.message ?? "Failed to generate share link");
+        setError(data?.error?.message ?? "Failed to send invite emails");
         return;
       }
 
-      setJoinLink(data as ProjectJoinLink);
+      const sentCount = Array.isArray(data.sent) ? data.sent.length : 0;
+      const failedCount = Array.isArray(data.failed) ? data.failed.length : 0;
+      const failedEmails = Array.isArray(data.failed)
+        ? data.failed
+            .map((entry) => entry.email)
+            .filter(Boolean)
+            .join(", ")
+        : "";
+
+      setJoinLink({
+        projectId,
+        token: "project-dashboard",
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        joinUrl: projectUrl,
+      });
+
+      if (failedCount > 0) {
+        setShareStatus(
+          `Sent ${sentCount} invite(s). Failed ${failedCount}: ${failedEmails || "some recipients"}.`,
+        );
+      } else {
+        setShareStatus(`Sent ${sentCount} invite(s).`);
+      }
     } catch {
-      setError("Failed to generate share link");
+      setError("Failed to send invite emails");
     } finally {
       setIsGeneratingLink(false);
     }
@@ -791,7 +843,7 @@ export function ProjectForm() {
                   <span>
                     {project
                       ? isGeneratingLink
-                        ? "Generating Share Link..."
+                        ? "Sending Invites..."
                         : "Share Project"
                       : isSubmitting
                         ? "Creating Project..."
@@ -811,6 +863,12 @@ export function ProjectForm() {
               {error ? (
                 <div className="rounded-xl border border-red-500/35 bg-red-950/35 p-3 text-sm text-red-200">
                   {error}
+                </div>
+              ) : null}
+
+              {shareStatus ? (
+                <div className="rounded-xl border border-emerald-500/35 bg-emerald-950/30 p-3 text-sm text-emerald-100">
+                  {shareStatus}
                 </div>
               ) : null}
 
@@ -846,8 +904,8 @@ export function ProjectForm() {
                 </div>
               ) : (
                 <div className="rounded-2xl border border-violet-900/45 bg-[#17191f]/85 p-4 text-xs text-slate-400">
-                  Create the project first, then use Share Project to generate a
-                  secure join link and send invites.
+                  Create the project first, then use Share Project to email
+                  invite links to the team roster.
                 </div>
               )}
 
