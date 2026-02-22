@@ -39,6 +39,8 @@ export type TaskPlanGenerationMetadata = {
   reason: GenerationFallbackReason | null;
   strictMode: boolean;
   planningMode: "standard" | "provisional";
+  model: string | null;
+  latencyMs: number | null;
   diagnostics?: {
     message: string;
     status?: number;
@@ -147,6 +149,10 @@ function logTaskPlanSchemaOnce(): void {
     "[generateTaskPlan] OpenAI response schema",
     JSON.stringify(OPENAI_TASK_PLAN_RESPONSE_FORMAT.json_schema.schema),
   );
+}
+
+function nowMs(): number {
+  return typeof performance !== "undefined" ? performance.now() : Date.now();
 }
 
 const DEFAULT_PLAN_TEMPLATES: Array<{
@@ -288,10 +294,14 @@ type OpenAITaskPlanAttempt =
   | {
       ok: true;
       plan: AITaskPlanOutput;
+      model: string;
+      latencyMs: number;
     }
   | {
       ok: false;
       reason: GenerationFallbackReason;
+      model: string | null;
+      latencyMs: number | null;
       diagnostics: {
         message: string;
         status?: number;
@@ -306,6 +316,8 @@ async function callOpenAITaskPlan(
     return {
       ok: false,
       reason: "missing_api_key",
+      model: null,
+      latencyMs: null,
       diagnostics: {
         message: "OPENAI_API_KEY is not configured.",
       },
@@ -318,6 +330,7 @@ async function callOpenAITaskPlan(
   const model = resolveOpenAIModelForOperation(env, "task_plan");
   const systemPrompt = getTaskPlanSystemPrompt();
   const planningMode = input.planningMode ?? "standard";
+  const requestStartedAt = nowMs();
 
   logTaskPlanSchemaOnce();
 
@@ -357,6 +370,8 @@ async function callOpenAITaskPlan(
     return {
       ok: false,
       reason: "request_failed",
+      model,
+      latencyMs: Math.max(1, Math.round(nowMs() - requestStartedAt)),
       diagnostics: {
         message:
           error instanceof Error
@@ -370,6 +385,8 @@ async function callOpenAITaskPlan(
     return {
       ok: false,
       reason: "openai_http_error",
+      model,
+      latencyMs: Math.max(1, Math.round(nowMs() - requestStartedAt)),
       diagnostics: {
         message: `OpenAI returned HTTP ${response.status}.`,
         status: response.status,
@@ -386,6 +403,8 @@ async function callOpenAITaskPlan(
     return {
       ok: false,
       reason: "empty_response",
+      model,
+      latencyMs: Math.max(1, Math.round(nowMs() - requestStartedAt)),
       diagnostics: {
         message: "OpenAI response did not contain a task plan payload.",
       },
@@ -403,6 +422,8 @@ async function callOpenAITaskPlan(
     return {
       ok: false,
       reason: "response_parse_error",
+      model,
+      latencyMs: Math.max(1, Math.round(nowMs() - requestStartedAt)),
       diagnostics: {
         message: "OpenAI task plan payload was not valid JSON.",
       },
@@ -423,6 +444,8 @@ async function callOpenAITaskPlan(
     return {
       ok: false,
       reason: "response_schema_invalid",
+      model,
+      latencyMs: Math.max(1, Math.round(nowMs() - requestStartedAt)),
       diagnostics: {
         message: "OpenAI task plan payload did not match expected schema.",
       },
@@ -432,6 +455,8 @@ async function callOpenAITaskPlan(
   return {
     ok: true,
     plan: parsed.data,
+    model,
+    latencyMs: Math.max(1, Math.round(nowMs() - requestStartedAt)),
   };
 }
 
@@ -450,6 +475,8 @@ export async function generateTaskPlan(
         reason: null,
         strictMode,
         planningMode,
+        model: modelPlan.model,
+        latencyMs: modelPlan.latencyMs,
       },
     };
   }
@@ -468,6 +495,8 @@ export async function generateTaskPlan(
       {
         mode: "openai",
         reason: modelPlan.reason,
+        model: modelPlan.model,
+        latencyMs: modelPlan.latencyMs,
         diagnostics: modelPlan.diagnostics,
       },
     );
@@ -480,6 +509,8 @@ export async function generateTaskPlan(
       reason: modelPlan.reason,
       strictMode,
       planningMode,
+      model: modelPlan.model,
+      latencyMs: modelPlan.latencyMs,
       diagnostics: modelPlan.diagnostics,
     },
   };
