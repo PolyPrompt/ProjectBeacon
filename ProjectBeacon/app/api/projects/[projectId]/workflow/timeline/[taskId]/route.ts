@@ -1,6 +1,8 @@
-import { requireAuthenticatedUserId } from "@/lib/server/auth";
-import { HttpError, toErrorResponse } from "@/lib/server/errors";
-import { requireProjectMembership } from "@/lib/server/project-access";
+import { HttpError } from "@/lib/server/errors";
+import {
+  mapRouteError,
+  requireProjectAccess,
+} from "@/lib/server/route-helpers";
 import { supabaseRestGet } from "@/lib/server/supabase-rest";
 import {
   type TaskDependencyInput,
@@ -81,9 +83,10 @@ export async function GET(
 ): Promise<NextResponse> {
   try {
     const { projectId, taskId } = await params;
-    const userId = requireAuthenticatedUserId(request);
-
-    await requireProjectMembership(projectId, userId);
+    const access = await requireProjectAccess(request, projectId);
+    if (!access.ok) {
+      return access.response as NextResponse;
+    }
 
     const [project, tasks] = await Promise.all([
       getProject(projectId),
@@ -157,6 +160,6 @@ export async function GET(
       },
     });
   } catch (error) {
-    return toErrorResponse(error);
+    return mapRouteError(error) as NextResponse;
   }
 }
