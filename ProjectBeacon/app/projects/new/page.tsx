@@ -1,10 +1,16 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
+import {
+  getE2EBypassClerkUserId,
+  isE2EAuthBypassEnabled,
+} from "@/lib/auth/e2e-bypass";
 import { ProjectForm } from "@/components/projects/project-form";
 
 export default async function NewProjectPage() {
-  const { userId } = await auth();
+  const userId = isE2EAuthBypassEnabled()
+    ? getE2EBypassClerkUserId()
+    : (await auth()).userId;
 
   if (!userId) {
     redirect("/");

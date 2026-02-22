@@ -9,6 +9,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { BootstrapUser } from "@/components/auth/bootstrap-user";
+import { isE2EAuthBypassEnabled } from "@/lib/auth/e2e-bypass";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -21,6 +22,27 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  if (isE2EAuthBypassEnabled()) {
+    return (
+      <html lang="en">
+        <body className="antialiased">
+          <header className="border-b border-black/10 px-6 py-4">
+            <nav className="mx-auto flex w-full max-w-5xl items-center justify-between">
+              <Link href="/" className="font-semibold">
+                Project Beacon
+              </Link>
+              <div className="flex items-center gap-4 text-sm">
+                <Link href="/projects/new">Projects</Link>
+                <Link href="/profile">Profile</Link>
+              </div>
+            </nav>
+          </header>
+          {children}
+        </body>
+      </html>
+    );
+  }
+
   return (
     <html lang="en">
       <body className="antialiased">

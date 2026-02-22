@@ -293,3 +293,17 @@
   - Keep current behavior with no explicit workspace handoff affordance.
 - Impact on files or behavior:
   - `components/projects/project-form.tsx` now keeps context visible and provides direct workspace + dashboard transitions after create.
+
+## 2026-02-22T07:13:16Z
+
+- Decision summary:
+  - Use an environment-gated e2e auth bypass plus route-level API mocks to make Playwright flows deterministic without introducing test-only product routes.
+- Rationale:
+  - `PB-042` requires route-level regression coverage across protected pages; direct Clerk session automation is brittle and external dependency-heavy for CI/local runs.
+- Alternatives considered:
+  - Require full Clerk login automation in Playwright.
+  - Add dedicated test-only UI routes that duplicate product pages.
+- Impact on files or behavior:
+  - Added `lib/auth/e2e-bypass.ts` and wired middleware/auth/session/new-project/layout for `E2E_BYPASS_AUTH=true`.
+  - Added Playwright config and e2e specs for project setup/share, workspace transitions, and board/timeline smoke coverage.
+  - `README.md` now documents e2e command and artifact locations.

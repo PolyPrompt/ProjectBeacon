@@ -130,6 +130,30 @@ Copy `.env.example` to `.env.local` and set Clerk keys:
 - `/api/**` requires authentication by default.
 - Public API exceptions are limited to `/api/public/**` and `/api/health/**`.
 
+### Playwright E2E
+
+Run the regression suite:
+
+```bash
+npm run test:e2e
+```
+
+Optional headed mode:
+
+```bash
+npm run test:e2e:headed
+```
+
+Artifacts:
+
+- HTML report: `playwright-report/`
+- traces/videos/screenshots: `test-results/playwright/`
+
+Notes:
+
+- The Playwright web server runs with `E2E_BYPASS_AUTH=true` so route-level tests can execute deterministically without external Clerk session setup.
+- E2E specs use route-level API mocks for stable, non-flaky UI flow assertions.
+
 ## Planning Pipeline APIs (Agent 2)
 
 The backend now includes MVP planning endpoints for the AI workflow:
