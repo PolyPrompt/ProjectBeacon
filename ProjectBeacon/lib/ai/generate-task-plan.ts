@@ -2,6 +2,9 @@ import {
   aiTaskPlanOutputSchema,
   type AITaskPlanOutput,
 } from "@/types/ai-output";
+import { getTaskPlanSystemPrompt } from "@/lib/ai/prompt-registry";
+import { resolveOpenAIModelForOperation } from "@/lib/ai/model-selection";
+import { getOpenAIChatRequestTuning } from "@/lib/ai/openai-chat-options";
 import { ApiHttpError } from "@/lib/server/errors";
 import { getServerEnv } from "@/lib/server/env";
 
@@ -37,6 +40,105 @@ export type GenerateTaskPlanResult = {
   plan: AITaskPlanOutput;
   generation: TaskPlanGenerationMetadata;
 };
+
+const OPENAI_TASK_PLAN_JSON_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    tasks: {
+      type: "array",
+      minItems: 6,
+      maxItems: 12,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          tempId: { type: "string", minLength: 1, maxLength: 50 },
+          title: { type: "string", minLength: 3, maxLength: 120 },
+          description: {
+            type: "string",
+            minLength: 10,
+            maxLength: 1000,
+          },
+          difficultyPoints: {
+            type: "integer",
+            enum: [1, 2, 3, 5, 8],
+          },
+          dueAt: {
+            anyOf: [{ type: "string", format: "date-time" }, { type: "null" }],
+          },
+          requiredSkills: {
+            type: "array",
+            maxItems: 8,
+            items: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                skillName: {
+                  type: "string",
+                  minLength: 1,
+                  maxLength: 80,
+                },
+                weight: { type: "number", minimum: 1, maximum: 5 },
+              },
+              required: ["skillName", "weight"],
+            },
+          },
+          dependsOnTempIds: {
+            type: "array",
+            maxItems: 8,
+            items: { type: "string", minLength: 1, maxLength: 50 },
+          },
+        },
+        required: [
+          "tempId",
+          "title",
+          "description",
+          "difficultyPoints",
+          "dueAt",
+          "requiredSkills",
+          "dependsOnTempIds",
+        ],
+      },
+    },
+  },
+  required: ["tasks"],
+} as const;
+
+const OPENAI_TASK_PLAN_RESPONSE_FORMAT = {
+  type: "json_schema",
+  json_schema: {
+    name: "draft_task_plan",
+    strict: true,
+    schema: OPENAI_TASK_PLAN_JSON_SCHEMA,
+  },
+} as const;
+
+let hasLoggedTaskPlanSchema = false;
+const OPENAI_RAW_RESPONSE_LOG_LIMIT = 4000;
+
+function truncateForLog(
+  value: string,
+  maxLength = OPENAI_RAW_RESPONSE_LOG_LIMIT,
+) {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, maxLength)}... [truncated]`;
+}
+
+function logTaskPlanSchemaOnce(): void {
+  if (hasLoggedTaskPlanSchema) {
+    return;
+  }
+
+  hasLoggedTaskPlanSchema = true;
+  console.info(
+    "[generateTaskPlan] OpenAI response schema",
+    JSON.stringify(OPENAI_TASK_PLAN_RESPONSE_FORMAT.json_schema.schema),
+  );
+}
 
 const DEFAULT_PLAN_TEMPLATES: Array<{
   title: string;
@@ -150,6 +252,10 @@ async function callOpenAITaskPlan(
   const contextText = input.contextBlocks
     .map((context) => `[${context.contextType}] ${context.textContent}`)
     .join("\n\n");
+  const model = resolveOpenAIModelForOperation(env, "task_plan");
+  const systemPrompt = getTaskPlanSystemPrompt();
+
+  logTaskPlanSchemaOnce();
 
   let response: Response;
   try {
@@ -160,13 +266,12 @@ async function callOpenAITaskPlan(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: env.OPENAI_MODEL,
-        temperature: 0,
+        model,
+        ...getOpenAIChatRequestTuning(model),
         messages: [
           {
             role: "system",
-            content:
-              "Generate a draft plan between 6 and 12 tasks. IDs must be temporary strings (tempId). Do not assign users.",
+            content: systemPrompt,
           },
           {
             role: "user",
@@ -176,87 +281,10 @@ async function callOpenAITaskPlan(
               deadline: input.projectDeadline,
               contextText,
               availableSkills: input.availableSkills,
-              rules: [
-                "Use difficulty points from [1,2,3,5,8].",
-                "Set status implicitly todo by returning only task planning data.",
-                "Use dependsOnTempIds for finish-to-start dependencies.",
-              ],
             }),
           },
         ],
-        response_format: {
-          type: "json_schema",
-          json_schema: {
-            name: "draft_task_plan",
-            strict: true,
-            schema: {
-              type: "object",
-              additionalProperties: false,
-              properties: {
-                tasks: {
-                  type: "array",
-                  minItems: 6,
-                  maxItems: 12,
-                  items: {
-                    type: "object",
-                    additionalProperties: false,
-                    properties: {
-                      tempId: { type: "string", minLength: 1, maxLength: 50 },
-                      title: { type: "string", minLength: 3, maxLength: 120 },
-                      description: {
-                        type: "string",
-                        minLength: 10,
-                        maxLength: 1000,
-                      },
-                      difficultyPoints: {
-                        type: "integer",
-                        enum: [1, 2, 3, 5, 8],
-                      },
-                      dueAt: {
-                        anyOf: [
-                          { type: "string", format: "date-time" },
-                          { type: "null" },
-                        ],
-                      },
-                      requiredSkills: {
-                        type: "array",
-                        maxItems: 8,
-                        items: {
-                          type: "object",
-                          additionalProperties: false,
-                          properties: {
-                            skillName: {
-                              type: "string",
-                              minLength: 1,
-                              maxLength: 80,
-                            },
-                            weight: { type: "number", minimum: 1, maximum: 5 },
-                          },
-                          required: ["skillName", "weight"],
-                        },
-                      },
-                      dependsOnTempIds: {
-                        type: "array",
-                        maxItems: 8,
-                        items: { type: "string", minLength: 1, maxLength: 50 },
-                      },
-                    },
-                    required: [
-                      "tempId",
-                      "title",
-                      "description",
-                      "difficultyPoints",
-                      "dueAt",
-                      "requiredSkills",
-                      "dependsOnTempIds",
-                    ],
-                  },
-                },
-              },
-              required: ["tasks"],
-            },
-          },
-        },
+        response_format: OPENAI_TASK_PLAN_RESPONSE_FORMAT,
       }),
     });
   } catch (error) {
@@ -297,6 +325,10 @@ async function callOpenAITaskPlan(
       },
     };
   }
+  console.info("[generateTaskPlan] OpenAI raw response content", {
+    contentLength: content.length,
+    preview: truncateForLog(content),
+  });
 
   let candidate: unknown;
   try {
@@ -313,6 +345,15 @@ async function callOpenAITaskPlan(
 
   const parsed = aiTaskPlanOutputSchema.safeParse(candidate);
   if (!parsed.success) {
+    console.warn("[generateTaskPlan] response schema validation failed", {
+      issues: parsed.error.issues.map((issue) => ({
+        path: issue.path.join("."),
+        code: issue.code,
+        message: issue.message,
+      })),
+      rawContentPreview: truncateForLog(content),
+    });
+
     return {
       ok: false,
       reason: "response_schema_invalid",

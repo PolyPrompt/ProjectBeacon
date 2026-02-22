@@ -236,6 +236,7 @@ export default function PlanningWorkspace({
   const [inventoryRefreshToken, setInventoryRefreshToken] = useState(0);
   const [isDelegatingFromInventory, setIsDelegatingFromInventory] =
     useState(false);
+  const [clarificationRefreshToken, setClarificationRefreshToken] = useState(0);
 
   const canLock = planningStatus === "draft" && taskCount > 0;
   const canAssign = planningStatus === "locked";
@@ -421,6 +422,7 @@ export default function PlanningWorkspace({
         };
       });
       setActionStatus("Specifications saved.");
+      setClarificationRefreshToken((previous) => previous + 1);
     } catch (error) {
       setContextError(
         error instanceof Error ? error.message : "Failed to save context.",
@@ -512,6 +514,7 @@ export default function PlanningWorkspace({
         };
       });
       setActionStatus("File uploaded and added to planning inputs.");
+      setClarificationRefreshToken((previous) => previous + 1);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to upload document.";
@@ -946,6 +949,7 @@ export default function PlanningWorkspace({
             isGenerating ||
             !workspaceState.hasMinimumInput
           }
+          refreshToken={clarificationRefreshToken}
           onProceedToDelegation={handleProceedFromClarification}
           onReturnToRefinement={handleReturnToRefinement}
           onStateChange={handleClarificationState}

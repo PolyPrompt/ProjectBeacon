@@ -14,6 +14,9 @@ const serverEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default("gpt-4o-mini"),
+  OPENAI_MODEL_TASK_PLAN: z.string().optional(),
+  OPENAI_MODEL_CONFIDENCE: z.string().optional(),
+  OPENAI_MODEL_TASK_ASSIGNMENT: z.string().optional(),
 });
 
 export type ServerEnv = {
@@ -22,6 +25,9 @@ export type ServerEnv = {
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY?: string;
   OPENAI_API_KEY?: string;
   OPENAI_MODEL: string;
+  OPENAI_MODEL_TASK_PLAN?: string;
+  OPENAI_MODEL_CONFIDENCE?: string;
+  OPENAI_MODEL_TASK_ASSIGNMENT?: string;
   SUPABASE_URL?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   SUPABASE_SECRET_KEY?: string;

@@ -3,6 +3,7 @@ import {
   assignTasks,
   type TaskSkillRequirement,
 } from "@/lib/assignment/assign-tasks";
+import { generateTaskAssignments } from "@/lib/ai/generate-task-assignments";
 import {
   loadEffectiveMemberSkills,
   loadProjectMembers,
@@ -86,16 +87,47 @@ export async function POST(
       tasks,
     );
 
-    const assignmentResult = assignTasks(
-      tasks.map((task) => ({
+    const aiAssignments = await generateTaskAssignments({
+      projectId,
+      projectName: access.project.name,
+      projectDescription: access.project.description,
+      tasks: tasks.map((task) => ({
         id: task.id,
         status: task.status,
         difficultyPoints: task.difficulty_points,
         assigneeUserId: task.assignee_user_id,
       })),
-      effectiveSkills,
-      requirements,
-    );
+      members: effectiveSkills,
+      taskRequirements: requirements,
+    });
+
+    const assignmentResult =
+      aiAssignments !== null
+        ? {
+            assignments: aiAssignments,
+            assignedCount: aiAssignments.length,
+          }
+        : assignTasks(
+            tasks.map((task) => ({
+              id: task.id,
+              status: task.status,
+              difficultyPoints: task.difficulty_points,
+              assigneeUserId: task.assignee_user_id,
+            })),
+            effectiveSkills,
+            requirements,
+          );
+
+    const assignmentMode = aiAssignments !== null ? "openai" : "deterministic";
+
+    if (aiAssignments === null) {
+      console.info(
+        "[assignments/run] falling back to deterministic assignment",
+        {
+          projectId,
+        },
+      );
+    }
 
     for (const assignment of assignmentResult.assignments) {
       await updateRows<TaskRow>(
@@ -136,6 +168,7 @@ export async function POST(
       projectId,
       planningStatus: updatedProject.planning_status,
       assignedCount: assignmentResult.assignedCount,
+      assignmentMode,
     });
   } catch (error) {
     return mapRouteError(error);
