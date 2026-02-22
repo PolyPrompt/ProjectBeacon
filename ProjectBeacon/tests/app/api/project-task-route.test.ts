@@ -213,4 +213,65 @@ describe("PATCH /api/projects/[projectId]/tasks/[taskId]", () => {
       },
     );
   });
+
+  it("allows reopening a done task back to in_progress", async () => {
+    requireProjectAccessMock.mockResolvedValue({
+      ok: true,
+      userId: USER_ID,
+      membership: {
+        id: "m1",
+        project_id: PROJECT_ID,
+        user_id: USER_ID,
+        role: "member",
+      },
+      project: {
+        id: PROJECT_ID,
+        name: "Project",
+        description: "desc",
+        deadline: "2026-03-01T00:00:00.000Z",
+        owner_user_id: USER_ID,
+        planning_status: "assigned",
+        created_at: "2026-02-22T00:00:00.000Z",
+        updated_at: "2026-02-22T00:00:00.000Z",
+      },
+    });
+    selectSingleMock.mockResolvedValueOnce(
+      makeTaskRow({
+        assigneeUserId: USER_ID,
+        status: "done",
+      }),
+    );
+    updateRowsMock.mockResolvedValueOnce([
+      makeTaskRow({
+        assigneeUserId: USER_ID,
+        status: "in_progress",
+      }),
+    ]);
+
+    const response = await PATCH(
+      new Request("http://localhost", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status: "in_progress" }),
+      }),
+      {
+        params: Promise.resolve({
+          projectId: PROJECT_ID,
+          taskId: TASK_ID,
+        }),
+      },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.task.status).toBe("in_progress");
+    expect(updateRowsMock).toHaveBeenCalledWith(
+      "tasks",
+      { status: "in_progress" },
+      {
+        id: `eq.${TASK_ID}`,
+        project_id: `eq.${PROJECT_ID}`,
+      },
+    );
+  });
 });

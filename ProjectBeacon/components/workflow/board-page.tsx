@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { TaskDetailModal } from "@/components/dashboard/task-detail-modal";
+import { isProjectComplete } from "@/lib/projects/completion";
 import type { MyTaskDTO } from "@/types/dashboard";
 import type { ProjectRole } from "@/types/roles";
 import type {
@@ -16,6 +19,7 @@ import type {
 type BoardPageProps = {
   projectId: string;
   role: ProjectRole;
+  showProjectSummaryLink?: boolean;
   viewerUserId: string;
 };
 
@@ -575,7 +579,13 @@ function boardCard(
   );
 }
 
-export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
+export function BoardPage({
+  projectId,
+  role,
+  showProjectSummaryLink = false,
+  viewerUserId,
+}: BoardPageProps) {
+  const router = useRouter();
   const [mode, setMode] = useState<WorkflowBoardMode>("member_lane");
   const [columns, setColumns] = useState<WorkflowBoardColumnDTO[]>([]);
   const [unassigned, setUnassigned] = useState<WorkflowBoardTaskDTO[]>([]);
@@ -596,6 +606,7 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
   const [createTaskLaneId, setCreateTaskLaneId] = useState<string | null>(null);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [completingTaskIds, setCompletingTaskIds] = useState<string[]>([]);
+  const previousProjectCompleteRef = useRef<boolean | null>(null);
 
   useEffect(() => {
     setNowMs(Date.now());
@@ -756,6 +767,11 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
     () => flattenBoard(columns, unassigned),
     [columns, unassigned],
   );
+  const projectIsComplete = useMemo(
+    () => isProjectComplete(tasks.map((task) => task.status)),
+    [tasks],
+  );
+  const canShowProjectSummaryLink = showProjectSummaryLink && projectIsComplete;
   const selectedTask = useMemo(
     () => tasks.find((task) => task.id === selectedTaskId) ?? null,
     [selectedTaskId, tasks],
@@ -769,6 +785,25 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
     createTaskLaneId === null
       ? null
       : (lanes.find((lane) => lane.id === createTaskLaneId) ?? null);
+
+  useEffect(() => {
+    if (loading || completingTaskIds.length > 0) {
+      return;
+    }
+
+    if (previousProjectCompleteRef.current === null) {
+      previousProjectCompleteRef.current = projectIsComplete;
+      return;
+    }
+
+    if (!previousProjectCompleteRef.current && projectIsComplete) {
+      router.replace(`/projects/${projectId}/complete`);
+      return;
+    }
+
+    previousProjectCompleteRef.current = projectIsComplete;
+  }, [completingTaskIds, loading, projectId, projectIsComplete, router]);
+
   function openCreateTaskModal(preferredLaneId?: string): void {
     const selectedLaneId =
       preferredLaneId && lanes.some((lane) => lane.id === preferredLaneId)
@@ -1083,6 +1118,14 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                 )}
 
                 <div className="flex items-center gap-2">
+                  {canShowProjectSummaryLink ? (
+                    <Link
+                      className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-emerald-200 hover:bg-emerald-500/20"
+                      href={`/projects/${projectId}/complete`}
+                    >
+                      Go to Project Summary
+                    </Link>
+                  ) : null}
                   <button
                     type="button"
                     className="rounded-lg border border-violet-500/40 bg-violet-500/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-violet-200 hover:bg-violet-500/20"

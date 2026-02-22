@@ -6,6 +6,7 @@ import {
   type DashboardProject,
   type DashboardTask,
 } from "@/components/dashboard/project-dashboard-shell";
+import { isProjectComplete } from "@/lib/projects/completion";
 import { requireSessionUser, type ProjectRole } from "@/lib/auth/session";
 import { getServiceSupabaseClient } from "@/lib/supabase/server";
 import type { TaskStatus } from "@/types/dashboard";
@@ -42,6 +43,10 @@ type UserRow = {
   id: string;
   name: string | null;
   email: string;
+};
+
+type TaskCompletionRow = {
+  status: string;
 };
 
 function normalizePlanningStatus(
@@ -215,6 +220,24 @@ export default async function ProjectDashboardPage({
 
   if (!membership) {
     notFound();
+  }
+
+  const { data: completionRows, error: completionError } = await supabase
+    .from("tasks")
+    .select("status")
+    .eq("project_id", projectId)
+    .returns<TaskCompletionRow[]>();
+
+  if (completionError) {
+    throw new Error(
+      `Failed loading task completion state: ${completionError.message}`,
+    );
+  }
+
+  if (
+    isProjectComplete((completionRows ?? []).map((task) => task.status ?? ""))
+  ) {
+    redirect(`/projects/${projectId}/complete`);
   }
 
   // Check if user has added project or profile skills (required before viewing dashboard)
