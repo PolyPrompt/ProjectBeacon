@@ -892,6 +892,36 @@
 - Files changed:
   - `components/projects/project-form.tsx`
 
+## 2026-02-22T06:50:41Z - PB-041 Milestone (Agent3)
+
+- Issue: `#91` `[PB-041] Implement team/member board variants and finalized delegation board parity`.
+- Completed:
+  - Expanded `/projects/[projectId]/board` into explicit mode variants:
+    - `Member Lanes`
+    - `Categorized`
+    - `Finalized`
+  - Added viewer-aware lane treatment:
+    - route now provides `viewerUserId` to board page
+    - viewer lane is pinned first and visually highlighted
+  - Added finalized parity elements:
+    - top-level sprint context metrics
+    - deadline countdown
+    - assignee summary strip (task counts + in-progress/blocked counts)
+    - action controls (`New Task`, `Re-Delegate`, `Finalize and Send to Group`)
+  - Added grouped status rendering (`Not Started`, `In Progress`, `Blocked`, `Complete`) for categorized and finalized board modes.
+  - Improved board accessibility:
+    - tab semantics for board-mode switcher
+    - tabpanel semantics for active board mode
+    - keyboard focus treatment and ARIA labels for task cards
+- Verification:
+  - `set -a; source .env.local; set +a; npm run format:check` -> pass
+  - `set -a; source .env.local; set +a; npm run lint` -> pass
+  - `set -a; source .env.local; set +a; npm run build` -> pass
+- Files changed:
+  - `app/projects/[projectId]/board/page.tsx`
+  - `components/workflow/board-page.tsx`
+  - `types/workflow.ts`
+
 ## 2026-02-22T07:13:16Z - PB-042 Milestone (Agent3)
 
 - Issue: `#92` `[PB-042] Add Playwright regression suite for project setup/share context and UI parity flows`.

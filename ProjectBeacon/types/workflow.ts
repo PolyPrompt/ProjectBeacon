@@ -33,6 +33,14 @@ export type WorkflowBoardDTO = {
   unassigned: WorkflowBoardTaskDTO[];
 };
 
+export type WorkflowBoardMode = "member_lane" | "categorized" | "finalized";
+
+export type WorkflowStatusBucket =
+  | "not_started"
+  | "in_progress"
+  | "blocked"
+  | "complete";
+
 export type WorkflowTimelineTaskDTO = {
   id: string;
   title: string;
