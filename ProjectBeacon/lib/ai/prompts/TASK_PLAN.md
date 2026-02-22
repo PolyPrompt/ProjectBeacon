@@ -53,6 +53,7 @@ Planning quality requirements:
 - Build a dependency-valid DAG with useful parallel work where possible.
 - Include setup, implementation, integration, testing, and delivery work.
 - Balance workload so high-difficulty tasks are not concentrated in one workstream.
+- Avoid concentrating the majority of required-skill weight into a single specialist profile when realistic alternatives exist.
 - Prefer concrete, measurable language over vague wording.
 - Each task `description` must include one short rationale sentence tied to project needs, skills, dependencies, or workload only.
 

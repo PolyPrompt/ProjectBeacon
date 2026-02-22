@@ -24,6 +24,10 @@ export type AssignmentResult = {
   assignedCount: number;
 };
 
+function maxAllowedProjectedLoadGap(task: TaskForAssignment): number {
+  return Math.max(1, Math.floor(task.difficultyPoints / 2) + 1);
+}
+
 function scoreMemberForTask(
   member: MemberEffectiveSkills,
   task: TaskForAssignment,
@@ -60,27 +64,44 @@ export function assignTasks(
       (a, b) =>
         b.difficultyPoints - a.difficultyPoints || a.id.localeCompare(b.id),
     );
+  const requirementsByTask = new Map<string, TaskSkillRequirement[]>();
+  for (const requirement of taskRequirements) {
+    const existing = requirementsByTask.get(requirement.taskId);
+    if (existing) {
+      existing.push(requirement);
+      continue;
+    }
+    requirementsByTask.set(requirement.taskId, [requirement]);
+  }
 
   const assignments: Array<{ taskId: string; assigneeUserId: string }> = [];
 
   for (const task of eligibleTasks) {
-    const requirements = taskRequirements.filter(
-      (requirement) => requirement.taskId === task.id,
-    );
+    const requirements = requirementsByTask.get(task.id) ?? [];
 
     const ranked = mutableMembers
       .map((member) => ({
         member,
         score: scoreMemberForTask(member, task, requirements),
+        projectedLoad: member.currentLoad + task.difficultyPoints,
       }))
       .sort(
         (left, right) =>
           right.score - left.score ||
-          left.member.currentLoad - right.member.currentLoad ||
+          left.projectedLoad - right.projectedLoad ||
           left.member.userId.localeCompare(right.member.userId),
       );
 
-    const selected = ranked[0];
+    const minProjectedLoad = ranked.reduce(
+      (currentMin, candidate) => Math.min(currentMin, candidate.projectedLoad),
+      Number.POSITIVE_INFINITY,
+    );
+    const fairCandidate = ranked.find(
+      (candidate) =>
+        candidate.projectedLoad - minProjectedLoad <=
+        maxAllowedProjectedLoadGap(task),
+    );
+    const selected = fairCandidate ?? ranked[0];
     if (!selected) {
       continue;
     }
