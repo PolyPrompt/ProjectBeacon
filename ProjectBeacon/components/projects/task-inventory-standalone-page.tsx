@@ -17,6 +17,7 @@ type InventoryTask = {
   categories: InventoryCategory[];
   id: string;
   priority: InventoryPriority;
+  sourceTaskId: string | null;
   title: string;
 };
 
@@ -47,45 +48,6 @@ const PRIORITY_DOT: Record<InventoryPriority, string> = {
   medium: "bg-amber-500",
   high: "bg-violet-500",
 };
-
-const FALLBACK_TASKS: InventoryTask[] = [
-  {
-    categories: ["Research & Discovery", "Planning & Coordination"],
-    id: "fallback-research-1",
-    priority: "low",
-    title: "Review rubric and define project success criteria",
-  },
-  {
-    categories: ["Research & Discovery", "Writing & Documentation"],
-    id: "fallback-research-2",
-    priority: "medium",
-    title: "Gather sources or reference materials",
-  },
-  {
-    categories: ["Planning & Coordination", "Implementation & Production"],
-    id: "fallback-build-1",
-    priority: "high",
-    title: "Create first complete draft or prototype",
-  },
-  {
-    categories: ["Analysis & Validation", "Implementation & Production"],
-    id: "fallback-analysis-1",
-    priority: "medium",
-    title: "Run validation pass and capture findings",
-  },
-  {
-    categories: ["Writing & Documentation", "Analysis & Validation"],
-    id: "fallback-writing-1",
-    priority: "medium",
-    title: "Finalize written report with revisions",
-  },
-  {
-    categories: ["Presentation & Submission", "Planning & Coordination"],
-    id: "fallback-delivery-1",
-    priority: "medium",
-    title: "Assemble presentation and submission package",
-  },
-];
 
 function createDraftId(): string {
   if (
@@ -142,6 +104,7 @@ function toInventoryTasks(board: WorkflowBoardDTO): InventoryTask[] {
       categories: inferInventoryCategories(task),
       id: task.id,
       priority: mapDifficultyToPriority(task.difficultyPoints),
+      sourceTaskId: task.id,
       title: task.title,
     })),
   );
@@ -150,6 +113,7 @@ function toInventoryTasks(board: WorkflowBoardDTO): InventoryTask[] {
     categories: inferInventoryCategories(task),
     id: task.id,
     priority: mapDifficultyToPriority(task.difficultyPoints),
+    sourceTaskId: task.id,
     title: task.title,
   }));
 
@@ -196,14 +160,31 @@ async function loadInitialTasks(projectId: string): Promise<InventoryTask[]> {
 
     const payload = parseBoardPayload((await response.json()) as unknown);
     if (!response.ok || !payload) {
-      return FALLBACK_TASKS;
+      return [];
     }
 
-    const mapped = toInventoryTasks(payload);
-    return mapped.length > 0 ? mapped : FALLBACK_TASKS;
+    return toInventoryTasks(payload);
   } catch {
-    return FALLBACK_TASKS;
+    return [];
   }
+}
+
+function resolveMessage(payload: unknown, fallback: string): string {
+  if (!payload || typeof payload !== "object") {
+    return fallback;
+  }
+
+  const candidate = payload as {
+    error?: {
+      message?: string;
+    };
+  };
+
+  if (typeof candidate.error?.message === "string") {
+    return candidate.error.message;
+  }
+
+  return fallback;
 }
 
 export default function TaskInventoryStandalonePage({
@@ -212,6 +193,7 @@ export default function TaskInventoryStandalonePage({
   const router = useRouter();
   const [mode, setMode] = useState<InventoryMode>("review");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [committedTasks, setCommittedTasks] = useState<InventoryTask[]>([]);
   const [draftTasks, setDraftTasks] = useState<InventoryTask[]>([]);
@@ -263,6 +245,7 @@ export default function TaskInventoryStandalonePage({
       categories: [category],
       id: createDraftId(),
       priority: "medium",
+      sourceTaskId: null,
       title: "",
     };
 
@@ -339,7 +322,14 @@ export default function TaskInventoryStandalonePage({
     );
   }
 
-  function saveChanges() {
+  async function saveChanges() {
+    if (isSaving) {
+      return;
+    }
+
+    setIsSaving(true);
+    setStatusMessage(null);
+
     const normalized = draftTasks.map((task) => ({
       ...task,
       categories:
@@ -352,12 +342,65 @@ export default function TaskInventoryStandalonePage({
           : "Untitled inventory task",
     }));
 
-    setCommittedTasks(normalized);
-    setDraftTasks(
-      normalized.map((task) => ({ ...task, categories: [...task.categories] })),
-    );
-    setMode("review");
-    setStatusMessage("Blueprint edits saved locally.");
+    try {
+      const response = await fetch(`/api/projects/${projectId}/tasks/sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tasks: normalized.map((task) => ({
+            id: task.sourceTaskId ?? undefined,
+            priority: task.priority,
+            title: task.title,
+          })),
+        }),
+      });
+
+      const payload = (await response.json()) as {
+        error?: {
+          message?: string;
+        };
+        syncedTasks?: Array<{ id: string }>;
+      };
+
+      if (!response.ok) {
+        throw new Error(resolveMessage(payload, "Failed to save inventory."));
+      }
+
+      const syncedTasks = Array.isArray(payload.syncedTasks)
+        ? payload.syncedTasks
+        : [];
+
+      const persisted = normalized.map((task, index) => {
+        const syncedTask = syncedTasks[index];
+        if (!syncedTask?.id) {
+          return task;
+        }
+
+        return {
+          ...task,
+          id: syncedTask.id,
+          sourceTaskId: syncedTask.id,
+        };
+      });
+
+      setCommittedTasks(persisted);
+      setDraftTasks(
+        persisted.map((task) => ({
+          ...task,
+          categories: [...task.categories],
+        })),
+      );
+      setMode("review");
+      setStatusMessage("Blueprint edits saved.");
+    } catch (error) {
+      setStatusMessage(
+        error instanceof Error ? error.message : "Failed to save inventory.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   if (isLoading) {
@@ -623,9 +666,12 @@ export default function TaskInventoryStandalonePage({
               <button
                 type="button"
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#622faf] px-8 py-3 text-sm font-bold text-white shadow-lg shadow-[#622faf]/30 transition-all hover:bg-[#622faf]/90 md:flex-none"
-                onClick={saveChanges}
+                onClick={() => {
+                  void saveChanges();
+                }}
+                disabled={isSaving}
               >
-                Save Changes
+                {isSaving ? "Saving..." : "Save Changes"}
                 <span>✓</span>
               </button>
             ) : (

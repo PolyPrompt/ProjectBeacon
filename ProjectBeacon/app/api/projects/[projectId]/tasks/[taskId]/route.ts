@@ -61,6 +61,10 @@ function canUpdateTaskByRole(
   return task.assignee_user_id === actorUserId;
 }
 
+function canReassignTaskByRole(role: ProjectRole): boolean {
+  return role === "admin";
+}
+
 function isAssignmentChanged(
   currentAssignee: string | null,
   nextAssignee: string | null,
@@ -122,6 +126,16 @@ export async function PATCH(
             to: nextStatus,
             allowedTo: allowedTransitions[task.status],
           },
+        );
+      }
+    }
+
+    if (nextAssigneeUserId !== undefined) {
+      if (!canReassignTaskByRole(actorRole)) {
+        return jsonError(
+          403,
+          "FORBIDDEN",
+          "You do not have permission to reassign this task.",
         );
       }
     }

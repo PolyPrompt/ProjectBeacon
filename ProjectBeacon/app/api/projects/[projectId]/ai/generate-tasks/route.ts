@@ -20,7 +20,12 @@ import {
   requireProjectAccess,
 } from "@/lib/server/route-helpers";
 import { normalizeProjectRole } from "@/lib/server/project-access";
-import { insertRows, selectRows, upsertRows } from "@/lib/server/supabase-rest";
+import {
+  deleteRows,
+  insertRows,
+  selectRows,
+  upsertRows,
+} from "@/lib/server/supabase-rest";
 import type {
   SkillRow,
   TaskDependencyRow,
@@ -176,6 +181,32 @@ export async function POST(
           edge: dependencyValidation.edge,
         },
       );
+    }
+
+    const existingTasks = await selectRows<TaskRow>("tasks", {
+      select:
+        "id,project_id,assignee_user_id,title,description,status,difficulty_points,due_at,created_at,updated_at",
+      project_id: `eq.${projectId}`,
+    });
+
+    if (existingTasks.length > 0) {
+      const existingTaskFilter = `in.(${existingTasks
+        .map((task) => task.id)
+        .join(",")})`;
+
+      await deleteRows("task_required_skills", {
+        task_id: existingTaskFilter,
+      });
+      await deleteRows("task_dependencies", {
+        task_id: existingTaskFilter,
+      });
+      await deleteRows("task_dependencies", {
+        depends_on_task_id: existingTaskFilter,
+      });
+      await deleteRows("tasks", {
+        id: existingTaskFilter,
+        project_id: `eq.${projectId}`,
+      });
     }
 
     const rowsToInsert: TaskInsertRow[] = generated.tasks.map((task) => ({
