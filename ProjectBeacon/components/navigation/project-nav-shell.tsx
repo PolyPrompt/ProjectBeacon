@@ -24,6 +24,12 @@ export function ProjectNavShell({
   const pathname = usePathname();
   const isBoardRoute = pathname.includes("/board");
   const isSettingsRoute = pathname.includes("/settings");
+  const useWorkflowHeader =
+    pathname.includes("/skills") ||
+    pathname.includes("/workspace") ||
+    pathname.includes("/clarification") ||
+    pathname.includes("/inventory") ||
+    pathname.includes("/userflow/");
   const rootClassName = isSettingsRoute
     ? "min-h-screen bg-[#120d1c]"
     : "min-h-screen bg-[#18131F]";
@@ -35,6 +41,7 @@ export function ProjectNavShell({
   return (
     <div className={rootClassName}>
       <NavBar
+        hideNavigation={useWorkflowHeader}
         mode="project"
         onSignOut={onSignOut}
         pathname={pathname}

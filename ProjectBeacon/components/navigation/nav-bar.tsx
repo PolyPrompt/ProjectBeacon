@@ -11,6 +11,7 @@ type ProjectNavBarProps = {
   role: ProjectRole;
   projectId: string;
   pathname: string;
+  hideNavigation?: boolean;
   onSignOut: () => Promise<void>;
   useClerkUserButton: boolean;
 };
@@ -46,6 +47,8 @@ function getUserInitials(userId: string): string {
 
 export function NavBar(props: NavBarProps) {
   const pathname = props.pathname;
+  const hideNavigation =
+    props.mode === "project" && props.hideNavigation === true;
 
   const brandHref = "/projects";
   let userInitials = "";
@@ -120,17 +123,19 @@ export function NavBar(props: NavBarProps) {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-10 md:flex">
-          {navItems.map((item) => (
-            <Link
-              key={item.label}
-              className={navLinkClass(item.match(pathname))}
-              href={item.href}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        {hideNavigation ? null : (
+          <nav className="hidden items-center gap-10 md:flex">
+            {navItems.map((item) => (
+              <Link
+                key={item.label}
+                className={navLinkClass(item.match(pathname))}
+                href={item.href}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        )}
 
         <div className="flex items-center gap-3">
           {props.mode === "public" ? (
@@ -175,19 +180,21 @@ export function NavBar(props: NavBarProps) {
         </div>
       </div>
 
-      <nav className="border-t border-white/10 px-4 py-2 md:hidden">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 overflow-x-auto whitespace-nowrap">
-          {navItems.map((item) => (
-            <Link
-              key={item.label}
-              className={navLinkClass(item.match(pathname))}
-              href={item.href}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      </nav>
+      {hideNavigation ? null : (
+        <nav className="border-t border-white/10 px-4 py-2 md:hidden">
+          <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 overflow-x-auto whitespace-nowrap">
+            {navItems.map((item) => (
+              <Link
+                key={item.label}
+                className={navLinkClass(item.match(pathname))}
+                href={item.href}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </nav>
+      )}
     </header>
   );
 }
