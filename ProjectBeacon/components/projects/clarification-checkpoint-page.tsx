@@ -346,6 +346,9 @@ export function ClarificationCheckpointPage({
     setGenerationMetadata(null);
 
     try {
+      const useProvisionalPlanning =
+        options?.allowLowConfidenceProceed === true ||
+        !workspaceState.clarification.readyForGeneration;
       const response = await fetch(
         `/api/projects/${projectId}/ai/generate-tasks`,
         {
@@ -353,6 +356,9 @@ export function ClarificationCheckpointPage({
           headers: {
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({
+            allowLowConfidenceProceed: useProvisionalPlanning,
+          }),
         },
       );
 
