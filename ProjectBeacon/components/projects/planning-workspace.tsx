@@ -1088,9 +1088,6 @@ export default function PlanningWorkspace({
           <h3 className="text-sm font-semibold uppercase tracking-wide text-cyan-100">
             AI Pipeline Replay
           </h3>
-          <p className="text-xs font-medium text-cyan-200">
-            Expected gain: +5 to +7 overall
-          </p>
         </div>
         {pipelineReplay.length === 0 ? (
           <p className="rounded-lg border border-slate-700 bg-[#11121a] px-3 py-2 text-xs text-slate-400">
@@ -1136,7 +1133,7 @@ export default function PlanningWorkspace({
                       Generation mode
                     </dt>
                     <dd className="text-sm font-semibold text-slate-100">
-                      {event.generationMode ?? "N/A"}
+                      {event.generationMode ?? "pending"}
                     </dd>
                   </div>
                   <div className="rounded-lg border border-slate-800 bg-slate-900/40 px-2 py-2">
@@ -1144,7 +1141,7 @@ export default function PlanningWorkspace({
                       Assignment mode
                     </dt>
                     <dd className="text-sm font-semibold text-slate-100">
-                      {event.assignmentMode ?? "N/A"}
+                      {event.assignmentMode ?? "pending"}
                     </dd>
                   </div>
                   <div className="rounded-lg border border-slate-800 bg-slate-900/40 px-2 py-2">
