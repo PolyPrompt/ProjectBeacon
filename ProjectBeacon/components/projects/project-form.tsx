@@ -301,6 +301,14 @@ export function ProjectForm() {
     setIsAddingMilestone(false);
   }
 
+  function updateMilestone(id: string, updates: Partial<Milestone>) {
+    setMilestones((current) =>
+      current.map((milestone) =>
+        milestone.id === id ? { ...milestone, ...updates } : milestone,
+      ),
+    );
+  }
+
   function removeMilestone(id: string) {
     setMilestones((current) =>
       current.filter((milestone) => milestone.id !== id),
@@ -496,13 +504,28 @@ export function ProjectForm() {
                           key={milestone.id}
                           className="rounded-xl border border-violet-900/35 bg-black/15 p-3"
                         >
-                          <p className="mb-2 text-base font-semibold text-slate-100">
-                            {milestone.title}
-                          </p>
+                          <input
+                            className="mb-2 w-full rounded-lg border border-violet-900/50 bg-black/20 px-3 py-2 text-sm font-semibold text-slate-100 outline-none placeholder:text-slate-500 focus:border-violet-500"
+                            type="text"
+                            value={milestone.title}
+                            onChange={(event) =>
+                              updateMilestone(milestone.id, {
+                                title: event.target.value,
+                              })
+                            }
+                            placeholder="Milestone title"
+                          />
                           <div className="flex items-center justify-between gap-3">
-                            <p className="text-xs text-slate-400">
-                              {milestone.date}
-                            </p>
+                            <input
+                              className="w-full rounded-lg border border-violet-900/50 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none focus:border-violet-500"
+                              type="date"
+                              value={milestone.date}
+                              onChange={(event) =>
+                                updateMilestone(milestone.id, {
+                                  date: event.target.value,
+                                })
+                              }
+                            />
                             <button
                               className="text-slate-500 transition hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
                               type="button"
