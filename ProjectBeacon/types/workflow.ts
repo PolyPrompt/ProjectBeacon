@@ -13,6 +13,7 @@ export type WorkflowCapabilityDTO = {
 export type WorkflowBoardTaskDTO = {
   id: string;
   title: string;
+  description?: string;
   status: TaskStatus;
   softDeadline: string | null;
   difficultyPoints: 1 | 2 | 3 | 5 | 8;
