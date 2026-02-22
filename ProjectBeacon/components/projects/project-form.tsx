@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 type ProjectResponse = {
   id: string;
@@ -200,6 +200,7 @@ export function ProjectForm() {
   const [shareStatus, setShareStatus] = useState<string | null>(null);
   const [project, setProject] = useState<ProjectResponse | null>(null);
   const [joinLink, setJoinLink] = useState<ProjectJoinLink | null>(null);
+  const deadlineInputRef = useRef<HTMLInputElement | null>(null);
 
   const rosterEmails = useMemo(
     () =>
@@ -214,6 +215,21 @@ export function ProjectForm() {
   );
 
   const remainingDays = daysUntil(deadlineDate);
+
+  function openMainDeadlinePicker() {
+    const input = deadlineInputRef.current;
+    if (!input) {
+      return;
+    }
+
+    if (typeof input.showPicker === "function") {
+      input.showPicker();
+      return;
+    }
+
+    input.focus();
+    input.click();
+  }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -520,13 +536,24 @@ export function ProjectForm() {
                     <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
                       Main Project Deadline
                     </span>
-                    <input
-                      className="w-full rounded-xl border border-violet-950/80 bg-[#11091d] px-4 py-3.5 text-xl text-slate-100 outline-none transition focus:border-violet-500"
-                      type="date"
-                      value={deadlineDate}
-                      onChange={(event) => setDeadlineDate(event.target.value)}
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        ref={deadlineInputRef}
+                        className="w-full rounded-xl border border-violet-950/80 bg-[#11091d] px-4 py-3.5 pr-14 text-xl text-slate-100 outline-none transition focus:border-violet-500"
+                        type="date"
+                        value={deadlineDate}
+                        onChange={(event) => setDeadlineDate(event.target.value)}
+                        required
+                      />
+                      <button
+                        type="button"
+                        aria-label="Open calendar"
+                        className="absolute right-2 top-1/2 inline-flex -translate-y-1/2 items-center rounded-lg border border-violet-700/60 bg-violet-900/35 px-2.5 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-violet-200 transition hover:bg-violet-800/50"
+                        onClick={openMainDeadlinePicker}
+                      >
+                        Pick
+                      </button>
+                    </div>
                   </label>
 
                   <div className="rounded-xl border border-violet-900/55 bg-violet-950/20 px-4 py-3">
