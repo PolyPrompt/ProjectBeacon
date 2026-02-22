@@ -605,6 +605,7 @@ export function BoardPage({
   const [reloadToken, setReloadToken] = useState(0);
   const [createTaskLaneId, setCreateTaskLaneId] = useState<string | null>(null);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [isAssigningUnassigned, setIsAssigningUnassigned] = useState(false);
   const [completingTaskIds, setCompletingTaskIds] = useState<string[]>([]);
   const previousProjectCompleteRef = useRef<boolean | null>(null);
 
