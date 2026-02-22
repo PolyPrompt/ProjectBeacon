@@ -20,6 +20,13 @@ type ProjectMember = {
   role: "owner" | "member";
 };
 
+type ProjectMilestone = {
+  id: string;
+  title: string;
+  dueAt: string;
+  status: "todo" | "in_progress" | "blocked" | "done";
+};
+
 const DEFAULT_METADATA: ProjectMetadata = {
   name: "Untitled Project",
   deadline: "",
@@ -38,6 +45,19 @@ function toDateInputValue(value: string): string {
   return date.toISOString().slice(0, 10);
 }
 
+function toMilestoneLabel(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Invalid date";
+  }
+
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export function ProjectSettingsPage({
   projectId,
   role,
@@ -52,8 +72,15 @@ export function ProjectSettingsPage({
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [isSendingInvite, setIsSendingInvite] = useState(false);
+  const [milestones, setMilestones] = useState<ProjectMilestone[]>([]);
+  const [loadingMilestones, setLoadingMilestones] = useState(true);
+  const [isAddingMilestone, setIsAddingMilestone] = useState(false);
+  const [newMilestoneTitle, setNewMilestoneTitle] = useState("");
+  const [newMilestoneDate, setNewMilestoneDate] = useState("");
+  const [isSavingMilestone, setIsSavingMilestone] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [teamStatus, setTeamStatus] = useState<string | null>(null);
+  const [milestoneStatus, setMilestoneStatus] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -171,6 +198,63 @@ export function ProjectSettingsPage({
     };
   }, [projectId]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    async function loadMilestones() {
+      try {
+        setLoadingMilestones(true);
+        const response = await fetch(`/api/projects/${projectId}/milestones`, {
+          method: "GET",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        const payload = (await response.json()) as {
+          milestones?: ProjectMilestone[];
+          error?: { message?: string };
+        };
+
+        if (!response.ok) {
+          throw new Error(
+            payload?.error?.message ??
+              `Milestones request returned ${response.status}`,
+          );
+        }
+
+        if (!cancelled) {
+          const data = Array.isArray(payload.milestones)
+            ? payload.milestones
+            : [];
+          setMilestones(
+            data.filter((milestone) => milestone.status !== "done"),
+          );
+        }
+      } catch (milestonesError) {
+        if (!cancelled) {
+          setMilestoneStatus(
+            milestonesError instanceof Error
+              ? milestonesError.message
+              : "Failed to load milestones.",
+          );
+          setMilestones([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingMilestones(false);
+        }
+      }
+    }
+
+    void loadMilestones();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [projectId]);
+
   async function handleInviteByEmail(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -242,6 +326,106 @@ export function ProjectSettingsPage({
       );
     } finally {
       setIsSendingInvite(false);
+    }
+  }
+
+  async function handleAddMilestone(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const title = newMilestoneTitle.trim();
+    const date = newMilestoneDate.trim();
+
+    if (!title || !date) {
+      return;
+    }
+
+    try {
+      setIsSavingMilestone(true);
+      setMilestoneStatus(null);
+
+      const dueAt = new Date(`${date}T00:00:00.000Z`).toISOString();
+      const response = await fetch(`/api/projects/${projectId}/milestones`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, dueAt }),
+      });
+
+      const payload = (await response.json()) as
+        | ProjectMilestone
+        | { error?: { message?: string } };
+
+      if (!response.ok) {
+        throw new Error(
+          "error" in payload
+            ? (payload.error?.message ?? "Failed to create milestone.")
+            : "Failed to create milestone.",
+        );
+      }
+
+      if (
+        "id" in payload &&
+        "title" in payload &&
+        "dueAt" in payload &&
+        "status" in payload
+      ) {
+        setMilestones((current) =>
+          [...current, payload]
+            .filter((milestone) => milestone.status !== "done")
+            .sort(
+              (left, right) =>
+                new Date(left.dueAt).getTime() -
+                new Date(right.dueAt).getTime(),
+            ),
+        );
+      }
+
+      setNewMilestoneTitle("");
+      setNewMilestoneDate("");
+      setIsAddingMilestone(false);
+      setMilestoneStatus("Milestone added.");
+    } catch (milestoneError) {
+      setMilestoneStatus(
+        milestoneError instanceof Error
+          ? milestoneError.message
+          : "Failed to create milestone.",
+      );
+    } finally {
+      setIsSavingMilestone(false);
+    }
+  }
+
+  async function handleDeleteMilestone(id: string) {
+    try {
+      setMilestoneStatus(null);
+
+      const response = await fetch(`/api/projects/${projectId}/milestones`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+
+      const payload = (await response.json()) as
+        | { deleted?: boolean }
+        | { error?: { message?: string } };
+
+      if (!response.ok) {
+        throw new Error(
+          "error" in payload
+            ? (payload.error?.message ?? "Failed deleting milestone.")
+            : "Failed deleting milestone.",
+        );
+      }
+
+      setMilestones((current) =>
+        current.filter((milestone) => milestone.id !== id),
+      );
+      setMilestoneStatus("Milestone removed.");
+    } catch (milestoneError) {
+      setMilestoneStatus(
+        milestoneError instanceof Error
+          ? milestoneError.message
+          : "Failed deleting milestone.",
+      );
     }
   }
 
@@ -409,6 +593,110 @@ export function ProjectSettingsPage({
             Admin-only project controls are hidden for users.
           </section>
         )}
+
+        <section className="rounded-2xl border border-violet-500/20 bg-[#1a1228]/90 p-5 shadow-lg shadow-black/20">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-3xl font-semibold text-slate-100">
+              Milestones
+            </h2>
+            {isAdmin ? (
+              <button
+                className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:bg-violet-500"
+                onClick={() => {
+                  setIsAddingMilestone((current) => !current);
+                  setMilestoneStatus(null);
+                  setNewMilestoneTitle("");
+                  setNewMilestoneDate("");
+                }}
+                type="button"
+              >
+                {isAddingMilestone ? "Cancel" : "Add Milestone"}
+              </button>
+            ) : null}
+          </div>
+
+          <p className="mt-2 text-sm text-slate-400">
+            Milestones added here power the dashboard&apos;s next milestone
+            card.
+          </p>
+
+          {milestoneStatus ? (
+            <p className="mt-3 rounded-lg border border-violet-500/20 bg-violet-500/10 px-3 py-2 text-sm text-violet-100">
+              {milestoneStatus}
+            </p>
+          ) : null}
+
+          {isAdmin && isAddingMilestone ? (
+            <form
+              className="mt-4 grid gap-2 rounded-lg border border-violet-500/20 bg-[#150f23] p-3 md:grid-cols-[1fr_200px_auto]"
+              onSubmit={handleAddMilestone}
+            >
+              <input
+                className="rounded-lg border border-violet-500/20 bg-[#1b1430] px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 outline-none transition focus:border-violet-400"
+                onChange={(event) => setNewMilestoneTitle(event.target.value)}
+                placeholder="Milestone title"
+                type="text"
+                value={newMilestoneTitle}
+                required
+              />
+              <input
+                className="rounded-lg border border-violet-500/20 bg-[#1b1430] px-3 py-2.5 text-sm text-slate-200 outline-none transition [color-scheme:dark] focus:border-violet-400"
+                onChange={(event) => setNewMilestoneDate(event.target.value)}
+                type="date"
+                value={newMilestoneDate}
+                required
+              />
+              <button
+                className="rounded-lg border border-violet-500/40 bg-violet-500/20 px-5 py-2.5 text-sm font-semibold text-violet-100 transition hover:bg-violet-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isSavingMilestone}
+                type="submit"
+              >
+                {isSavingMilestone ? "Saving..." : "Add"}
+              </button>
+            </form>
+          ) : null}
+
+          <div className="mt-6 border-t border-violet-500/15 pt-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              Existing Milestones
+            </p>
+
+            {loadingMilestones ? (
+              <p className="mt-3 text-sm text-slate-400">
+                Loading milestones...
+              </p>
+            ) : milestones.length === 0 ? (
+              <p className="mt-3 text-sm text-slate-400">No milestones yet.</p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {milestones.map((milestone) => (
+                  <li
+                    key={milestone.id}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-violet-500/20 bg-[#150f23] px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-100">
+                        {milestone.title}
+                      </p>
+                      <p className="truncate text-xs text-slate-400">
+                        {toMilestoneLabel(milestone.dueAt)}
+                      </p>
+                    </div>
+                    {isAdmin ? (
+                      <button
+                        className="rounded-lg border border-red-500/40 bg-red-500/10 px-2 py-1 text-xs font-semibold text-red-200 transition hover:bg-red-500/20"
+                        onClick={() => void handleDeleteMilestone(milestone.id)}
+                        type="button"
+                      >
+                        Remove
+                      </button>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
 
         <section className="rounded-2xl border border-violet-500/20 bg-[#1a1228]/90 p-5 shadow-lg shadow-black/20">
           <div className="flex flex-wrap items-center justify-between gap-3">
