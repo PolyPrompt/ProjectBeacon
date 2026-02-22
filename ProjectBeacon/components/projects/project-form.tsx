@@ -55,6 +55,118 @@ function daysUntil(dateValue: string) {
   return Math.ceil(diff / msPerDay);
 }
 
+function estimatedDurationLabel(remainingDays: number | null) {
+  if (remainingDays === null) {
+    return "Set a deadline to calculate timeline";
+  }
+
+  if (remainingDays <= 0) {
+    return "Deadline is in the past";
+  }
+
+  return `${remainingDays} day${remainingDays === 1 ? "" : "s"} remaining from today`;
+}
+
+function ProjectDetailsIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className="h-5 w-5 text-violet-400"
+    >
+      <path
+        d="M4 4h10M4 10h10M4 16h6M17 13l3 3-6 6H11v-3l6-6Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function DeadlineIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className="h-5 w-5 text-violet-400"
+    >
+      <rect
+        x="4"
+        y="5"
+        width="16"
+        height="15"
+        rx="2.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M8 3v4M16 3v4M4 10h16"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function TeamIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className="h-5 w-5 text-violet-400"
+    >
+      <path
+        d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-4A3.5 3.5 0 0 0 5 18.5V20M14.5 7.5A2.5 2.5 0 1 1 9.5 7.5a2.5 2.5 0 0 1 5 0ZM19.5 8v4M17.5 10h4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-4 w-4">
+      <circle cx="7" cy="12" r="2" fill="currentColor" />
+      <circle cx="17" cy="6" r="2" fill="currentColor" />
+      <circle cx="17" cy="18" r="2" fill="currentColor" />
+      <path
+        d="m8.8 11 6.4-4M8.8 13l6.4 4"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function EmptyRosterIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className="h-5 w-5 text-violet-200"
+    >
+      <path
+        d="M16 16.5a5 5 0 1 0-4-1.98M14.5 16.5 19 21M9 15.5v-.75a2.75 2.75 0 0 0-2.75-2.75h-1.5A2.75 2.75 0 0 0 2 14.75v.75M7.5 7.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function ProjectForm() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -203,312 +315,419 @@ export function ProjectForm() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-6 py-10 lg:px-10">
-      <div className="mb-8 rounded-2xl border border-black/10 bg-gradient-to-r from-emerald-50 via-sky-50 to-amber-50 p-6">
-        <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-          Start Your Project
-        </h1>
-        <p className="mt-2 max-w-3xl text-sm text-black/65 md:text-base">
-          Define scope, timeline, and collaborators before generating a share
-          link for your team.
-        </p>
-      </div>
+    <div className="relative min-h-screen overflow-hidden bg-[#110a1f] text-slate-100">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_8%,rgba(103,47,180,0.24),transparent_38%),radial-gradient(circle_at_85%_20%,rgba(47,25,90,0.22),transparent_48%),linear-gradient(180deg,#120a24_0%,#130b22_55%,#120a1f_100%)]" />
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
-        <form id="project-setup-form" className="contents" onSubmit={onSubmit}>
-          <section className="md:col-span-8 rounded-2xl border border-black/10 bg-white p-6 shadow-sm">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Project Details</h2>
-              <span className="rounded-full bg-black/5 px-2.5 py-1 text-xs font-medium text-black/60">
-                Core setup
-              </span>
-            </div>
-
-            <div className="space-y-4">
-              <label className="block space-y-1.5">
-                <span className="text-xs font-semibold uppercase tracking-wide text-black/50">
-                  Project Name
-                </span>
-                <input
-                  className="w-full rounded-lg border border-black/15 bg-white px-3 py-2.5 outline-none ring-emerald-500/30 transition focus:ring-4"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="e.g. CS302 Distributed Systems Lab"
-                  required
-                />
-              </label>
-
-              <label className="block space-y-1.5">
-                <span className="text-xs font-semibold uppercase tracking-wide text-black/50">
-                  Description
-                </span>
-                <textarea
-                  className="w-full rounded-lg border border-black/15 bg-white px-3 py-2.5 outline-none ring-emerald-500/30 transition focus:ring-4"
-                  rows={5}
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                  placeholder="Describe goals, scope, and expected outcomes"
-                  required
-                />
-              </label>
-            </div>
-          </section>
-
-          <section className="md:col-span-4 rounded-2xl border border-black/10 bg-white p-6 shadow-sm">
-            <h2 className="mb-5 text-xl font-semibold">
-              Deadline & Milestones
-            </h2>
-
-            <label className="block space-y-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wide text-black/50">
-                Main Deadline
-              </span>
-              <input
-                className="w-full rounded-lg border border-black/15 bg-white px-3 py-2.5 outline-none ring-emerald-500/30 transition focus:ring-4"
-                type="date"
-                value={deadlineDate}
-                onChange={(event) => setDeadlineDate(event.target.value)}
-                required
-              />
-            </label>
-
-            <div className="mt-4 rounded-lg border border-black/10 bg-black/[0.03] p-3 text-sm">
-              <p className="text-xs uppercase tracking-wide text-black/50">
-                Estimated Duration
-              </p>
-              <p className="mt-1 font-medium">
-                {remainingDays === null
-                  ? "Set a deadline to calculate timeline"
-                  : remainingDays <= 0
-                    ? "Deadline is in the past"
-                    : `${remainingDays} day${remainingDays === 1 ? "" : "s"} remaining`}
-              </p>
-            </div>
-
-            <div className="mt-6 border-t border-black/10 pt-5">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-black/50">
-                  Milestones
-                </h3>
-                <button
-                  className="rounded-md border border-black/15 px-2.5 py-1 text-xs font-medium"
-                  type="button"
-                  onClick={() =>
-                    setMilestones((current) => [
-                      ...current,
-                      { id: nextId(), title: "", date: "" },
-                    ])
-                  }
+      <div className="relative mx-auto flex min-h-screen w-full max-w-[1280px] flex-col">
+        <header className="border-b border-violet-900/45 px-6 py-4 lg:px-10">
+          <div className="mx-auto flex w-full items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-600 shadow-[0_0_0_1px_rgba(255,255,255,0.12)]">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                  className="h-5 w-5 text-white"
                 >
-                  Add
-                </button>
+                  <path
+                    d="M4 7h7v4H4V7Zm0 6h4v4H4v-4Zm7 0h9v4h-9v-4Zm4-6h5v4h-5V7Z"
+                    fill="currentColor"
+                  />
+                </svg>
               </div>
+              <span className="text-3xl font-semibold tracking-tight text-white">
+                Delegator
+              </span>
+            </div>
 
-              <div className="space-y-2.5">
-                {milestones.map((milestone) => (
-                  <div
-                    key={milestone.id}
-                    className="rounded-lg border border-black/10 bg-black/[0.02] p-3"
-                  >
+            <div className="flex items-center gap-4 text-sm">
+              <nav className="hidden items-center gap-6 text-[19px] text-slate-300 md:flex">
+                <Link className="transition-colors hover:text-white" href="/">
+                  Dashboard
+                </Link>
+                <Link
+                  className="transition-colors hover:text-white"
+                  href="/projects/new"
+                >
+                  Projects
+                </Link>
+                <Link
+                  className="transition-colors hover:text-white"
+                  href="/profile"
+                >
+                  Team
+                </Link>
+              </nav>
+              <div className="flex h-11 w-11 items-center justify-center rounded-full border border-violet-300/50 bg-violet-500/20 text-sm font-semibold text-violet-100">
+                KS
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 px-6 pb-10 pt-10 lg:px-10 lg:pt-14">
+          <div className="mb-10 space-y-3">
+            <h1 className="text-6xl font-semibold tracking-tight text-white">
+              Start Your Project
+            </h1>
+            <p className="text-[31px] text-slate-300/95">
+              Set the foundation for your team&apos;s success with structured
+              delegation.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
+            <form
+              id="project-setup-form"
+              className="contents"
+              onSubmit={onSubmit}
+            >
+              <section className="rounded-2xl border border-violet-900/45 bg-[#17191f]/85 p-6 md:col-span-8">
+                <div className="mb-6 flex items-center gap-2.5">
+                  <ProjectDetailsIcon />
+                  <h2 className="text-4xl font-semibold text-white">
+                    Project Details
+                  </h2>
+                </div>
+
+                <div className="space-y-6">
+                  <label className="block space-y-2">
+                    <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      Project Name
+                    </span>
                     <input
-                      className="mb-2 w-full rounded border border-black/10 bg-white px-2 py-1.5 text-sm"
-                      type="text"
-                      placeholder="Milestone title"
-                      value={milestone.title}
-                      onChange={(event) =>
-                        updateMilestone(milestone.id, {
-                          title: event.target.value,
-                        })
-                      }
+                      className="w-full rounded-xl border border-violet-950/80 bg-[#11091d] px-4 py-3.5 text-[28px] text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-violet-500"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      placeholder="e.g. CS302 Distributed Systems Lab"
+                      required
                     />
-                    <div className="flex items-center gap-2">
-                      <input
-                        className="w-full rounded border border-black/10 bg-white px-2 py-1.5 text-xs"
-                        type="date"
-                        value={milestone.date}
-                        onChange={(event) =>
-                          updateMilestone(milestone.id, {
-                            date: event.target.value,
-                          })
-                        }
-                      />
+                  </label>
+
+                  <label className="block space-y-2">
+                    <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      Description
+                      <span className="ml-1 text-[11px] lowercase tracking-normal text-slate-500 italic">
+                        (optional)
+                      </span>
+                    </span>
+                    <textarea
+                      className="w-full resize-none rounded-xl border border-violet-950/80 bg-[#11091d] px-4 py-3.5 text-[27px] text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-violet-500"
+                      rows={5}
+                      value={description}
+                      onChange={(event) => setDescription(event.target.value)}
+                      placeholder="Briefly explain the project goals and core milestones..."
+                    />
+                  </label>
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-violet-900/45 bg-[#17191f]/85 p-6 md:col-span-4">
+                <div className="mb-6 flex items-center gap-2.5">
+                  <DeadlineIcon />
+                  <h2 className="text-4xl font-semibold text-white">
+                    Deadline
+                  </h2>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="block space-y-2">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      Main Project Deadline
+                    </span>
+                    <input
+                      className="w-full rounded-xl border border-violet-950/80 bg-[#11091d] px-4 py-3.5 text-[28px] text-slate-100 outline-none transition focus:border-violet-500"
+                      type="date"
+                      value={deadlineDate}
+                      onChange={(event) => setDeadlineDate(event.target.value)}
+                      required
+                    />
+                  </label>
+
+                  <div className="rounded-xl border border-violet-900/55 bg-violet-950/20 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      Estimated Duration
+                    </p>
+                    <p className="mt-1 text-[27px] text-slate-200">
+                      {estimatedDurationLabel(remainingDays)}
+                    </p>
+                  </div>
+
+                  <div className="border-t border-violet-900/45 pt-5">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                        Milestones
+                      </h3>
                       <button
-                        className="rounded border border-black/15 px-2 py-1 text-xs"
+                        className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-400 transition hover:text-violet-300"
                         type="button"
-                        onClick={() => removeMilestone(milestone.id)}
-                        disabled={milestones.length === 1}
+                        onClick={() =>
+                          setMilestones((current) => [
+                            ...current,
+                            { id: nextId(), title: "", date: "" },
+                          ])
+                        }
                       >
-                        Remove
+                        + Add
                       </button>
                     </div>
+
+                    <div className="space-y-2.5">
+                      {milestones.map((milestone) => (
+                        <div
+                          key={milestone.id}
+                          className="rounded-xl border border-violet-900/35 bg-black/15 p-3"
+                        >
+                          <input
+                            className="mb-2 w-full bg-transparent text-[22px] font-semibold text-slate-100 outline-none placeholder:text-slate-500"
+                            type="text"
+                            placeholder="Milestone name"
+                            value={milestone.title}
+                            onChange={(event) =>
+                              updateMilestone(milestone.id, {
+                                title: event.target.value,
+                              })
+                            }
+                          />
+                          <div className="flex items-center justify-between gap-3">
+                            <input
+                              className="w-full bg-transparent text-xs text-slate-400 outline-none"
+                              type="date"
+                              value={milestone.date}
+                              onChange={(event) =>
+                                updateMilestone(milestone.id, {
+                                  date: event.target.value,
+                                })
+                              }
+                            />
+                            <button
+                              className="text-slate-500 transition hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
+                              type="button"
+                              onClick={() => removeMilestone(milestone.id)}
+                              disabled={milestones.length === 1}
+                              aria-label="Remove milestone"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+
+                      <div className="rounded-xl border border-dashed border-violet-900/50 px-3 py-3 text-[22px] italic text-slate-500">
+                        Add next milestone...
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          </section>
+                </div>
+              </section>
 
-          <section className="md:col-span-7 rounded-2xl border border-black/10 bg-white p-6 shadow-sm">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Team Roster</h2>
-              <button
-                className="rounded-full border border-black/20 px-3 py-1.5 text-xs font-semibold"
-                type="button"
-                onClick={() =>
-                  setTeamMembers((current) => {
-                    if (current.length >= MAX_TEAM_SIZE) {
-                      return current;
-                    }
-
-                    return [...current, { id: nextId(), name: "", email: "" }];
-                  })
-                }
-                disabled={teamMembers.length >= MAX_TEAM_SIZE}
-              >
-                Add Member
-              </button>
-            </div>
-
-            <div className="space-y-2.5">
-              {teamMembers.map((member) => (
-                <div
-                  key={member.id}
-                  className="grid grid-cols-1 gap-2 rounded-lg border border-black/10 bg-black/[0.02] p-3 md:grid-cols-[2fr_2fr_auto]"
-                >
-                  <input
-                    className="rounded border border-black/10 bg-white px-2.5 py-2 text-sm"
-                    type="text"
-                    placeholder="Full name"
-                    value={member.name}
-                    onChange={(event) =>
-                      updateMember(member.id, { name: event.target.value })
-                    }
-                  />
-                  <input
-                    className="rounded border border-black/10 bg-white px-2.5 py-2 text-sm"
-                    type="email"
-                    placeholder="Email address"
-                    value={member.email}
-                    onChange={(event) =>
-                      updateMember(member.id, { email: event.target.value })
-                    }
-                  />
+              <section className="rounded-2xl border border-violet-900/45 bg-[#17191f]/85 p-6 md:col-span-7">
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <TeamIcon />
+                    <h2 className="text-4xl font-semibold text-white">
+                      Team Roster
+                    </h2>
+                  </div>
                   <button
-                    className="rounded border border-black/15 px-2.5 py-2 text-xs"
+                    className="rounded-full border border-violet-600/70 bg-violet-600/20 px-3 py-1.5 text-[13px] font-semibold uppercase tracking-[0.1em] text-violet-200 transition hover:bg-violet-600/35 disabled:cursor-not-allowed disabled:opacity-45"
                     type="button"
-                    onClick={() => removeMember(member.id)}
-                    disabled={teamMembers.length === 1}
+                    onClick={() =>
+                      setTeamMembers((current) => {
+                        if (current.length >= MAX_TEAM_SIZE) {
+                          return current;
+                        }
+
+                        return [
+                          ...current,
+                          { id: nextId(), name: "", email: "" },
+                        ];
+                      })
+                    }
+                    disabled={teamMembers.length >= MAX_TEAM_SIZE}
                   >
-                    Remove
+                    + Add Member
                   </button>
                 </div>
-              ))}
-            </div>
 
-            <p className="mt-4 text-sm text-black/60">
-              Invite up to {MAX_TEAM_SIZE} teammates after creating the project.
-            </p>
-          </section>
-        </form>
+                <div className="space-y-3">
+                  {teamMembers.map((member) => (
+                    <div
+                      key={member.id}
+                      className="grid grid-cols-1 items-center gap-3 rounded-xl border border-violet-900/35 bg-black/15 p-3 md:grid-cols-12"
+                    >
+                      <div className="md:col-span-5">
+                        <input
+                          className="w-full bg-transparent text-[26px] text-slate-200 outline-none placeholder:text-slate-500"
+                          type="text"
+                          placeholder="New teammate name..."
+                          value={member.name}
+                          onChange={(event) =>
+                            updateMember(member.id, {
+                              name: event.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="md:col-span-6">
+                        <input
+                          className="w-full bg-transparent text-[25px] text-slate-400 outline-none placeholder:text-slate-500"
+                          type="email"
+                          placeholder="Email..."
+                          value={member.email}
+                          onChange={(event) =>
+                            updateMember(member.id, {
+                              email: event.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex justify-end md:col-span-1">
+                        <button
+                          className="text-slate-500 transition hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
+                          type="button"
+                          onClick={() => removeMember(member.id)}
+                          disabled={teamMembers.length === 1}
+                          aria-label="Remove team member"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))}
 
-        <section className="md:col-span-5 rounded-2xl border border-black/10 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold">Share & Invite</h2>
+                  <div className="grid grid-cols-1 items-center gap-3 rounded-xl border border-dashed border-violet-900/50 p-3 md:grid-cols-12">
+                    <div className="md:col-span-5 text-[23px] italic text-slate-500">
+                      New teammate name...
+                    </div>
+                    <div className="md:col-span-6 text-[23px] italic text-slate-500">
+                      Email...
+                    </div>
+                  </div>
+                </div>
 
-          <button
-            className="mt-4 w-full rounded-lg bg-black px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-            type="submit"
-            form="project-setup-form"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Creating project..." : "Create Project Workspace"}
-          </button>
+                <div className="mt-7 border-t border-violet-900/45 pt-7 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-violet-900/35">
+                    <EmptyRosterIcon />
+                  </div>
+                  <p className="text-[23px] text-slate-400">
+                    Invite up to {MAX_TEAM_SIZE} team members to this project
+                    workspace.
+                  </p>
+                </div>
+              </section>
+            </form>
 
-          {project && (
-            <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm">
-              <p className="font-semibold">Project created</p>
-              <p className="mt-1 break-all">{project.name}</p>
-              <p className="text-xs text-black/65">
-                Deadline: {new Date(project.deadline).toLocaleString()}
-              </p>
-            </div>
-          )}
-
-          {project ? (
-            <div className="mt-4 space-y-3 rounded-lg border border-sky-200 bg-sky-50 p-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-sky-800/80">
-                  Active project context
-                </p>
-                <p className="mt-1 text-sm font-semibold text-sky-950">
-                  {project.name}
-                </p>
-                <p className="mt-1 text-xs text-sky-900/80">
-                  Project ID: {project.id}
-                </p>
-                <p className="text-xs text-sky-900/80">
-                  Planning status: {project.planningStatus}
-                </p>
-              </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <Link
-                  href={`/projects/${project.id}/workspace`}
-                  className="rounded-lg bg-sky-700 px-3 py-2 text-center text-sm font-semibold text-white transition hover:bg-sky-600"
+            <section className="flex flex-col gap-4 md:col-span-5">
+              <div className="rounded-2xl border border-violet-700/40 bg-violet-900/15 p-4">
+                <button
+                  className="group flex w-full items-center justify-center gap-2 rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-55"
+                  type={project ? "button" : "submit"}
+                  form={project ? undefined : "project-setup-form"}
+                  onClick={project ? generateShareLink : undefined}
+                  disabled={project ? isGeneratingLink : isSubmitting}
                 >
-                  Continue to Workspace Intake
-                </Link>
-                <Link
-                  href={`/projects/${project.id}`}
-                  className="rounded-lg border border-sky-700/30 bg-white px-3 py-2 text-center text-sm font-semibold text-sky-900 transition hover:bg-sky-100"
-                >
-                  Open Project Dashboard
-                </Link>
-              </div>
-            </div>
-          ) : null}
+                  <span>
+                    {project
+                      ? isGeneratingLink
+                        ? "Generating Share Link..."
+                        : "Share Project"
+                      : isSubmitting
+                        ? "Creating Project..."
+                        : "Share Project"}
+                  </span>
+                  <span className="transition-transform group-hover:translate-x-1">
+                    <ShareIcon />
+                  </span>
+                </button>
 
-          <button
-            className="mt-3 w-full rounded-lg border border-black/20 px-4 py-2 text-sm font-medium disabled:opacity-50"
-            type="button"
-            onClick={generateShareLink}
-            disabled={!project || isGeneratingLink}
-          >
-            {isGeneratingLink ? "Generating link..." : "Generate Share Link"}
-          </button>
-
-          {project && joinLink && (
-            <div className="mt-4 space-y-3 rounded-lg border border-black/10 bg-black/[0.02] p-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-black/50">
-                  Share URL
-                </p>
-                <p className="mt-1 break-all text-sm">{joinLink.joinUrl}</p>
-                <p className="mt-1 text-xs text-black/60">
-                  Expires: {new Date(joinLink.expiresAt).toLocaleString()}
+                <p className="mt-3 text-center text-xs italic text-slate-400">
+                  * Invitations will be sent automatically to the email
+                  addresses listed in the team roster.
                 </p>
               </div>
-              <button
-                className="rounded-lg border border-black/20 px-3 py-1.5 text-sm"
-                type="button"
-                onClick={copyJoinLink}
-              >
-                {isCopyingLink ? "Copied" : "Copy Link"}
-              </button>
-              <ShareEmailForm
-                projectId={project.id}
-                joinUrl={joinLink.joinUrl}
-                suggestedEmails={rosterEmails}
-              />
-            </div>
-          )}
 
-          {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+              {error ? (
+                <div className="rounded-xl border border-red-500/35 bg-red-950/35 p-3 text-sm text-red-200">
+                  {error}
+                </div>
+              ) : null}
 
-          {!project && (
-            <p className="mt-4 text-xs text-black/60">
-              Create the project first, then generate a join link and send
-              invites.
-            </p>
-          )}
-        </section>
+              {project ? (
+                <div className="rounded-2xl border border-violet-700/35 bg-[#17191f]/85 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-violet-300">
+                    Active Project
+                  </p>
+                  <p className="mt-1 text-[22px] font-semibold text-white">
+                    {project.name}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Deadline: {new Date(project.deadline).toLocaleString()}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    Planning status: {project.planningStatus}
+                  </p>
+
+                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <Link
+                      href={`/projects/${project.id}/workspace`}
+                      className="rounded-lg border border-violet-500/50 bg-violet-600/20 px-3 py-2 text-center text-xs font-semibold text-violet-100 transition hover:bg-violet-600/35"
+                    >
+                      Continue to Workspace Intake
+                    </Link>
+                    <Link
+                      href={`/projects/${project.id}`}
+                      className="rounded-lg border border-slate-700 bg-slate-900/40 px-3 py-2 text-center text-xs font-semibold text-slate-200 transition hover:bg-slate-900/70"
+                    >
+                      Open Project Dashboard
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-violet-900/45 bg-[#17191f]/85 p-4 text-xs text-slate-400">
+                  Create the project first, then use Share Project to generate a
+                  secure join link and send invites.
+                </div>
+              )}
+
+              {project && joinLink ? (
+                <div className="rounded-2xl border border-violet-700/35 bg-[#17191f]/85 p-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-violet-300">
+                      Share URL
+                    </p>
+                    <p className="mt-1 break-all text-sm text-slate-100">
+                      {joinLink.joinUrl}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Expires: {new Date(joinLink.expiresAt).toLocaleString()}
+                    </p>
+                  </div>
+
+                  <button
+                    className="mt-3 rounded-lg border border-violet-500/55 bg-violet-600/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-violet-100 transition hover:bg-violet-600/35"
+                    type="button"
+                    onClick={copyJoinLink}
+                  >
+                    {isCopyingLink ? "Copied" : "Copy Link"}
+                  </button>
+
+                  <div className="mt-4 rounded-xl border border-violet-900/45 bg-black/20 p-3">
+                    <ShareEmailForm
+                      projectId={project.id}
+                      joinUrl={joinLink.joinUrl}
+                      suggestedEmails={rosterEmails}
+                    />
+                  </div>
+                </div>
+              ) : null}
+            </section>
+          </div>
+        </main>
+
+        <footer className="border-t border-violet-900/45 px-6 py-6 text-center text-xs text-slate-500 lg:px-10">
+          © 2024 Delegator Student Tools. Built for high-performing teams.
+        </footer>
       </div>
     </div>
   );
