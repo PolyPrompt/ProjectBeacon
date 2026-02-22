@@ -6,7 +6,7 @@ import {
   type DashboardProject,
   type DashboardTask,
 } from "@/components/dashboard/project-dashboard-shell";
-import { requireSessionUser, type ProjectRole } from "@/lib/auth/session";
+import { requireSessionUser } from "@/lib/auth/session";
 import { getServiceSupabaseClient } from "@/lib/supabase/server";
 
 type ProjectDashboardPageProps = {
@@ -20,9 +20,26 @@ export default async function ProjectDashboardPage({
   const sessionUser = await requireSessionUser(`/projects/${projectId}`, {
     projectId,
   });
+  const supabase = getServiceSupabaseClient();
+
+  const { data: membership, error: membershipError } = await supabase
+    .from("project_members")
+    .select("role")
+    .eq("project_id", projectId)
+    .eq("user_id", sessionUser.userId)
+    .maybeSingle();
+
+  if (membershipError) {
+    throw new Error(
+      `Failed loading project membership for dashboard access: ${membershipError.message}`,
+    );
+  }
+
+  if (!membership) {
+    notFound();
+  }
 
   // Check if user has added project skills (required before viewing dashboard)
-  const supabase = getServiceSupabaseClient();
   const { data: existingProjectSkill, error: existingProjectSkillError } =
     await supabase
       .from("project_member_skills")
@@ -42,33 +59,108 @@ export default async function ProjectDashboardPage({
     redirect(`/projects/${projectId}/skills`);
   }
 
-  // Fetch dashboard data from API endpoint
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/projects/${projectId}/dashboard`,
-    {
-      headers: {
-        "x-user-id": sessionUser.userId,
-      },
-      cache: "no-store",
-    },
-  );
+  const [projectResult, membersResult, tasksResult] = await Promise.all([
+    supabase
+      .from("projects")
+      .select("id,name,description,deadline,planning_status")
+      .eq("id", projectId)
+      .maybeSingle(),
+    supabase
+      .from("project_members")
+      .select("user_id,role")
+      .eq("project_id", projectId),
+    supabase
+      .from("tasks")
+      .select(
+        "id,title,description,status,due_at,difficulty_points,assignee_user_id,created_at",
+      )
+      .eq("project_id", projectId),
+  ]);
 
-  if (!response.ok) {
-    if (response.status === 404 || response.status === 403) {
-      notFound();
-    }
-    throw new Error(`Failed to fetch dashboard data: ${response.statusText}`);
+  if (projectResult.error) {
+    throw new Error(
+      `Failed loading dashboard project details: ${projectResult.error.message}`,
+    );
+  }
+  if (!projectResult.data) {
+    notFound();
   }
 
-  const data = await response.json();
+  if (membersResult.error) {
+    throw new Error(
+      `Failed loading dashboard members: ${membersResult.error.message}`,
+    );
+  }
+
+  if (tasksResult.error) {
+    throw new Error(
+      `Failed loading dashboard tasks: ${tasksResult.error.message}`,
+    );
+  }
+
+  const userIds = membersResult.data.map((member) => member.user_id);
+  const { data: users, error: usersError } =
+    userIds.length > 0
+      ? await supabase.from("users").select("id,name,email").in("id", userIds)
+      : { data: [], error: null };
+
+  if (usersError) {
+    throw new Error(`Failed loading dashboard users: ${usersError.message}`);
+  }
+
+  const usersById = new Map(users.map((user) => [user.id, user]));
+  const members: DashboardMember[] = membersResult.data.map((member) => {
+    const profile = usersById.get(member.user_id);
+    return {
+      userId: member.user_id,
+      name: profile?.name ?? "Unknown",
+      email: profile?.email ?? "",
+      role: member.role === "owner" ? "owner" : "member",
+      inviteStatus: "accepted",
+    };
+  });
+
+  const tasks: DashboardTask[] = tasksResult.data.map((task) => ({
+    id: task.id,
+    title: task.title ?? "Untitled task",
+    description: task.description ?? "",
+    status:
+      task.status === "in_progress" ||
+      task.status === "blocked" ||
+      task.status === "done"
+        ? task.status
+        : "todo",
+    softDeadline: task.due_at,
+    difficultyPoints:
+      task.difficulty_points === 1 ||
+      task.difficulty_points === 2 ||
+      task.difficulty_points === 3 ||
+      task.difficulty_points === 5 ||
+      task.difficulty_points === 8
+        ? task.difficulty_points
+        : 3,
+    assigneeUserId: task.assignee_user_id,
+    createdAt: task.created_at,
+  }));
+
+  const project: DashboardProject = {
+    id: projectResult.data.id,
+    name: projectResult.data.name,
+    description: projectResult.data.description ?? "",
+    deadline: projectResult.data.deadline,
+    planningStatus:
+      projectResult.data.planning_status === "assigned" ||
+      projectResult.data.planning_status === "locked"
+        ? projectResult.data.planning_status
+        : "draft",
+  };
 
   return (
     <ProjectDashboardShell
-      members={data.members as DashboardMember[]}
-      project={data.project as DashboardProject}
+      members={members}
+      project={project}
       projectId={projectId}
-      tasks={data.tasks as DashboardTask[]}
-      viewerRole={data.role as ProjectRole}
+      tasks={tasks}
       viewerUserId={sessionUser.userId}
     />
   );

@@ -34,7 +34,6 @@ type ProjectDashboardShellProps = {
   members: DashboardMember[];
   tasks: DashboardTask[];
   viewerUserId: string;
-  viewerRole: "admin" | "user";
 };
 
 type TaskHealth = "high" | "medium" | "low";
@@ -132,7 +131,6 @@ export function ProjectDashboardShell({
   members,
   tasks: initialTasks,
   viewerUserId,
-  viewerRole,
 }: ProjectDashboardShellProps) {
   const [tasks, setTasks] = useState<DashboardTask[]>(initialTasks);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -152,6 +150,12 @@ export function ProjectDashboardShell({
       tasks
         .filter((task) => task.assigneeUserId === viewerUserId)
         .sort((left, right) => {
+          if (left.status === "done" && right.status !== "done") {
+            return 1;
+          }
+          if (left.status !== "done" && right.status === "done") {
+            return -1;
+          }
           if (!left.softDeadline && !right.softDeadline) {
             return left.title.localeCompare(right.title);
           }
@@ -262,10 +266,10 @@ export function ProjectDashboardShell({
       <div className="grid gap-6 lg:grid-cols-12">
         <div className="space-y-6 lg:col-span-8">
           <MyTasksPanel
+            boardHref={`/projects/${projectId}/board`}
             onTaskSelect={(task) => setSelectedTaskId(task.id)}
             selectedTaskId={selectedTaskId}
             tasks={myTasks}
-            viewerRole={viewerRole}
           />
 
           <section className="overflow-hidden rounded-2xl border border-violet-900/50 bg-[#1a1730]/80">
@@ -356,13 +360,13 @@ export function ProjectDashboardShell({
 
       <TaskDetailModal
         onClose={() => setSelectedTaskId(null)}
-        onTaskStatusChange={(taskId, status) => {
+        onTaskUpdate={(taskId, patch) => {
           setTasks((current) =>
             current.map((task) =>
               task.id === taskId
                 ? {
                     ...task,
-                    status,
+                    ...patch,
                   }
                 : task,
             ),
