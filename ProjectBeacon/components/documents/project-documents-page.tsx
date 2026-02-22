@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DocumentPreviewModal } from "@/components/documents/document-preview-modal";
-import type { DocumentsListDTO, ProjectDocumentDTO } from "@/types/documents";
+import type {
+  DocumentAccessDTO,
+  DocumentsListDTO,
+  ProjectDocumentDTO,
+} from "@/types/documents";
 
 type ProjectDocumentsPageProps = {
   projectId: string;
@@ -177,17 +181,39 @@ export function ProjectDocumentsPage({
 
     try {
       setActionStatus(null);
-      const response = await fetch(
+      const accessResponse = await fetch(
         `/api/projects/${projectId}/documents/${documentId}/access`,
         {
-          method: "POST",
+          method: "GET",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId }),
         },
       );
 
-      if (!response.ok) {
-        throw new Error(`Assign access failed with ${response.status}`);
+      if (!accessResponse.ok) {
+        throw new Error(
+          `Load document access failed with ${accessResponse.status}`,
+        );
+      }
+
+      const currentAccess = (await accessResponse.json()) as DocumentAccessDTO;
+      const nextAssignedUserIds = Array.from(
+        new Set([...(currentAccess.assignedUserIds ?? []), userId]),
+      );
+
+      const patchResponse = await fetch(
+        `/api/projects/${projectId}/documents/${documentId}/access`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            isPublic: Boolean(currentAccess.isPublic),
+            assignedUserIds: nextAssignedUserIds,
+          }),
+        },
+      );
+
+      if (!patchResponse.ok) {
+        throw new Error(`Assign access failed with ${patchResponse.status}`);
       }
 
       setActionStatus(`Assigned ${documentId} to ${userId}.`);
@@ -203,12 +229,11 @@ export function ProjectDocumentsPage({
   async function handleRemove(documentId: string) {
     try {
       setActionStatus(null);
-      const response = await fetch(
-        `/api/projects/${projectId}/documents/${documentId}`,
-        {
-          method: "DELETE",
-        },
-      );
+      const response = await fetch(`/api/projects/${projectId}/documents`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentId }),
+      });
 
       if (!response.ok) {
         throw new Error(`Remove failed with ${response.status}`);
