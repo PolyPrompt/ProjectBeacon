@@ -17,6 +17,17 @@ type ProjectRow = {
   created_at: string;
 };
 
+type ProjectMembershipRow = {
+  project_id: string;
+  user_id: string;
+};
+
+type UserRow = {
+  id: string;
+  name: string | null;
+  email: string;
+};
+
 function getUserInitials(userId: string): string {
   const trimmed = userId.trim();
 
@@ -45,20 +56,64 @@ export default async function ProjectsPage() {
     (membership) => membership.project_id,
   );
   let projects: ProjectRow[] = [];
+  const projectMemberNamesByProjectId = new Map<string, string[]>();
 
   if (projectIds.length > 0) {
-    const { data: projectRows, error: projectsError } = await supabase
-      .from("projects")
-      .select("id,name,description,deadline,planning_status,created_at")
-      .in("id", projectIds)
-      .order("created_at", { ascending: false })
-      .returns<ProjectRow[]>();
+    const [
+      { data: projectRows, error: projectsError },
+      { data: memberRows, error: memberRowsError },
+    ] = await Promise.all([
+      supabase
+        .from("projects")
+        .select("id,name,description,deadline,planning_status,created_at")
+        .in("id", projectIds)
+        .order("created_at", { ascending: false })
+        .returns<ProjectRow[]>(),
+      supabase
+        .from("project_members")
+        .select("project_id,user_id")
+        .in("project_id", projectIds)
+        .returns<ProjectMembershipRow[]>(),
+    ]);
 
-    if (projectsError) {
+    if (projectsError || memberRowsError) {
       redirect("/projects/new");
     }
 
     projects = projectRows ?? [];
+
+    const uniqueMemberUserIds = Array.from(
+      new Set((memberRows ?? []).map((row) => row.user_id)),
+    );
+
+    let usersById = new Map<string, UserRow>();
+
+    if (uniqueMemberUserIds.length > 0) {
+      const { data: userRows, error: userRowsError } = await supabase
+        .from("users")
+        .select("id,name,email")
+        .in("id", uniqueMemberUserIds)
+        .returns<UserRow[]>();
+
+      if (userRowsError) {
+        redirect("/projects/new");
+      }
+
+      usersById = new Map((userRows ?? []).map((row) => [row.id, row]));
+    }
+
+    for (const memberRow of memberRows ?? []) {
+      const profile = usersById.get(memberRow.user_id);
+      const displayName =
+        profile?.name?.trim() || profile?.email || "Unknown member";
+      const members = projectMemberNamesByProjectId.get(memberRow.project_id);
+
+      if (members) {
+        members.push(displayName);
+      } else {
+        projectMemberNamesByProjectId.set(memberRow.project_id, [displayName]);
+      }
+    }
   }
 
   async function signOutAction() {
@@ -137,6 +192,7 @@ export default async function ProjectsPage() {
             description: project.description,
             deadline: project.deadline,
             planningStatus: project.planning_status,
+            members: projectMemberNamesByProjectId.get(project.id) ?? [],
           }))}
         />
       </main>

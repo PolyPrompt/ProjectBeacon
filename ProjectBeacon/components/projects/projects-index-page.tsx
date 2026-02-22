@@ -9,6 +9,7 @@ type ProjectsIndexItem = {
   description: string;
   deadline: string;
   planningStatus: "draft" | "locked" | "assigned";
+  members: string[];
 };
 
 type ProjectsIndexPageProps = {
@@ -46,19 +47,13 @@ function daysUntil(value: string): number | null {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
-function initialsFromName(projectName: string): string[] {
-  const tokens = projectName
-    .split(/[\s-]+/)
-    .filter(Boolean)
-    .slice(0, 3)
-    .map((token) => token[0]?.toUpperCase() ?? "")
-    .filter(Boolean);
-
-  if (tokens.length > 0) {
-    return tokens;
+function initialFromMemberName(memberName: string): string {
+  const trimmedName = memberName.trim();
+  if (!trimmedName) {
+    return "U";
   }
 
-  return ["P"];
+  return trimmedName[0]?.toUpperCase() ?? "U";
 }
 
 function deadlineTextClass(daysLeft: number | null): string {
@@ -185,7 +180,9 @@ export function ProjectsIndexPage({ projects }: ProjectsIndexPageProps) {
 
       <div className="mt-6 grid gap-4 xl:grid-cols-3">
         {visibleProjects.map((project) => {
-          const avatars = initialsFromName(project.name);
+          const avatars = project.members.map((memberName) =>
+            initialFromMemberName(memberName),
+          );
           const remaining = daysUntil(project.deadline);
 
           return (
