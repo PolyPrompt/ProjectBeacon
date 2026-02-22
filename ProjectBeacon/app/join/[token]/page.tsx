@@ -16,15 +16,17 @@ export default async function JoinPage({
     redirect("/");
   }
 
+  const localUser = await requireUser();
+  const { token } = await params;
+
+  let projectId: string;
+
   try {
-    const localUser = await requireUser();
-    const { token } = await params;
     const result = await joinProjectWithToken({
       token,
       userId: localUser.userId,
     });
-
-    redirect(`/projects/${result.projectId}`);
+    projectId = result.projectId;
   } catch {
     return (
       <main className="mx-auto flex min-h-[70vh] w-full max-w-2xl flex-col items-start justify-center gap-4 px-6">
@@ -41,4 +43,6 @@ export default async function JoinPage({
       </main>
     );
   }
+
+  redirect(`/projects/${projectId}`);
 }
