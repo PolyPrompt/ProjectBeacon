@@ -72,6 +72,8 @@ export function ProjectSettingsPage({
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [isSendingInvite, setIsSendingInvite] = useState(false);
+  const [isGeneratingShareLink, setIsGeneratingShareLink] = useState(false);
+  const [isCopyingShareLink, setIsCopyingShareLink] = useState(false);
   const [milestones, setMilestones] = useState<ProjectMilestone[]>([]);
   const [loadingMilestones, setLoadingMilestones] = useState(true);
   const [isAddingMilestone, setIsAddingMilestone] = useState(false);
@@ -394,6 +396,64 @@ export function ProjectSettingsPage({
     }
   }
 
+  async function handleShareByLink() {
+    try {
+      setIsGeneratingShareLink(true);
+      setTeamStatus(null);
+
+      const response = await fetch(`/api/projects/${projectId}/share-link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const payload = (await response.json()) as
+        | {
+            projectId?: string;
+            token?: string;
+            expiresAt?: string;
+            joinUrl?: string;
+            error?: { message?: string };
+          }
+        | { error?: { message?: string } };
+
+      if (!response.ok) {
+        throw new Error(
+          "error" in payload
+            ? (payload.error?.message ?? "Failed to generate share link.")
+            : "Failed to generate share link.",
+        );
+      }
+
+      if (
+        "joinUrl" in payload &&
+        typeof payload.joinUrl === "string" &&
+        payload.joinUrl.length > 0
+      ) {
+        try {
+          await navigator.clipboard.writeText(payload.joinUrl);
+          setIsCopyingShareLink(true);
+          setTeamStatus("Share link copied to clipboard.");
+          setTimeout(() => {
+            setIsCopyingShareLink(false);
+          }, 1200);
+        } catch {
+          setTeamStatus("Share link generated, but failed to copy.");
+        }
+        return;
+      }
+
+      throw new Error("Failed to generate share link.");
+    } catch (shareLinkError) {
+      setTeamStatus(
+        shareLinkError instanceof Error
+          ? shareLinkError.message
+          : "Failed to generate share link.",
+      );
+    } finally {
+      setIsGeneratingShareLink(false);
+    }
+  }
+
   async function handleDeleteMilestone(id: string) {
     try {
       setMilestoneStatus(null);
@@ -704,18 +764,32 @@ export function ProjectSettingsPage({
               Team Roster
             </h2>
             {isAdmin ? (
-              <button
-                className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:bg-violet-500"
-                onClick={() => {
-                  setIsAddingMember((current) => !current);
-                  setTeamStatus(null);
-                  setNewMemberName("");
-                  setNewMemberEmail("");
-                }}
-                type="button"
-              >
-                {isAddingMember ? "Cancel" : "Add Member"}
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:bg-violet-500"
+                  onClick={() => {
+                    setIsAddingMember((current) => !current);
+                    setTeamStatus(null);
+                    setNewMemberName("");
+                    setNewMemberEmail("");
+                  }}
+                  type="button"
+                >
+                  {isAddingMember ? "Cancel" : "Add Member"}
+                </button>
+                <button
+                  className="rounded-xl border border-violet-500/60 bg-transparent px-4 py-2.5 text-sm font-semibold uppercase tracking-[0.08em] text-violet-100 transition hover:bg-violet-700/30 disabled:cursor-default disabled:opacity-55"
+                  onClick={() => void handleShareByLink()}
+                  type="button"
+                  disabled={isGeneratingShareLink}
+                >
+                  {isGeneratingShareLink
+                    ? "Generating Link..."
+                    : isCopyingShareLink
+                      ? "Link Copied"
+                      : "Share by Link"}
+                </button>
+              </div>
             ) : null}
           </div>
 
