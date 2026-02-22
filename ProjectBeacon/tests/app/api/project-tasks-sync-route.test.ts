@@ -239,4 +239,99 @@ describe("POST /api/projects/[projectId]/tasks/sync", () => {
     expect(deleteRowsMock).not.toHaveBeenCalled();
     expect(updateRowsMock).not.toHaveBeenCalled();
   });
+
+  it("preserves existing high-bucket difficulty points", async () => {
+    const existingTask = makeTaskRow({
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      title: "Old title",
+      difficultyPoints: 8,
+    });
+
+    selectRowsMock.mockResolvedValue([existingTask]);
+    updateRowsMock.mockResolvedValue([existingTask]);
+
+    const response = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          tasks: [
+            {
+              id: existingTask.id,
+              priority: "high",
+              title: "Updated title",
+            },
+          ],
+        }),
+      }),
+      {
+        params: Promise.resolve({
+          projectId: PROJECT_ID,
+        }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateRowsMock).toHaveBeenCalledWith(
+      "tasks",
+      {
+        title: "Updated title",
+        difficulty_points: 8,
+      },
+      {
+        id: `eq.${existingTask.id}`,
+        project_id: `eq.${PROJECT_ID}`,
+      },
+    );
+  });
+
+  it("rejects sync for non-admin project members", async () => {
+    requireProjectAccessMock.mockResolvedValue({
+      ok: true,
+      userId: "22222222-2222-4222-8222-222222222222",
+      membership: {
+        id: "33333333-3333-4333-8333-333333333333",
+        project_id: PROJECT_ID,
+        user_id: "22222222-2222-4222-8222-222222222222",
+        role: "member",
+      },
+      project: {
+        id: PROJECT_ID,
+        name: "Test Project",
+        description: "test",
+        deadline: "2026-03-01T00:00:00.000Z",
+        owner_user_id: "22222222-2222-4222-8222-222222222222",
+        planning_status: "draft",
+        created_at: "2026-02-20T00:00:00.000Z",
+        updated_at: "2026-02-20T00:00:00.000Z",
+      },
+    });
+
+    const response = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          tasks: [],
+        }),
+      }),
+      {
+        params: Promise.resolve({
+          projectId: PROJECT_ID,
+        }),
+      },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(body.error.code).toBe("FORBIDDEN");
+    expect(selectRowsMock).not.toHaveBeenCalled();
+    expect(updateRowsMock).not.toHaveBeenCalled();
+    expect(insertRowsMock).not.toHaveBeenCalled();
+    expect(deleteRowsMock).not.toHaveBeenCalled();
+  });
 });

@@ -4,6 +4,7 @@ import { jsonError } from "@/lib/server/errors";
 import {
   mapRouteError,
   parseBody,
+  requireProjectAdmin,
   requireProjectAccess,
 } from "@/lib/server/route-helpers";
 import {
@@ -47,7 +48,30 @@ const syncTasksSchema = z
     }
   });
 
-function mapPriorityToDifficulty(priority: InventoryPriority): 1 | 2 | 3 | 5 {
+function mapDifficultyToPriority(
+  difficultyPoints: TaskRow["difficulty_points"],
+): InventoryPriority {
+  if (difficultyPoints <= 2) {
+    return "low";
+  }
+  if (difficultyPoints === 3) {
+    return "medium";
+  }
+
+  return "high";
+}
+
+function mapPriorityToDifficulty(
+  priority: InventoryPriority,
+  existingDifficultyPoints?: TaskRow["difficulty_points"],
+): 1 | 2 | 3 | 5 | 8 {
+  if (
+    existingDifficultyPoints !== undefined &&
+    mapDifficultyToPriority(existingDifficultyPoints) === priority
+  ) {
+    return existingDifficultyPoints;
+  }
+
   if (priority === "low") {
     return 2;
   }
@@ -70,6 +94,11 @@ export async function POST(
     const access = await requireProjectAccess(request, projectId);
     if (!access.ok) {
       return access.response;
+    }
+
+    const adminResponse = requireProjectAdmin(access.membership);
+    if (adminResponse) {
+      return adminResponse;
     }
 
     if (access.project.planning_status !== "draft") {
@@ -126,10 +155,13 @@ export async function POST(
 
     for (const task of parsedBody.data.tasks) {
       const title = task.title.trim();
-      const difficultyPoints = mapPriorityToDifficulty(task.priority);
 
       if (task.id) {
         const existing = existingById.get(task.id) as TaskRow;
+        const difficultyPoints = mapPriorityToDifficulty(
+          task.priority,
+          existing.difficulty_points,
+        );
         if (
           existing.title !== title ||
           existing.difficulty_points !== difficultyPoints
@@ -152,6 +184,7 @@ export async function POST(
         continue;
       }
 
+      const difficultyPoints = mapPriorityToDifficulty(task.priority);
       const [insertedTask] = await insertRows<TaskRow, Record<string, unknown>>(
         "tasks",
         {
