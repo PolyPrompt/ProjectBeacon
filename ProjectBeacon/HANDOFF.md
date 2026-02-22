@@ -800,3 +800,36 @@
   - Playwright smoke verification via MCP -> blocked in this environment due persistent Chrome profile launch conflict (`Opening in existing browser session` on launch).
 - Files changed:
   - `components/workflow/timeline-page.tsx`
+
+## 2026-02-22T06:36:00Z - PB-040 Milestone (Agent3)
+
+- Issue: `#90` `[PB-040] Rebuild member dashboard and task details modal to reference parity`.
+- Completed:
+  - Replaced `/projects/[projectId]` composition with a unified dashboard shell that matches the reference hierarchy:
+    - milestone/final-delivery countdown cards
+    - role-scoped `My Delegated Tasks` cards with rationale blocks
+    - global backlog table with assignment/status/difficulty/deadline metadata
+    - right-rail team status overview panel
+  - Upgraded task modal structure to include:
+    - status control (`PATCH /api/projects/:projectId/tasks/:taskId`)
+    - status timeline/history block
+    - AI rationale section
+    - workflow impact deep-link action
+    - backup request action
+  - Added robust modal interactions:
+    - backdrop dismiss
+    - `Escape` close
+    - keyboard focus trap
+    - loading/error fallbacks on detail and status-update paths
+  - Preserved existing route structure and API contracts.
+- Verification:
+  - `npm run format:check` -> pass
+  - `npm run lint` -> pass
+  - `npm run build` -> pass
+  - Playwright smoke via MCP -> blocked in this environment due persistent Chrome profile launch conflict (`Opening in existing browser session`).
+- Files changed:
+  - `app/projects/[projectId]/page.tsx`
+  - `components/dashboard/project-dashboard-shell.tsx`
+  - `components/dashboard/my-tasks-panel.tsx`
+  - `components/dashboard/team-status-overview.tsx`
+  - `components/dashboard/task-detail-modal.tsx`
