@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type ClarificationPanelProps = {
   disabled?: boolean;
+  refreshToken?: number;
   onAnswerSubmitted?: (payload: {
     answer: string;
     question: string;
@@ -114,6 +115,7 @@ function deriveSuggestions(question: string): string[] {
 
 export default function ClarificationPanel({
   disabled = false,
+  refreshToken,
   onAnswerSubmitted,
   onProceedToDelegation,
   onQuestionsChange,
@@ -131,6 +133,7 @@ export default function ClarificationPanel({
   const [isProceeding, setIsProceeding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const lastRefreshTokenRef = useRef<number | undefined>(refreshToken);
 
   const canSubmit = useMemo(
     () =>
@@ -282,6 +285,23 @@ export default function ClarificationPanel({
 
     void refreshFlow();
   }, [applyQuestions, disabled, onStateChange, refreshFlow]);
+
+  useEffect(() => {
+    if (typeof refreshToken !== "number") {
+      return;
+    }
+
+    if (lastRefreshTokenRef.current === refreshToken) {
+      return;
+    }
+
+    lastRefreshTokenRef.current = refreshToken;
+    if (disabled) {
+      return;
+    }
+
+    void refreshFlow();
+  }, [disabled, refreshFlow, refreshToken]);
 
   async function refreshQuestionsOnly() {
     if (!state || state.readyForGeneration) {

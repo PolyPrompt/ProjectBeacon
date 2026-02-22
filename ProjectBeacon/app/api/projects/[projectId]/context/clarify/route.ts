@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { buildClarificationState } from "@/lib/ai/context-confidence";
+import {
+  buildClarificationState,
+  generateClarificationQuestions,
+} from "@/lib/ai/context-confidence";
 import {
   countClarificationEntries,
   fetchActiveProjectContexts,
@@ -31,8 +34,18 @@ export async function POST(
       askedCount,
     });
 
+    const questions = await generateClarificationQuestions({
+      projectName: access.project.name,
+      projectDescription: access.project.description,
+      projectDeadline: access.project.deadline,
+      contexts,
+      askedCount,
+      confidence: state.confidence,
+      fallbackQuestions: state.questions,
+    });
+
     return NextResponse.json({
-      questions: state.questions,
+      questions,
     });
   } catch (error) {
     return mapRouteError(error);

@@ -35,12 +35,21 @@ export const aiConfidenceOutputSchema = z.object({
 
 export type AIConfidenceOutput = z.infer<typeof aiConfidenceOutputSchema>;
 
+export const aiClarifyingQuestionsOutputSchema = z.object({
+  clarification_questions: z.array(z.string().min(1).max(200)).max(5),
+  reasoning: z.string().min(1).max(600),
+});
+
+export type AIClarifyingQuestionsOutput = z.infer<
+  typeof aiClarifyingQuestionsOutputSchema
+>;
+
 export const aiDraftTaskSchema = z.object({
   tempId: z.string().min(1).max(50),
   title: z.string().min(3).max(120),
   description: z.string().min(10).max(1000),
   difficultyPoints: difficultyPointsSchema,
-  dueAt: z.string().datetime().nullable(),
+  dueAt: z.string().datetime({ offset: true }).nullable(),
   requiredSkills: z
     .array(
       z.object({
@@ -68,9 +77,9 @@ export const generateTasksResponseSchema = z.object({
       description: z.string().min(1),
       difficultyPoints: difficultyPointsSchema,
       status: taskStatusSchema,
-      dueAt: z.string().datetime().nullable(),
-      createdAt: z.string().datetime(),
-      updatedAt: z.string().datetime(),
+      dueAt: z.string().datetime({ offset: true }).nullable(),
+      createdAt: z.string().datetime({ offset: true }),
+      updatedAt: z.string().datetime({ offset: true }),
     }),
   ),
   taskSkills: z.array(
@@ -79,7 +88,7 @@ export const generateTasksResponseSchema = z.object({
       taskId: z.string().min(1),
       skillId: z.string().min(1),
       weight: z.number().min(1).max(5),
-      createdAt: z.string().datetime(),
+      createdAt: z.string().datetime({ offset: true }),
     }),
   ),
   taskDependencies: z.array(

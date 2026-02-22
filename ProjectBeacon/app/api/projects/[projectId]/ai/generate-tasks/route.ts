@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { buildPlanningDocumentContextBlocks } from "@/lib/ai/document-context";
 import { generateTaskPlan } from "@/lib/ai/generate-task-plan";
 import {
   countClarificationEntries,
@@ -16,6 +17,7 @@ import {
   mapRouteError,
   requireProjectAccess,
 } from "@/lib/server/route-helpers";
+import { normalizeProjectRole } from "@/lib/server/project-access";
 import { insertRows, selectRows, upsertRows } from "@/lib/server/supabase-rest";
 import type {
   SkillRow,
@@ -80,16 +82,33 @@ export async function POST(
       order: "name.asc",
     });
 
-    const strictMode = process.env.AI_GENERATION_STRICT_MODE === "true";
+    const role = normalizeProjectRole(access.membership.role);
+    const documentContextBlocks = await buildPlanningDocumentContextBlocks({
+      projectId,
+      actorUserId: access.userId,
+      role,
+    });
+    const contextBlocks = [
+      ...contexts.map((entry) => ({
+        contextType: entry.context_type,
+        textContent: entry.text_content,
+      })),
+      ...documentContextBlocks,
+    ];
+
+    console.info("[generateTaskPlan] prompt context summary", {
+      projectId,
+      contextBlocks: contextBlocks.length,
+      documentContextBlocks: documentContextBlocks.length,
+    });
+
+    const strictMode = process.env.AI_GENERATION_STRICT_MODE !== "false";
     const generatedResult = await generateTaskPlan(
       {
         projectName: access.project.name,
         projectDescription: access.project.description,
         projectDeadline: access.project.deadline,
-        contextBlocks: contexts.map((entry) => ({
-          contextType: entry.context_type,
-          textContent: entry.text_content,
-        })),
+        contextBlocks,
         availableSkills: existingSkills.map((skill) => skill.name),
       },
       { strictMode },
