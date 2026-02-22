@@ -22,7 +22,6 @@ export function ProjectNavShell({
   children,
 }: ProjectNavShellProps) {
   const pathname = usePathname();
-  const isStandaloneInventoryRoute = pathname.endsWith("/inventory");
   const isBoardRoute = pathname.includes("/board");
   const isSettingsRoute = pathname.includes("/settings");
   const rootClassName = isSettingsRoute
@@ -33,10 +32,6 @@ export function ProjectNavShell({
     : isSettingsRoute
       ? "min-h-[calc(100vh-73px)]"
       : "mx-auto w-full max-w-7xl px-4 py-6 sm:px-6";
-  if (isStandaloneInventoryRoute) {
-    return <>{children}</>;
-  }
-
   return (
     <div className={rootClassName}>
       <NavBar

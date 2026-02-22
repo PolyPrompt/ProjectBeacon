@@ -30,7 +30,7 @@ export default async function ProjectSkillsPage({
 
       <SkillsEditor
         apiBasePath={`/api/projects/${projectId}/skills`}
-        continueHref={`/projects/${projectId}/documents`}
+        continueHref={`/projects/${projectId}/workspace`}
       />
     </section>
   );
