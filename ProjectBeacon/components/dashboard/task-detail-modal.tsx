@@ -446,6 +446,10 @@ export function TaskDetailModal({
         return;
       }
 
+      if (!activeDetail) {
+        throw new Error("Task detail is not available.");
+      }
+
       const activeTaskId = activeDetail.id;
       const response = await fetch(
         `/api/projects/${projectId}/tasks/${activeTaskId}`,

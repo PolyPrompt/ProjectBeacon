@@ -6,7 +6,7 @@ import {
   type DashboardProject,
   type DashboardTask,
 } from "@/components/dashboard/project-dashboard-shell";
-import { requireSessionUser } from "@/lib/auth/session";
+import { requireSessionUser, type ProjectRole } from "@/lib/auth/session";
 import { getServiceSupabaseClient } from "@/lib/supabase/server";
 import type { TaskStatus } from "@/types/dashboard";
 
@@ -217,9 +217,12 @@ export default async function ProjectDashboardPage({
     notFound();
   }
 
-  // Check if user has added project skills (required before viewing dashboard)
-  const { data: existingProjectSkill, error: existingProjectSkillError } =
-    await supabase
+  // Check if user has added project or profile skills (required before viewing dashboard)
+  const [
+    { data: existingProjectSkill, error: existingProjectSkillError },
+    { data: existingProfileSkill, error: existingProfileSkillError },
+  ] = await Promise.all([
+    supabase
       .from("project_member_skills")
       .select("skill_id")
       .eq("project_id", projectId)
