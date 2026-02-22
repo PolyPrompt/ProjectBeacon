@@ -588,3 +588,47 @@
   - `npm run dev` + Playwright (`/projects/:projectId/workspace`) -> pass for layout/state rendering and upload error-state row behavior.
 - Notes:
   - `GET /api/projects/:projectId/documents` currently returns `500` in this environment; UI now renders explicit empty/error states instead of silent failure.
+
+## 2026-02-22T00:41:23Z - PB-030 Milestone (Agent1)
+
+- Issue: `#71` `[PB-030] Align Document Access Schema With V0 API Contracts`.
+- Completed:
+  - Added migration to align schema with document access APIs:
+    - `project_documents.is_public` (`boolean`, default `false`, not null)
+    - `project_documents.used_for_planning` (`boolean`, default `false`, not null)
+    - `project_document_access` table with FKs, unique constraint, and supporting indexes.
+  - Updated `types/db.ts` to include the new `project_documents` fields and `project_document_access` table definitions.
+- Files changed:
+  - `supabase/migrations/20260222_000002_document_access_alignment.sql`
+  - `types/db.ts`
+- Commands and results:
+  - `set -a && source .env.local && set +a && npm run format:check` -> pass.
+  - `set -a && source .env.local && set +a && npm run lint` -> pass.
+  - `set -a && source .env.local && set +a && npm run build` -> fails in sandbox Turbopack mode (`Operation not permitted` while creating/binding process).
+  - `set -a && source .env.local && set +a && npm run build -- --webpack` -> pass.
+- Blockers:
+  - Local git ref writes are sandbox-restricted in this environment (`Operation not permitted` on `.git/refs/heads/*`), so branch creation/commit/PR steps could not be executed from CLI in this run.
+
+## 2026-02-22T00:44:00Z - Agent1 Runner Final Summary
+
+- Runner executed: `TASKMVP-agent1-runner.md`.
+- Final queue check (`agent1` + `status:ready`): `[]`.
+- Outcome:
+  - `PB-030` (`#71`) implemented locally and validated.
+  - Issue `#71` moved to `status:blocked` due sandbox git ref write restriction preventing local branch/commit/PR workflow.
+- Stop reason:
+  - No actionable `agent1` issues remain in `status:ready`.
+
+## 2026-02-22T01:10:39Z - PB-030 PR Packaging (Agent1)
+
+- Issue: `#71` `[PB-030] Align Document Access Schema With V0 API Contracts`.
+- Completed:
+  - Re-ran required validation checks in unrestricted environment and confirmed all required checks pass.
+  - Cleared issue from blocked state and moved to `status:in-progress` to resume normal delivery flow.
+  - Prepared branch/commit/PR packaging for existing local PB-030 schema + type changes.
+- Validation:
+  - `set -a; source .env.local; set +a; npm run format:check` -> pass.
+  - `set -a; source .env.local; set +a; npm run lint` -> pass.
+  - `set -a; source .env.local; set +a; npm run build` -> pass.
+- Notes:
+  - `DATAMODEL.md` already documents `project_document_access`, `project_documents.is_public`, and `project_documents.used_for_planning`; no additional contract/model doc edits were required for this milestone.
