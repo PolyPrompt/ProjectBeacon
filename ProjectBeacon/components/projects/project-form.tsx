@@ -160,6 +160,20 @@ function ShareIcon() {
   );
 }
 
+function ArrowRightIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-4 w-4">
+      <path
+        d="M5 12h14M13 6l6 6-6 6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function EmptyRosterIcon() {
   return (
     <svg
@@ -983,29 +997,15 @@ export function ProjectForm() {
               ) : null}
 
               {project ? (
-                <div className="rounded-2xl border border-violet-700/35 bg-[#17191f]/85 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-violet-300">
-                    Active Project
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-white">
-                    {project.name}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    Deadline: {new Date(project.deadline).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    Planning status: {project.planningStatus}
-                  </p>
-
-                  <div className="mt-3">
-                    <Link
-                      href={`/projects/${project.id}/workspace`}
-                      className="rounded-lg border border-violet-500/50 bg-violet-600/20 px-3 py-2 text-center text-xs font-semibold text-violet-100 transition hover:bg-violet-600/35"
-                    >
-                      Add Project Documents
-                    </Link>
-                  </div>
-                </div>
+                <Link
+                  href={`/projects/${project.id}/workspace`}
+                  className="group flex w-full items-center justify-center gap-2 rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-violet-600"
+                >
+                  <span>Add Project Documents</span>
+                  <span className="transition-transform group-hover:translate-x-1">
+                    <ArrowRightIcon />
+                  </span>
+                </Link>
               ) : (
                 <div className="rounded-2xl border border-violet-900/45 bg-[#17191f]/85 p-4 text-xs text-slate-400">
                   Create the project first, then use Share Project to email
