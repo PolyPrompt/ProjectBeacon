@@ -263,8 +263,25 @@ export default function ClarificationPanel({
   }, [applyQuestions, fetchConfidenceState, fetchQuestions]);
 
   useEffect(() => {
+    if (disabled) {
+      const idleState: ClarificationState = {
+        confidence: 0,
+        threshold: FALLBACK_THRESHOLD,
+        askedCount: 0,
+        maxQuestions: FALLBACK_MAX_QUESTIONS,
+        readyForGeneration: false,
+      };
+      setState(idleState);
+      applyQuestions([]);
+      onStateChange?.(idleState);
+      setError(null);
+      setStatusMessage(null);
+      setIsBootstrapping(false);
+      return;
+    }
+
     void refreshFlow();
-  }, [refreshFlow]);
+  }, [applyQuestions, disabled, onStateChange, refreshFlow]);
 
   async function refreshQuestionsOnly() {
     if (!state || state.readyForGeneration) {
