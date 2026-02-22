@@ -632,3 +632,11 @@
   - `set -a; source .env.local; set +a; npm run build` -> pass.
 - Notes:
   - `DATAMODEL.md` already documents `project_document_access`, `project_documents.is_public`, and `project_documents.used_for_planning`; no additional contract/model doc edits were required for this milestone.
+
+## 2026-02-22T01:12:35Z - PB-030 PR Opened (Agent1)
+
+- Issue: `#71` moved to `status:handoff`.
+- PR opened: `#100` https://github.com/PolyPrompt/ProjectBeacon/pull/100
+- Branch: `agent1/pb-030-document-access-alignment`
+- Issue comment posted with shipped scope + validation summary:
+  - https://github.com/PolyPrompt/ProjectBeacon/issues/71#issuecomment-3939834702
