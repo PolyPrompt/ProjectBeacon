@@ -49,6 +49,11 @@ type BoardAssigneeSummary = {
   tone: BoardLane["tone"];
 };
 
+type DraggedTask = {
+  taskId: string;
+  fromLaneId: string;
+};
+
 const MODE_OPTIONS: Array<{ id: WorkflowBoardMode; label: string }> = [
   { id: "member_lane", label: "Member Lanes" },
   { id: "categorized", label: "Categorized" },
@@ -66,7 +71,7 @@ const STATUS_SECTIONS: Array<{
 ];
 
 const FALLBACK_PROJECT: ProjectSummary = {
-  deadline: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000).toISOString(),
+  deadline: "2026-03-15T00:00:00.000Z",
   id: "fallback",
   name: "Project Alpha",
   planningStatus: "draft",
@@ -83,9 +88,7 @@ const FALLBACK_COLUMNS: WorkflowBoardColumnDTO[] = [
         id: "t_board_1",
         title: "Refactor Legacy Auth",
         status: "todo",
-        softDeadline: new Date(
-          Date.now() + 4 * 24 * 60 * 60 * 1000,
-        ).toISOString(),
+        softDeadline: "2026-03-04T00:00:00.000Z",
         difficultyPoints: 5,
         phase: "beginning",
       },
@@ -93,9 +96,7 @@ const FALLBACK_COLUMNS: WorkflowBoardColumnDTO[] = [
         id: "t_board_2",
         title: "Scale Inference Engine",
         status: "in_progress",
-        softDeadline: new Date(
-          Date.now() + 3 * 24 * 60 * 60 * 1000,
-        ).toISOString(),
+        softDeadline: "2026-03-03T00:00:00.000Z",
         difficultyPoints: 8,
         phase: "middle",
       },
@@ -103,6 +104,22 @@ const FALLBACK_COLUMNS: WorkflowBoardColumnDTO[] = [
   },
   {
     userId: "user_002",
+    name: "Sarah",
+    email: "sarah@example.edu",
+    role: "user",
+    tasks: [
+      {
+        id: "t_board_3",
+        title: "Mobile Responsiveness Audit",
+        status: "done",
+        softDeadline: "2026-03-05T00:00:00.000Z",
+        difficultyPoints: 3,
+        phase: "end",
+      },
+    ],
+  },
+  {
+    userId: "user_003",
     name: "Jordan",
     email: "jordan@example.edu",
     role: "user",
@@ -111,9 +128,7 @@ const FALLBACK_COLUMNS: WorkflowBoardColumnDTO[] = [
         id: "t_board_3",
         title: "Dataset Cleaning Pipeline",
         status: "blocked",
-        softDeadline: new Date(
-          Date.now() + 4 * 24 * 60 * 60 * 1000,
-        ).toISOString(),
+        softDeadline: "2026-03-06T00:00:00.000Z",
         difficultyPoints: 3,
         phase: "end",
       },
@@ -256,7 +271,7 @@ function priorityTone(task: WorkflowBoardTaskDTO): {
   };
 }
 
-function dueLabel(value: string | null): string {
+function dueLabel(value: string | null, nowMs: number | null): string {
   if (!value) {
     return "Suggested deadline: TBD";
   }
@@ -266,7 +281,11 @@ function dueLabel(value: string | null): string {
     return "Suggested deadline: invalid date";
   }
 
-  const diffHours = Math.ceil((due - Date.now()) / (1000 * 60 * 60));
+  if (nowMs === null) {
+    return `Suggested deadline: ${value.slice(0, 10)}`;
+  }
+
+  const diffHours = Math.ceil((due - nowMs) / (1000 * 60 * 60));
   if (diffHours <= 0) {
     return "Suggested deadline: today";
   }
@@ -275,16 +294,17 @@ function dueLabel(value: string | null): string {
   return `Suggested deadline: ${diffDays}d`;
 }
 
-function deadlineCountdown(deadlineIso: string): string {
+function deadlineCountdown(deadlineIso: string, nowMs: number | null): string {
+  if (nowMs === null) {
+    return "--d : --h : --m";
+  }
+
   const target = new Date(deadlineIso).getTime();
   if (Number.isNaN(target)) {
     return "Unknown";
   }
 
-  const totalMinutes = Math.max(
-    0,
-    Math.floor((target - Date.now()) / (1000 * 60)),
-  );
+  const totalMinutes = Math.max(0, Math.floor((target - nowMs) / (1000 * 60)));
   const days = Math.floor(totalMinutes / (60 * 24));
   const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
   const minutes = totalMinutes % 60;
@@ -354,16 +374,99 @@ function laneContextLine(
   return "Matched by role fit and recent throughput in related work.";
 }
 
-function boardCard(task: BoardTaskView, dense = false) {
+function moveTaskBetweenLanes(
+  sourceColumns: WorkflowBoardColumnDTO[],
+  sourceUnassigned: WorkflowBoardTaskDTO[],
+  taskId: string,
+  fromLaneId: string,
+  toLaneId: string,
+  forceTodo: boolean,
+): {
+  columns: WorkflowBoardColumnDTO[];
+  unassigned: WorkflowBoardTaskDTO[];
+} | null {
+  if (fromLaneId === toLaneId) {
+    return {
+      columns: sourceColumns,
+      unassigned: sourceUnassigned,
+    };
+  }
+
+  const nextColumns = sourceColumns.map((column) => ({
+    ...column,
+    tasks: [...column.tasks],
+  }));
+  const nextUnassigned = [...sourceUnassigned];
+
+  let movedTask: WorkflowBoardTaskDTO | null = null;
+
+  if (fromLaneId === "unassigned") {
+    const sourceIndex = nextUnassigned.findIndex((task) => task.id === taskId);
+    if (sourceIndex >= 0) {
+      const [task] = nextUnassigned.splice(sourceIndex, 1);
+      movedTask = task;
+    }
+  } else {
+    const sourceLane = nextColumns.find(
+      (column) => column.userId === fromLaneId,
+    );
+    if (sourceLane) {
+      const sourceIndex = sourceLane.tasks.findIndex(
+        (task) => task.id === taskId,
+      );
+      if (sourceIndex >= 0) {
+        const [task] = sourceLane.tasks.splice(sourceIndex, 1);
+        movedTask = task;
+      }
+    }
+  }
+
+  if (!movedTask) {
+    return null;
+  }
+
+  const nextTask = forceTodo ? { ...movedTask, status: "todo" } : movedTask;
+
+  if (toLaneId === "unassigned") {
+    nextUnassigned.push(nextTask);
+    return {
+      columns: nextColumns,
+      unassigned: nextUnassigned,
+    };
+  }
+
+  const targetLane = nextColumns.find((column) => column.userId === toLaneId);
+  if (!targetLane) {
+    return null;
+  }
+
+  targetLane.tasks.push(nextTask);
+  return {
+    columns: nextColumns,
+    unassigned: nextUnassigned,
+  };
+}
+
+function boardCard(
+  task: BoardTaskView,
+  nowMs: number | null,
+  dense = false,
+  draggable = false,
+  onDragStart?: (taskId: string) => void,
+  onDragEnd?: () => void,
+) {
   const tone = priorityTone(task);
-  const cardLabel = `${task.title}. ${statusLabel(task.status)}. ${dueLabel(task.softDeadline)}`;
+  const cardLabel = `${task.title}. ${statusLabel(task.status)}. ${dueLabel(task.softDeadline, nowMs)}`;
 
   return (
     <article
       key={task.id}
+      draggable={draggable}
       tabIndex={0}
       aria-label={cardLabel}
-      className={`rounded-xl border ${tone.borderTone} bg-[#241d2f] p-3 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400`}
+      className={`rounded-xl border ${tone.borderTone} bg-[#241d2f] p-3 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`}
+      onDragStart={() => onDragStart?.(task.id)}
+      onDragEnd={onDragEnd}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2">
@@ -399,7 +502,7 @@ function boardCard(task: BoardTaskView, dense = false) {
       </div>
       {!dense ? (
         <p className="mt-2 text-[10px] font-bold text-violet-300/80">
-          {dueLabel(task.softDeadline)}
+          {dueLabel(task.softDeadline, nowMs)}
         </p>
       ) : null}
     </article>
@@ -416,9 +519,25 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
     canEditWorkflow: role === "admin",
   });
   const [project, setProject] = useState<ProjectSummary>(FALLBACK_PROJECT);
+  const [nowMs, setNowMs] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [draggedTask, setDraggedTask] = useState<DraggedTask | null>(null);
+  const [dropLaneId, setDropLaneId] = useState<string | null>(null);
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
+
+  useEffect(() => {
+    setNowMs(Date.now());
+    const intervalId = setInterval(() => {
+      setNowMs(Date.now());
+    }, 60_000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -493,7 +612,18 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
       cancelled = true;
       controller.abort();
     };
-  }, [projectId, role]);
+  }, [projectId, role, viewerUserId, reloadToken]);
+
+  const isDraftPlanning = project.planningStatus === "draft";
+  const modeOptions = isDraftPlanning
+    ? MODE_OPTIONS.filter((option) => option.id === "member_lane")
+    : MODE_OPTIONS;
+
+  useEffect(() => {
+    if (isDraftPlanning && mode !== "member_lane") {
+      setMode("member_lane");
+    }
+  }, [isDraftPlanning, mode]);
 
   const lanes = useMemo<BoardLane[]>(() => {
     const memberLanes = columns
@@ -502,12 +632,16 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
         title:
           column.userId === viewerUserId ? `${column.name} (You)` : column.name,
         taskCount: column.tasks.length,
-        tasks: column.tasks.map((task) => ({
-          ...task,
-          assigneeName: column.name,
-          assigneeRole: column.role,
-          assigneeUserId: column.userId,
-        })),
+        tasks: column.tasks.map((task) => {
+          const status = isDraftPlanning ? ("todo" as const) : task.status;
+          return {
+            ...task,
+            status,
+            assigneeName: column.name,
+            assigneeRole: column.role,
+            assigneeUserId: column.userId,
+          };
+        }),
         tone:
           column.userId === viewerUserId
             ? ("viewer" as const)
@@ -534,16 +668,20 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
         id: "unassigned",
         title: "Unassigned",
         taskCount: unassigned.length,
-        tasks: unassigned.map((task) => ({
-          ...task,
-          assigneeName: "Unassigned",
-          assigneeRole: "unassigned",
-          assigneeUserId: null,
-        })),
+        tasks: unassigned.map((task) => {
+          const status = isDraftPlanning ? ("todo" as const) : task.status;
+          return {
+            ...task,
+            status,
+            assigneeName: "Unassigned",
+            assigneeRole: "unassigned",
+            assigneeUserId: null,
+          };
+        }),
         tone: "unassigned",
       },
     ];
-  }, [columns, unassigned, viewerUserId]);
+  }, [columns, isDraftPlanning, unassigned, viewerUserId]);
 
   const assigneeSummaries = useMemo<BoardAssigneeSummary[]>(
     () =>
@@ -573,9 +711,140 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
     [columns, unassigned],
   );
   const totalTasks = tasks.length;
-  const countdown = deadlineCountdown(project.deadline);
+  const countdown = deadlineCountdown(project.deadline, nowMs);
   const canRunDelegationActions = capability.canEditWorkflow;
-  const groupedMode = mode === "categorized" || mode === "finalized";
+  const groupedMode =
+    !isDraftPlanning && (mode === "categorized" || mode === "finalized");
+
+  async function readErrorMessage(response: Response): Promise<string> {
+    try {
+      const payload = (await response.json()) as {
+        error?: { message?: string };
+      };
+      if (payload?.error?.message) {
+        return payload.error.message;
+      }
+    } catch {
+      // Ignore JSON parse failures and use default fallback below.
+    }
+    return `Request failed (${response.status})`;
+  }
+
+  async function handleLaneDrop(targetLaneId: string) {
+    if (!draggedTask || !canRunDelegationActions) {
+      return;
+    }
+
+    const { taskId, fromLaneId } = draggedTask;
+    setDraggedTask(null);
+    setDropLaneId(null);
+
+    if (fromLaneId === targetLaneId) {
+      return;
+    }
+
+    const previousColumns = columns;
+    const previousUnassigned = unassigned;
+    const movedState = moveTaskBetweenLanes(
+      columns,
+      unassigned,
+      taskId,
+      fromLaneId,
+      targetLaneId,
+      isDraftPlanning,
+    );
+
+    if (!movedState) {
+      return;
+    }
+
+    setColumns(movedState.columns);
+    setUnassigned(movedState.unassigned);
+    setError(null);
+    setActionMessage(null);
+
+    try {
+      const response = await fetch(
+        `/api/projects/${projectId}/tasks/${taskId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            assigneeUserId: targetLaneId === "unassigned" ? null : targetLaneId,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(await readErrorMessage(response));
+      }
+
+      setActionMessage("Task moved.");
+    } catch (moveError) {
+      setColumns(previousColumns);
+      setUnassigned(previousUnassigned);
+      setError(
+        moveError instanceof Error
+          ? moveError.message
+          : "Failed to move task between team members.",
+      );
+    }
+  }
+
+  async function finalizeAndSend() {
+    if (!canRunDelegationActions || totalTasks === 0 || isFinalizing) {
+      return;
+    }
+
+    setIsFinalizing(true);
+    setError(null);
+    setActionMessage(null);
+
+    try {
+      let workingStatus = project.planningStatus;
+
+      if (workingStatus === "draft") {
+        const lockResponse = await fetch(
+          `/api/projects/${projectId}/planning/lock`,
+          {
+            method: "POST",
+          },
+        );
+
+        if (!lockResponse.ok) {
+          throw new Error(await readErrorMessage(lockResponse));
+        }
+
+        workingStatus = "locked";
+      }
+
+      if (workingStatus === "locked") {
+        const assignResponse = await fetch(
+          `/api/projects/${projectId}/assignments/run`,
+          {
+            method: "POST",
+          },
+        );
+
+        if (!assignResponse.ok) {
+          throw new Error(await readErrorMessage(assignResponse));
+        }
+      }
+
+      setActionMessage("Delegation package finalized and sent to the group.");
+      setReloadToken((current) => current + 1);
+    } catch (finalizeError) {
+      setError(
+        finalizeError instanceof Error
+          ? finalizeError.message
+          : "Failed to finalize and send delegation.",
+      );
+    } finally {
+      setIsFinalizing(false);
+    }
+  }
 
   return (
     <section className="space-y-6 rounded-2xl border border-slate-800 bg-[#18131f] p-5 shadow-[0_18px_60px_rgba(12,10,25,0.45)] md:p-6">
@@ -589,8 +858,8 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
               {project.name}
             </h1>
             <p className="mt-1 text-sm text-slate-400">
-              Team delegation board with member lanes, categorized progress, and
-              finalized handoff view.
+              Delegate ownership by member lane, then complete and send
+              assignments to your group.
             </p>
           </div>
 
@@ -615,31 +884,38 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
           </div>
         </div>
 
-        <div
-          className="flex flex-wrap gap-2"
-          role="tablist"
-          aria-label="Board modes"
-        >
-          {MODE_OPTIONS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              id={`board-tab-${option.id}`}
-              role="tab"
-              aria-controls={`board-panel-${option.id}`}
-              aria-selected={mode === option.id}
-              tabIndex={mode === option.id ? 0 : -1}
-              className={
-                mode === option.id
-                  ? "rounded-lg border border-violet-400 bg-violet-600/20 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-violet-200"
-                  : "rounded-lg border border-slate-700 bg-[#17141f] px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-slate-400 hover:border-violet-500/40 hover:text-slate-200"
-              }
-              onClick={() => setMode(option.id)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+        {isDraftPlanning ? (
+          <p className="rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-100">
+            Draft mode: tasks are shown as Not Started and organized by member
+            lanes only.
+          </p>
+        ) : (
+          <div
+            className="flex flex-wrap gap-2"
+            role="tablist"
+            aria-label="Board modes"
+          >
+            {modeOptions.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                id={`board-tab-${option.id}`}
+                role="tab"
+                aria-controls={`board-panel-${option.id}`}
+                aria-selected={mode === option.id}
+                tabIndex={mode === option.id ? 0 : -1}
+                className={
+                  mode === option.id
+                    ? "rounded-lg border border-violet-400 bg-violet-600/20 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-violet-200"
+                    : "rounded-lg border border-slate-700 bg-[#17141f] px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-slate-400 hover:border-violet-500/40 hover:text-slate-200"
+                }
+                onClick={() => setMode(option.id)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-violet-500/25 bg-violet-500/10 p-3">
@@ -716,7 +992,7 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
         </p>
       ) : null}
 
-      {mode === "finalized" ? (
+      {mode === "finalized" && !isDraftPlanning ? (
         <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-500/20 bg-[#1f1a29] p-3">
           <div className="text-xs text-slate-400">
             Finalized delegation controls are available to project managers.
@@ -775,7 +1051,30 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                     : lane.tone === "unassigned"
                       ? "border-amber-400/45 bg-[#2a1f2b]"
                       : "border-slate-700 bg-[#1a1722]"
+                } ${
+                  dropLaneId === lane.id && draggedTask
+                    ? "ring-2 ring-violet-400 ring-offset-1 ring-offset-[#100d19]"
+                    : ""
                 }`}
+                onDragOver={(event) => {
+                  if (!canRunDelegationActions || !draggedTask) {
+                    return;
+                  }
+                  event.preventDefault();
+                  setDropLaneId(lane.id);
+                }}
+                onDragLeave={() => {
+                  if (dropLaneId === lane.id) {
+                    setDropLaneId(null);
+                  }
+                }}
+                onDrop={(event) => {
+                  if (!canRunDelegationActions || !draggedTask) {
+                    return;
+                  }
+                  event.preventDefault();
+                  void handleLaneDrop(lane.id);
+                }}
               >
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <div>
@@ -813,7 +1112,21 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                           </h3>
                           <div className="space-y-2">
                             {sectionTasks.map((task) =>
-                              boardCard(task, mode === "categorized"),
+                              boardCard(
+                                task,
+                                nowMs,
+                                mode === "categorized",
+                                canRunDelegationActions,
+                                (taskId) =>
+                                  setDraggedTask({
+                                    taskId,
+                                    fromLaneId: lane.id,
+                                  }),
+                                () => {
+                                  setDraggedTask(null);
+                                  setDropLaneId(null);
+                                },
+                              ),
                             )}
                           </div>
                         </div>
@@ -833,7 +1146,20 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
                         No tasks in this lane.
                       </p>
                     ) : (
-                      lane.tasks.map((task) => boardCard(task))
+                      lane.tasks.map((task) =>
+                        boardCard(
+                          task,
+                          nowMs,
+                          false,
+                          canRunDelegationActions,
+                          (taskId) =>
+                            setDraggedTask({ taskId, fromLaneId: lane.id }),
+                          () => {
+                            setDraggedTask(null);
+                            setDropLaneId(null);
+                          },
+                        ),
+                      )
                     )}
                   </div>
                 )}
@@ -843,19 +1169,17 @@ export function BoardPage({ projectId, role, viewerUserId }: BoardPageProps) {
         </div>
       )}
 
-      {mode === "finalized" ? (
+      {project.planningStatus !== "assigned" ? (
         <div className="fixed bottom-6 right-6 z-20">
           <button
             type="button"
             className="rounded-full bg-violet-600 px-6 py-3 text-sm font-bold text-white shadow-xl shadow-violet-900/40 disabled:cursor-not-allowed disabled:bg-slate-700"
-            disabled={!canRunDelegationActions || totalTasks === 0}
-            onClick={() =>
-              setActionMessage(
-                "Delegation package finalized and ready to send to the project group.",
-              )
+            disabled={
+              !canRunDelegationActions || totalTasks === 0 || isFinalizing
             }
+            onClick={() => void finalizeAndSend()}
           >
-            Finalize and Send to Group
+            {isFinalizing ? "Sending..." : "Complete and Send Out"}
           </button>
         </div>
       ) : null}

@@ -21,6 +21,7 @@ export function ProjectNavShell({
 }: ProjectNavShellProps) {
   const pathname = usePathname();
   const isStandaloneInventoryRoute = pathname.endsWith("/inventory");
+  const isBoardRoute = pathname.includes("/board");
   const isDocumentsRoute = pathname.includes("/documents");
   const isSettingsRoute = pathname.includes("/settings");
   const rootClassName = isSettingsRoute
@@ -38,6 +39,10 @@ export function ProjectNavShell({
 
   if (isStandaloneInventoryRoute) {
     return <>{children}</>;
+  }
+
+  if (isBoardRoute) {
+    return <main className="min-h-screen">{children}</main>;
   }
   return (
     <div className={rootClassName}>
