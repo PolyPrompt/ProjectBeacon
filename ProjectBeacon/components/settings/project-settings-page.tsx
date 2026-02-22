@@ -13,6 +13,13 @@ type ProjectMetadata = {
   deadline: string;
 };
 
+type ProjectMember = {
+  userId: string;
+  name: string;
+  email: string;
+  role: "owner" | "member";
+};
+
 const DEFAULT_METADATA: ProjectMetadata = {
   name: "Untitled Project",
   deadline: "",
@@ -39,8 +46,14 @@ export function ProjectSettingsPage({
   const isAdmin = role === "admin";
   const [metadata, setMetadata] = useState<ProjectMetadata>(DEFAULT_METADATA);
   const [loadingMetadata, setLoadingMetadata] = useState(isAdmin);
-  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
+  const [isAddingMember, setIsAddingMember] = useState(false);
+  const [newMemberName, setNewMemberName] = useState("");
+  const [newMemberEmail, setNewMemberEmail] = useState("");
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [teamStatus, setTeamStatus] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -106,33 +119,129 @@ export function ProjectSettingsPage({
     };
   }, [isAdmin, projectId]);
 
-  async function handleShare() {
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    async function loadMembers() {
+      try {
+        setLoadingMembers(true);
+        const response = await fetch(`/api/projects/${projectId}/members`, {
+          method: "GET",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        const payload = (await response.json()) as {
+          members?: ProjectMember[];
+          error?: { message?: string };
+        };
+
+        if (!response.ok) {
+          throw new Error(
+            payload?.error?.message ??
+              `Members request returned ${response.status}`,
+          );
+        }
+
+        if (!cancelled) {
+          setMembers(Array.isArray(payload.members) ? payload.members : []);
+        }
+      } catch (membersError) {
+        if (!cancelled) {
+          setTeamStatus(
+            membersError instanceof Error
+              ? membersError.message
+              : "Failed to load project members.",
+          );
+          setMembers([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingMembers(false);
+        }
+      }
+    }
+
+    void loadMembers();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [projectId]);
+
+  async function handleInviteByEmail(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const name = newMemberName.trim();
+    const email = newMemberEmail.trim();
+    if (!name || !email) {
+      return;
+    }
+
+    const alreadyMember = members.some(
+      (member) => member.email.toLowerCase() === email.toLowerCase(),
+    );
+
+    if (alreadyMember) {
+      setTeamStatus(`${email} is already a member of this project.`);
+      return;
+    }
+
     try {
-      setStatus(null);
-      const response = await fetch(`/api/projects/${projectId}/share-link`, {
+      setIsSendingInvite(true);
+      setTeamStatus(null);
+      const response = await fetch(`/api/projects/${projectId}/share-email`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emails: [email] }),
       });
 
-      if (!response.ok) {
-        throw new Error(`Share-link request returned ${response.status}`);
-      }
-
       const payload = (await response.json()) as {
-        joinUrl?: string;
+        sent?: Array<{ email: string }>;
+        failed?: Array<{ email: string; reason: string }>;
+        error?: { message?: string };
       };
-      if (!payload.joinUrl) {
-        throw new Error("Share-link response missing joinUrl.");
+
+      if (!response.ok) {
+        throw new Error(
+          payload?.error?.message ??
+            `Invite request returned ${response.status}`,
+        );
       }
 
-      setShareLink(payload.joinUrl);
-      setStatus("Share link generated.");
-    } catch (shareError) {
-      setShareLink(null);
-      setStatus(
-        shareError instanceof Error
-          ? shareError.message
-          : "Could not generate share link from API.",
+      const sentCount = Array.isArray(payload.sent) ? payload.sent.length : 0;
+      const failedCount = Array.isArray(payload.failed)
+        ? payload.failed.length
+        : 0;
+
+      if (failedCount > 0) {
+        const firstFailure = payload.failed?.[0];
+        setTeamStatus(
+          firstFailure?.reason
+            ? `Failed to send invite to ${firstFailure.email}: ${firstFailure.reason}`
+            : "Failed to send invite email.",
+        );
+        return;
+      }
+
+      if (sentCount > 0) {
+        setTeamStatus(`Invite sent to ${name} (${email}).`);
+        setNewMemberName("");
+        setNewMemberEmail("");
+        setIsAddingMember(false);
+      } else {
+        setTeamStatus("No invite was sent.");
+      }
+    } catch (inviteError) {
+      setTeamStatus(
+        inviteError instanceof Error
+          ? inviteError.message
+          : "Failed to send invite email.",
       );
+    } finally {
+      setIsSendingInvite(false);
     }
   }
 
@@ -306,49 +415,94 @@ export function ProjectSettingsPage({
             <h2 className="text-3xl font-semibold text-slate-100">
               Team Roster
             </h2>
-            <button
-              className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:bg-violet-500"
-              onClick={() => void handleShare()}
-              type="button"
-            >
-              Add Member
-            </button>
+            {isAdmin ? (
+              <button
+                className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:bg-violet-500"
+                onClick={() => {
+                  setIsAddingMember((current) => !current);
+                  setTeamStatus(null);
+                  setNewMemberName("");
+                  setNewMemberEmail("");
+                }}
+                type="button"
+              >
+                {isAddingMember ? "Cancel" : "Add Member"}
+              </button>
+            ) : null}
           </div>
 
           <p className="mt-2 text-sm text-slate-400">
-            Generate a secure invite link and share it with teammates.
+            Invite teammates by email. They are listed here once they accept.
           </p>
 
-          {shareLink ? (
-            <div className="mt-4 rounded-lg border border-violet-500/20 bg-[#150f23] p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Share Link
-              </p>
-              <p className="mt-1 break-all text-sm text-violet-100">
-                {shareLink}
-              </p>
-            </div>
+          {teamStatus ? (
+            <p className="mt-3 rounded-lg border border-violet-500/20 bg-violet-500/10 px-3 py-2 text-sm text-violet-100">
+              {teamStatus}
+            </p>
+          ) : null}
+
+          {isAdmin && isAddingMember ? (
+            <form
+              className="mt-4 flex flex-wrap gap-2 rounded-lg border border-violet-500/20 bg-[#150f23] p-3"
+              onSubmit={handleInviteByEmail}
+            >
+              <input
+                className="min-w-[220px] flex-1 rounded-lg border border-violet-500/20 bg-[#1b1430] px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 outline-none transition focus:border-violet-400"
+                onChange={(event) => setNewMemberName(event.target.value)}
+                placeholder="Teammate name"
+                type="text"
+                value={newMemberName}
+                required
+              />
+              <input
+                className="min-w-[260px] flex-1 rounded-lg border border-violet-500/20 bg-[#1b1430] px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 outline-none transition focus:border-violet-400"
+                onChange={(event) => setNewMemberEmail(event.target.value)}
+                placeholder="teammate@school.edu"
+                type="email"
+                value={newMemberEmail}
+                required
+              />
+              <button
+                className="rounded-lg border border-violet-500/40 bg-violet-500/20 px-5 py-2.5 text-sm font-semibold text-violet-100 transition hover:bg-violet-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+                type="submit"
+                disabled={isSendingInvite}
+              >
+                {isSendingInvite ? "Sending..." : "Send Invite"}
+              </button>
+            </form>
           ) : null}
 
           <div className="mt-6 border-t border-violet-500/15 pt-4">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Add New Member
+              Existing Members
             </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <input
-                className="min-w-[260px] flex-1 rounded-lg border border-violet-500/20 bg-[#150f23] px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 outline-none"
-                disabled
-                placeholder="Search by name or email..."
-                type="text"
-              />
-              <button
-                className="rounded-lg border border-violet-500/30 bg-violet-500/20 px-5 py-2.5 text-sm font-semibold text-violet-200 transition hover:bg-violet-500/30"
-                onClick={() => void handleShare()}
-                type="button"
-              >
-                Add
-              </button>
-            </div>
+
+            {loadingMembers ? (
+              <p className="mt-3 text-sm text-slate-400">Loading members...</p>
+            ) : members.length === 0 ? (
+              <p className="mt-3 text-sm text-slate-400">No members yet.</p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {members.map((member) => (
+                  <li
+                    key={member.userId}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-violet-500/20 bg-[#150f23] px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-100">
+                        {member.name || member.email}
+                      </p>
+                      <p className="truncate text-xs text-slate-400">
+                        {member.email}
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-violet-500/40 bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-200">
+                      {member.role}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </section>
 
