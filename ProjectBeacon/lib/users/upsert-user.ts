@@ -139,6 +139,9 @@ export async function upsertUserFromClerk(
       upserted = {
         data: existingNow.data,
         error: null,
+        count: null,
+        status: 200,
+        statusText: "OK",
       };
     }
   }
