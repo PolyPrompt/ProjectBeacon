@@ -64,6 +64,7 @@ REPLAN RULES (NON-NEGOTIABLE)
 3. Task quality
 - New tasks must be concrete, verifiable, and assignable.
 - No vague tasks such as "handle docs updates" or "improve system."
+- When multiple reasonable skill paths exist, avoid creating all net-new work such that it can only be assigned to one member.
 
 4. Dependency integrity
 - Dependencies must remain a DAG.
