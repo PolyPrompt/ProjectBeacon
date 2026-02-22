@@ -1,266 +1,458 @@
-<!DOCTYPE html>
+<!doctype html>
 
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Onboarding | CS Project Delegator</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {primary: "#622faf", "background-light": "#f7f6f8", "background-dark": "#18131f"}, fontFamily: {display: "Manrope"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}}}};</script>
-<style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        body {
-            font-family: 'Manrope', sans-serif;
-        }
-        .bento-tile {
-            background-color: rgba(57, 1, 119, 0.1);
-            border: 1px solid rgba(57, 1, 119, 0.2);
-            transition: all 0.3s ease;
-        }
-        .bento-tile:hover {
-            border-color: rgba(57, 1, 119, 0.5);
-        }
-        .skill-bar-segment {
-            height: 8px;
-            border-radius: 4px;
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-        .skill-bar-segment.active {
-            background-color: #390177;
-        }
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Onboarding | CS Project Delegator</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#622faf",
+              "background-light": "#f7f6f8",
+              "background-dark": "#18131f",
+            },
+            fontFamily: { display: "Manrope" },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      body {
+        font-family: "Manrope", sans-serif;
+      }
+      .bento-tile {
+        background-color: rgba(57, 1, 119, 0.1);
+        border: 1px solid rgba(57, 1, 119, 0.2);
+        transition: all 0.3s ease;
+      }
+      .bento-tile:hover {
+        border-color: rgba(57, 1, 119, 0.5);
+      }
+      .skill-bar-segment {
+        height: 8px;
+        border-radius: 4px;
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+      .skill-bar-segment.active {
+        background-color: #390177;
+      }
     </style>
-</head>
-<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
-<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
-<div class="layout-container flex h-full grow flex-col">
-<!-- Header/Navigation -->
-<header class="flex items-center justify-between border-b border-primary/20 px-6 py-4 lg:px-20 bg-background-light/50 dark:bg-background-dark/50 backdrop-blur-md sticky top-0 z-50">
-<div class="flex items-center gap-4">
-<div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
-<span class="material-symbols-outlined">account_tree</span>
-</div>
-<h2 class="text-lg font-bold tracking-tight">ProjectDelegator</h2>
-</div>
-<div class="flex items-center gap-4">
-<div class="hidden md:flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
-<div class="size-2 rounded-full bg-green-500 animate-pulse"></div>
-<span class="text-xs font-medium text-primary dark:text-primary/80">System Online</span>
-</div>
-<button class="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors">
-<span class="material-symbols-outlined text-primary">notifications</span>
-</button>
-<div class="h-8 w-8 rounded-full bg-primary/30 border border-primary/50 overflow-hidden">
-<img class="w-full h-full object-cover" data-alt="User profile avatar placeholder" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHygPMcK1rLgdUUgkOPXeNIEiJnJrz8-7KPC6Ve7kAvTABQnM2AKozjFl6EguRH939qd1CwZ3Zk2NhAhujDRN1XcKUHpH9ybSNneNLw3_6KIxgZKLify6tysgfYc6vDR_bPDrm3nNv0JaSW1XuM-Yku0JqTDfRumg9-qRDKMsETdVlr6ZtshFhbn_o8410cPP7c9u4I_wmcKmhJFgP3ufpsBtW0yhbBzT5nCdmwVZRXHRGupbe7JTo4P53_ZIuq0fdJTIReKV-CYQ"/>
-</div>
-</div>
-</header>
-<main class="flex-1 px-6 py-10 lg:px-40 max-w-[1400px] mx-auto w-full">
-<!-- Welcome Section -->
-<div class="mb-10 animate-fade-in">
-<div class="flex items-center gap-3 mb-2">
-<span class="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-bold uppercase tracking-wider">Step 1: Profile</span>
-<div class="h-px flex-1 bg-primary/20"></div>
-</div>
-<h1 class="text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white mb-4">
-                        You're in! Welcome to <span class="text-primary">Team Alpha</span>
-</h1>
-<p class="text-slate-600 dark:text-slate-400 text-lg max-w-2xl">
-                        Let's match you with the perfect tasks. Build your technical profile to get started and showcase your expertise to the team.
+  </head>
+  <body
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen"
+  >
+    <div
+      class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden"
+    >
+      <div class="layout-container flex h-full grow flex-col">
+        <!-- Header/Navigation -->
+        <header
+          class="flex items-center justify-between border-b border-primary/20 px-6 py-4 lg:px-20 bg-background-light/50 dark:bg-background-dark/50 backdrop-blur-md sticky top-0 z-50"
+        >
+          <div class="flex items-center gap-4">
+            <div
+              class="size-8 bg-primary rounded-lg flex items-center justify-center text-white"
+            >
+              <span class="material-symbols-outlined">account_tree</span>
+            </div>
+            <h2 class="text-lg font-bold tracking-tight">ProjectDelegator</h2>
+          </div>
+          <div class="flex items-center gap-4">
+            <div
+              class="hidden md:flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20"
+            >
+              <div class="size-2 rounded-full bg-green-500 animate-pulse"></div>
+              <span
+                class="text-xs font-medium text-primary dark:text-primary/80"
+                >System Online</span
+              >
+            </div>
+            <button
+              class="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
+            >
+              <span class="material-symbols-outlined text-primary"
+                >notifications</span
+              >
+            </button>
+            <div
+              class="h-8 w-8 rounded-full bg-primary/30 border border-primary/50 overflow-hidden"
+            >
+              <img
+                class="w-full h-full object-cover"
+                data-alt="User profile avatar placeholder"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHygPMcK1rLgdUUgkOPXeNIEiJnJrz8-7KPC6Ve7kAvTABQnM2AKozjFl6EguRH939qd1CwZ3Zk2NhAhujDRN1XcKUHpH9ybSNneNLw3_6KIxgZKLify6tysgfYc6vDR_bPDrm3nNv0JaSW1XuM-Yku0JqTDfRumg9-qRDKMsETdVlr6ZtshFhbn_o8410cPP7c9u4I_wmcKmhJFgP3ufpsBtW0yhbBzT5nCdmwVZRXHRGupbe7JTo4P53_ZIuq0fdJTIReKV-CYQ"
+              />
+            </div>
+          </div>
+        </header>
+        <main class="flex-1 px-6 py-10 lg:px-40 max-w-[1400px] mx-auto w-full">
+          <!-- Welcome Section -->
+          <div class="mb-10 animate-fade-in">
+            <div class="flex items-center gap-3 mb-2">
+              <span
+                class="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-bold uppercase tracking-wider"
+                >Step 1: Profile</span
+              >
+              <div class="h-px flex-1 bg-primary/20"></div>
+            </div>
+            <h1
+              class="text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white mb-4"
+            >
+              You're in! Welcome to <span class="text-primary">Team Alpha</span>
+            </h1>
+            <p class="text-slate-600 dark:text-slate-400 text-lg max-w-2xl">
+              Let's match you with the perfect tasks. Build your technical
+              profile to get started and showcase your expertise to the team.
+            </p>
+          </div>
+          <!-- Bento Grid Layout -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Left Column: Smart Import & Manual Add -->
+            <div class="lg:col-span-4 flex flex-col gap-6">
+              <!-- Smart Import Tile -->
+              <!-- Add Manually Tile -->
+              <div
+                class="bento-tile rounded-xl p-6 bg-white/5 dark:bg-primary/5"
+              >
+                <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                  <span class="material-symbols-outlined text-sm">search</span>
+                  Add Manually
+                </h3>
+                <div class="relative">
+                  <input
+                    class="w-full bg-background-light dark:bg-background-dark border border-primary/20 rounded-lg py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
+                    placeholder="Search skills (e.g. AWS, Figma...)"
+                    type="text"
+                  />
+                  <button
+                    class="absolute right-2 top-2 p-1.5 bg-primary text-white rounded-md"
+                  >
+                    <span class="material-symbols-outlined text-sm">add</span>
+                  </button>
+                </div>
+                <div class="gap-2 mt-4">
+                  <div class="w-full mt-6 space-y-6">
+                    <div class="flex items-center gap-2 mb-4">
+                      <span
+                        class="material-symbols-outlined text-primary text-lg"
+                        >auto_awesome</span
+                      >
+                      <h4 class="text-lg font-bold">Suggestions</h4>
+                    </div>
+                    <!-- Core Backend Group -->
+                    <div class="space-y-3">
+                      <h5
+                        class="text-[10px] uppercase font-black text-slate-500 tracking-widest"
+                      >
+                        Core Backend
+                      </h5>
+                      <div class="flex flex-col gap-2">
+                        <button
+                          class="flex items-center justify-between w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all group text-left"
+                        >
+                          <span class="text-sm font-medium">Node.js</span>
+                          <span
+                            class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors"
+                            >add</span
+                          >
+                        </button>
+                        <button
+                          class="flex items-center justify-between w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all group text-left"
+                        >
+                          <span class="text-sm font-medium">Docker</span>
+                          <span
+                            class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors"
+                            >add</span
+                          >
+                        </button>
+                        <button
+                          class="flex items-center justify-between w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all group text-left"
+                        >
+                          <span class="text-sm font-medium">Redis</span>
+                          <span
+                            class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors"
+                            >add</span
+                          >
+                        </button>
+                      </div>
+                    </div>
+                    <!-- AI & Data Group -->
+                    <div class="space-y-3">
+                      <h5
+                        class="text-[10px] uppercase font-black text-slate-500 tracking-widest"
+                      >
+                        AI &amp; Data
+                      </h5>
+                      <div class="flex flex-col gap-2">
+                        <button
+                          class="flex items-center justify-between w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all group text-left"
+                        >
+                          <span class="text-sm font-medium">PyTorch</span>
+                          <span
+                            class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors"
+                            >add</span
+                          >
+                        </button>
+                        <button
+                          class="flex items-center justify-between w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all group text-left"
+                        >
+                          <span class="text-sm font-medium">Pandas</span>
+                          <span
+                            class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors"
+                            >add</span
+                          >
+                        </button>
+                        <button
+                          class="flex items-center justify-between w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all group text-left"
+                        >
+                          <span class="text-sm font-medium">Scikit-learn</span>
+                          <span
+                            class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors"
+                            >add</span
+                          >
+                        </button>
+                      </div>
+                    </div>
+                    <!-- Engineering Tools Group -->
+                    <div class="space-y-3">
+                      <h5
+                        class="text-[10px] uppercase font-black text-slate-500 tracking-widest"
+                      >
+                        Engineering Tools
+                      </h5>
+                      <div class="flex flex-col gap-2">
+                        <button
+                          class="flex items-center justify-between w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all group text-left"
+                        >
+                          <span class="text-sm font-medium">Git</span>
+                          <span
+                            class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors"
+                            >add</span
+                          >
+                        </button>
+                        <button
+                          class="flex items-center justify-between w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all group text-left"
+                        >
+                          <span class="text-sm font-medium">Kubernetes</span>
+                          <span
+                            class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors"
+                            >add</span
+                          >
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Right Column: Skill Proficiency Matrix -->
+            <div class="lg:col-span-8 flex flex-col gap-6">
+              <div
+                class="bento-tile rounded-xl p-8 bg-white/5 dark:bg-primary/5 h-full"
+              >
+                <div class="flex items-center justify-between mb-8">
+                  <div class="flex items-center gap-3">
+                    <span
+                      class="material-symbols-outlined text-primary p-2 bg-primary/10 rounded-lg"
+                      >psychology</span
+                    >
+                    <h3 class="text-2xl font-bold">Skill Proficiency</h3>
+                  </div>
+                  <div
+                    class="px-3 py-1 bg-primary/20 rounded-full border border-primary/30"
+                  >
+                    <span class="text-xs font-bold text-primary"
+                      >6/8 SKILLS ADDED</span
+                    >
+                  </div>
+                </div>
+                <div class="space-y-10">
+                  <!-- Hard Skills Group -->
+                  <div>
+                    <h4
+                      class="text-sm font-bold text-primary mb-6 flex items-center gap-2"
+                    >
+                      <span class="w-2 h-2 rounded-full bg-primary"></span>
+                      Hard Skills
+                    </h4>
+                    <div
+                      class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8"
+                    >
+                      <!-- Skill Item -->
+                      <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                          <span class="font-semibold">Python</span>
+                          <span
+                            class="text-xs font-bold px-2 py-0.5 bg-primary/20 text-primary rounded"
+                            >Expert</span
+                          >
+                        </div>
+                        <div class="flex gap-1.5">
+                          <div class="skill-bar-segment active flex-1"></div>
+                          <div class="skill-bar-segment active flex-1"></div>
+                          <div class="skill-bar-segment active flex-1"></div>
+                        </div>
+                      </div>
+                      <!-- Skill Item -->
+                      <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                          <span class="font-semibold">React.js</span>
+                          <span
+                            class="text-xs font-bold px-2 py-0.5 bg-primary/20 text-primary rounded"
+                            >Expert</span
+                          >
+                        </div>
+                        <div class="flex gap-1.5">
+                          <div class="skill-bar-segment active flex-1"></div>
+                          <div class="skill-bar-segment active flex-1"></div>
+                          <div class="skill-bar-segment active flex-1"></div>
+                        </div>
+                      </div>
+                      <!-- Skill Item -->
+                      <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                          <span class="font-semibold">PostgreSQL</span>
+                          <span
+                            class="text-xs font-bold px-2 py-0.5 bg-primary/20 text-primary rounded"
+                            >Intermediate</span
+                          >
+                        </div>
+                        <div class="flex gap-1.5">
+                          <div class="skill-bar-segment active flex-1"></div>
+                          <div class="skill-bar-segment active flex-1"></div>
+                          <div class="skill-bar-segment flex-1"></div>
+                        </div>
+                      </div>
+                      <!-- Skill Item -->
+                      <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                          <span class="font-semibold">Docker</span>
+                          <span
+                            class="text-xs font-bold px-2 py-0.5 bg-primary/20 text-primary rounded"
+                            >Beginner</span
+                          >
+                        </div>
+                        <div class="flex gap-1.5">
+                          <div class="skill-bar-segment active flex-1"></div>
+                          <div class="skill-bar-segment flex-1"></div>
+                          <div class="skill-bar-segment flex-1"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Soft Skills Group -->
+                  <div>
+                    <h4
+                      class="text-sm font-bold text-primary mb-6 flex items-center gap-2"
+                    >
+                      <span class="w-2 h-2 rounded-full bg-primary"></span>
+                      Soft Skills
+                    </h4>
+                    <div
+                      class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8"
+                    >
+                      <!-- Skill Item -->
+                      <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                          <span class="font-semibold">Technical Writing</span>
+                          <span
+                            class="text-xs font-bold px-2 py-0.5 bg-primary/20 text-primary rounded"
+                            >Expert</span
+                          >
+                        </div>
+                        <div class="flex gap-1.5">
+                          <div class="skill-bar-segment active flex-1"></div>
+                          <div class="skill-bar-segment active flex-1"></div>
+                          <div class="skill-bar-segment active flex-1"></div>
+                        </div>
+                      </div>
+                      <!-- Skill Item -->
+                      <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                          <span class="font-semibold">Team Leadership</span>
+                          <span
+                            class="text-xs font-bold px-2 py-0.5 bg-primary/20 text-primary rounded"
+                            >Intermediate</span
+                          >
+                        </div>
+                        <div class="flex gap-1.5">
+                          <div class="skill-bar-segment active flex-1"></div>
+                          <div class="skill-bar-segment active flex-1"></div>
+                          <div class="skill-bar-segment flex-1"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Profile Strength Meter -->
+                <div
+                  class="mt-12 p-6 rounded-xl bg-primary/10 border border-primary/20 flex flex-col md:flex-row items-center gap-6"
+                >
+                  <div class="flex-1 space-y-2">
+                    <div class="flex justify-between items-end">
+                      <p class="font-bold text-lg">Profile Completion</p>
+                      <p class="text-primary font-black text-xl">75%</p>
+                    </div>
+                    <div
+                      class="w-full bg-primary/10 h-3 rounded-full overflow-hidden"
+                    >
+                      <div class="bg-primary h-full w-3/4"></div>
+                    </div>
+                    <p class="text-xs text-slate-500">
+                      Add at least 8 skills to unlock AI-powered project
+                      matching and ensure high-confidence delegation.
                     </p>
-</div>
-<!-- Bento Grid Layout -->
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-<!-- Left Column: Smart Import & Manual Add -->
-<div class="lg:col-span-4 flex flex-col gap-6">
-<!-- Smart Import Tile -->
-<!-- Add Manually Tile -->
-<div class="bento-tile rounded-xl p-6 bg-white/5 dark:bg-primary/5">
-<h3 class="text-lg font-bold mb-4 flex items-center gap-2">
-<span class="material-symbols-outlined text-sm">search</span>
-                                Add Manually
-                            </h3>
-<div class="relative">
-<input class="w-full bg-background-light dark:bg-background-dark border border-primary/20 rounded-lg py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none" placeholder="Search skills (e.g. AWS, Figma...)" type="text"/>
-<button class="absolute right-2 top-2 p-1.5 bg-primary text-white rounded-md">
-<span class="material-symbols-outlined text-sm">add</span>
-</button>
-</div>
-<div class="gap-2 mt-4"><div class="w-full mt-6 space-y-6">
-<div class="flex items-center gap-2 mb-4">
-<span class="material-symbols-outlined text-primary text-lg">auto_awesome</span>
-<h4 class="text-lg font-bold">Suggestions</h4>
-</div>
-<!-- Core Backend Group -->
-<div class="space-y-3">
-<h5 class="text-[10px] uppercase font-black text-slate-500 tracking-widest">Core Backend</h5>
-<div class="flex flex-col gap-2">
-<button class="flex items-center justify-between w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all group text-left">
-<span class="text-sm font-medium">Node.js</span>
-<span class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors">add</span>
-</button>
-<button class="flex items-center justify-between w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all group text-left">
-<span class="text-sm font-medium">Docker</span>
-<span class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors">add</span>
-</button>
-<button class="flex items-center justify-between w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all group text-left">
-<span class="text-sm font-medium">Redis</span>
-<span class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors">add</span>
-</button>
-</div>
-</div>
-<!-- AI & Data Group -->
-<div class="space-y-3">
-<h5 class="text-[10px] uppercase font-black text-slate-500 tracking-widest">AI &amp; Data</h5>
-<div class="flex flex-col gap-2">
-<button class="flex items-center justify-between w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all group text-left">
-<span class="text-sm font-medium">PyTorch</span>
-<span class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors">add</span>
-</button>
-<button class="flex items-center justify-between w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all group text-left">
-<span class="text-sm font-medium">Pandas</span>
-<span class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors">add</span>
-</button>
-<button class="flex items-center justify-between w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all group text-left">
-<span class="text-sm font-medium">Scikit-learn</span>
-<span class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors">add</span>
-</button>
-</div>
-</div>
-<!-- Engineering Tools Group -->
-<div class="space-y-3">
-<h5 class="text-[10px] uppercase font-black text-slate-500 tracking-widest">Engineering Tools</h5>
-<div class="flex flex-col gap-2">
-<button class="flex items-center justify-between w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all group text-left">
-<span class="text-sm font-medium">Git</span>
-<span class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors">add</span>
-</button>
-<button class="flex items-center justify-between w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all group text-left">
-<span class="text-sm font-medium">Kubernetes</span>
-<span class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors">add</span>
-</button>
-</div>
-</div>
-</div></div>
-</div>
-</div>
-<!-- Right Column: Skill Proficiency Matrix -->
-<div class="lg:col-span-8 flex flex-col gap-6">
-<div class="bento-tile rounded-xl p-8 bg-white/5 dark:bg-primary/5 h-full">
-<div class="flex items-center justify-between mb-8">
-<div class="flex items-center gap-3">
-<span class="material-symbols-outlined text-primary p-2 bg-primary/10 rounded-lg">psychology</span>
-<h3 class="text-2xl font-bold">Skill Proficiency</h3>
-</div><div class="px-3 py-1 bg-primary/20 rounded-full border border-primary/30"><span class="text-xs font-bold text-primary">6/8 SKILLS ADDED</span></div>
-</div>
-<div class="space-y-10">
-<!-- Hard Skills Group -->
-<div>
-<h4 class="text-sm font-bold text-primary mb-6 flex items-center gap-2">
-<span class="w-2 h-2 rounded-full bg-primary"></span>
-                                        Hard Skills
-                                    </h4>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-<!-- Skill Item -->
-<div class="space-y-3"><div class="flex justify-between items-center">
-<span class="font-semibold">Python</span>
-<span class="text-xs font-bold px-2 py-0.5 bg-primary/20 text-primary rounded">Expert</span>
-</div>
-<div class="flex gap-1.5">
-<div class="skill-bar-segment active flex-1"></div>
-<div class="skill-bar-segment active flex-1"></div>
-<div class="skill-bar-segment active flex-1"></div>
-</div></div>
-<!-- Skill Item -->
-<div class="space-y-3"><div class="flex justify-between items-center">
-<span class="font-semibold">React.js</span>
-<span class="text-xs font-bold px-2 py-0.5 bg-primary/20 text-primary rounded">Expert</span>
-</div>
-<div class="flex gap-1.5">
-<div class="skill-bar-segment active flex-1"></div>
-<div class="skill-bar-segment active flex-1"></div>
-<div class="skill-bar-segment active flex-1"></div>
-</div></div>
-<!-- Skill Item -->
-<div class="space-y-3"><div class="flex justify-between items-center">
-<span class="font-semibold">PostgreSQL</span>
-<span class="text-xs font-bold px-2 py-0.5 bg-primary/20 text-primary rounded">Intermediate</span>
-</div>
-<div class="flex gap-1.5">
-<div class="skill-bar-segment active flex-1"></div>
-<div class="skill-bar-segment active flex-1"></div>
-<div class="skill-bar-segment flex-1"></div>
-</div></div>
-<!-- Skill Item -->
-<div class="space-y-3"><div class="flex justify-between items-center">
-<span class="font-semibold">Docker</span>
-<span class="text-xs font-bold px-2 py-0.5 bg-primary/20 text-primary rounded">Beginner</span>
-</div>
-<div class="flex gap-1.5">
-<div class="skill-bar-segment active flex-1"></div>
-<div class="skill-bar-segment flex-1"></div>
-<div class="skill-bar-segment flex-1"></div>
-</div></div>
-</div>
-</div>
-<!-- Soft Skills Group -->
-<div>
-<h4 class="text-sm font-bold text-primary mb-6 flex items-center gap-2">
-<span class="w-2 h-2 rounded-full bg-primary"></span>
-                                        Soft Skills
-                                    </h4>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-<!-- Skill Item -->
-<div class="space-y-3"><div class="flex justify-between items-center">
-<span class="font-semibold">Technical Writing</span>
-<span class="text-xs font-bold px-2 py-0.5 bg-primary/20 text-primary rounded">Expert</span>
-</div>
-<div class="flex gap-1.5">
-<div class="skill-bar-segment active flex-1"></div>
-<div class="skill-bar-segment active flex-1"></div>
-<div class="skill-bar-segment active flex-1"></div>
-</div></div>
-<!-- Skill Item -->
-<div class="space-y-3"><div class="flex justify-between items-center">
-<span class="font-semibold">Team Leadership</span>
-<span class="text-xs font-bold px-2 py-0.5 bg-primary/20 text-primary rounded">Intermediate</span>
-</div>
-<div class="flex gap-1.5">
-<div class="skill-bar-segment active flex-1"></div>
-<div class="skill-bar-segment active flex-1"></div>
-<div class="skill-bar-segment flex-1"></div>
-</div></div>
-</div>
-</div>
-</div>
-<!-- Profile Strength Meter -->
-<div class="mt-12 p-6 rounded-xl bg-primary/10 border border-primary/20 flex flex-col md:flex-row items-center gap-6">
-<div class="flex-1 space-y-2">
-<div class="flex justify-between items-end">
-<p class="font-bold text-lg">Profile Completion</p>
-<p class="text-primary font-black text-xl">75%</p>
-</div>
-<div class="w-full bg-primary/10 h-3 rounded-full overflow-hidden">
-<div class="bg-primary h-full w-3/4"></div>
-</div>
-<p class="text-xs text-slate-500">Add at least 8 skills to unlock AI-powered project matching and ensure high-confidence delegation.</p>
-</div>
-<button class="w-full md:w-auto px-8 py-4 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/20 transition-transform flex items-center justify-center gap-2 opacity-50">
-                                    Save &amp; Continue
-                                    <span class="material-symbols-outlined">arrow_forward</span>
-</button>
-</div>
-</div>
-</div>
-</div>
-<!-- Footer Summary -->
-<footer class="mt-16 border-t border-primary/10 pt-8 text-center text-slate-500 text-sm">
-<p>© 2024 ProjectDelegator AI. Matching brilliance with requirements.</p>
-</footer>
-</main>
-</div>
-</div>
-</body></html>
+                  </div>
+                  <button
+                    class="w-full md:w-auto px-8 py-4 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/20 transition-transform flex items-center justify-center gap-2 opacity-50"
+                  >
+                    Save &amp; Continue
+                    <span class="material-symbols-outlined">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Footer Summary -->
+          <footer
+            class="mt-16 border-t border-primary/10 pt-8 text-center text-slate-500 text-sm"
+          >
+            <p>
+              © 2024 ProjectDelegator AI. Matching brilliance with requirements.
+            </p>
+          </footer>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

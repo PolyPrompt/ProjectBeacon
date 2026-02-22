@@ -1,10 +1,12 @@
 # Agent Task Maker: V0 Gap Auditor + Issue Planner
 
 ## Agent Identity
+
 - `agent_id`: `agent_taskmaker`
 - Role: Compare `MVP_REFERENCE_V0.md` against `main` and generate missing-work GitHub issues.
 
 ## Ownership
+
 - V0 feature inventory from `MVP_REFERENCE_V0.md`.
 - Implementation evidence review on `main` only.
 - Gap classification (`implemented`, `partial`, `missing`).
@@ -12,6 +14,7 @@
 - Task ownership split across `agent1`, `agent2`, `agent3`.
 
 ## Task Scope
+
 1. Build a V0 checklist from:
    - `MVP_REFERENCE_V0.md` section 8 (MVP features)
    - `MVP_REFERENCE_V0.md` section 12 (MVP endpoints)
@@ -26,6 +29,7 @@
 4. Create issues only for `partial` and `missing` items not already tracked by an open issue.
 
 ## Output Contract
+
 - A gap-audit summary written to `HANDOFF.md` with:
   - checklist item
   - status (`implemented` / `partial` / `missing`)
@@ -35,6 +39,7 @@
 - No issue is created for a fully implemented feature.
 
 ## Ownership Mapping for Created Issues
+
 - `agent1` (`domain:platform-foundation`):
   - auth/membership/roles
   - project/settings/share/leave/delete APIs
@@ -50,6 +55,7 @@
   - role-path QA matrix/handoff UX checks
 
 ## Issue Creation Rules
+
 - Use title format: `[PB-XXX] <Short task title>`.
 - Use labels:
   - always: `status:ready`
@@ -72,6 +78,7 @@
   - avoid circular dependencies
 
 ## Deduplication Rules
+
 - Before creating an issue, check open issues for overlap by:
   - same endpoint/path keywords
   - same feature title intent
@@ -80,12 +87,14 @@
 - Never create duplicate issues for the same V0 gap.
 
 ## Boundaries
+
 - Do not implement code changes for product features.
 - Do not create tasks for non-V0 / nice-to-have scope.
 - Do not modify or close unrelated issues/PRs.
 - Before starting, verify `AGENT_ID=agent_taskmaker`; if mismatch, stop and report.
 
 ## Definition of Done
+
 - Every V0 checklist item is mapped to exactly one outcome:
   - `implemented` (no issue needed), or
   - `partial/missing` with one tracked open issue (new or existing).

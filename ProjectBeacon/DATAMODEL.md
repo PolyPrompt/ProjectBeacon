@@ -153,6 +153,7 @@ Constraints:
 Purpose: dependency graph between tasks.
 
 Fields:
+
 - `project_id` (FK -> `projects.id`)
 - `id` (PK)
 - `task_id` (FK -> `tasks.id`)

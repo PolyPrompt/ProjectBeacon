@@ -53,72 +53,81 @@ export async function upsertUserFromClerk(
 
   const supabase = getServiceSupabaseClient();
 
-  const { data: existingRow, error: existingError } = await supabase
+  const { data: existingByClerk, error: existingByClerkError } = await supabase
     .from("users")
     .select("id")
     .eq("clerk_user_id", clerkUserId)
     .maybeSingle();
 
-  if (existingError) {
+  if (existingByClerkError) {
     throw new ApiHttpError(
       500,
       "DB_ERROR",
       "Failed reading user bootstrap state",
-      existingError.message,
+      existingByClerkError.message,
     );
   }
 
-  let resolvedExistingRow = existingRow;
+  let existingByEmail: { id: string } | null = null;
 
-  if (!resolvedExistingRow) {
-    // Handle legacy rows created before clerk_user_id existed.
-    const { data: emailMatchedRow, error: emailMatchError } = await supabase
+  if (!existingByClerk) {
+    const { data, error: existingByEmailError } = await supabase
       .from("users")
       .select("id")
       .eq("email", email)
       .maybeSingle();
 
-    if (emailMatchError) {
+    if (existingByEmailError) {
       throw new ApiHttpError(
         500,
         "DB_ERROR",
-        "Failed matching existing user by email",
-        emailMatchError.message,
+        "Failed reading user bootstrap state",
+        existingByEmailError.message,
       );
     }
 
-    resolvedExistingRow = emailMatchedRow;
+    existingByEmail = data;
   }
 
-  const created = !resolvedExistingRow;
+  const existingRow = existingByClerk ?? existingByEmail;
+  const created = !existingRow;
 
-  const { data: upserted, error: upsertError } = await supabase
-    .from("users")
-    .upsert(
-      {
-        ...(resolvedExistingRow ? { id: resolvedExistingRow.id } : {}),
-        clerk_user_id: clerkUserId,
-        email,
-        name,
-      },
-      {
-        onConflict: "clerk_user_id",
-      },
-    )
-    .select("id")
-    .single();
+  const upserted = existingRow
+    ? await supabase
+        .from("users")
+        .update({
+          clerk_user_id: clerkUserId,
+          email,
+          name,
+        })
+        .eq("id", existingRow.id)
+        .select("id")
+        .single()
+    : await supabase
+        .from("users")
+        .insert({
+          clerk_user_id: clerkUserId,
+          email,
+          name,
+        })
+        .select("id")
+        .single();
 
-  if (upsertError) {
+  if (upserted.error) {
     throw new ApiHttpError(
       500,
       "DB_ERROR",
       "Failed syncing user profile",
-      upsertError.message,
+      upserted.error.message,
     );
   }
 
+  if (!upserted.data) {
+    throw new ApiHttpError(500, "DB_ERROR", "Failed syncing user profile");
+  }
+
   return {
-    userId: upserted.id,
+    userId: upserted.data.id,
     clerkUserId,
     email,
     created,

@@ -1,333 +1,542 @@
-<!DOCTYPE html>
+<!doctype html>
 
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Project Alpha Dashboard</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#622faf",
-                        "background-light": "#f7f6f8",
-                        "background-dark": "#18131f",
-                    },
-                    fontFamily: {
-                        "display": ["Manrope"]
-                    },
-                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
-                },
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Project Alpha Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#622faf",
+              "background-light": "#f7f6f8",
+              "background-dark": "#18131f",
             },
-        }
+            fontFamily: {
+              display: ["Manrope"],
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px",
+            },
+          },
+        },
+      };
     </script>
-<style>
-        body {
-            font-family: 'Manrope', sans-serif;
-        }
-        .bento-card {
-            background-color: rgba(98, 47, 175, 0.05);
-            border: 1px solid rgba(98, 47, 175, 0.2);
-        }
-        .bento-card:hover {
-            border-color: #622faf;
-        }
+    <style>
+      body {
+        font-family: "Manrope", sans-serif;
+      }
+      .bento-card {
+        background-color: rgba(98, 47, 175, 0.05);
+        border: 1px solid rgba(98, 47, 175, 0.2);
+      }
+      .bento-card:hover {
+        border-color: #622faf;
+      }
     </style>
-</head>
-<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
-<!-- Top Navigation Bar -->
-<header class="border-b border-primary/20 bg-background-light/50 dark:bg-background-dark/50 backdrop-blur-md sticky top-0 z-50 px-6 py-3">
-<div class="max-w-[1440px] mx-auto flex items-center justify-between">
-<div class="flex items-center gap-3">
-<div class="p-2 bg-primary rounded-lg text-white">
-<span class="material-symbols-outlined">rocket_launch</span>
-</div>
-<h1 class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">Project <span class="text-primary">Alpha</span></h1>
-</div>
-<div class="flex items-center gap-6">
-<div class="flex items-center gap-3 pl-6 border-l border-primary/20">
-<div class="text-right hidden sm:block">
-<p class="text-sm font-bold leading-none">Marcus Chen</p>
-<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Lead Architect</p>
-</div>
-<div class="relative group">
-<div class="h-10 w-10 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center overflow-hidden">
-<img alt="User Profile" class="h-full w-full object-cover" data-alt="Close up portrait of a professional male developer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAporljUz1ITTzhgIF1N-Z19pTh6cFEyXodKX7sQCQSyLNJo_Z_hwA7Bv71-fwO2ygjlnldltqc12ZU7pSz0lY7nCWWO3w9yQecjTsskIKXEULDD_WekmnZq8--6hPWMOma5gsY9s4BhAsw89ZtIviemrfcuBcxSFt4cUGCQDGNR261JSXub-O3fSwAJYB7CcmSMf1zd-qKwkcuvaSgWo68aAleMPP7fY96-CEanlsZXt7J04kDxrsBFxlYhevOlMwqgUZ8A6XVvQM"/>
-</div>
-<div class="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-background-dark"></div>
-</div>
-</div>
-</div>
-</div>
-</header>
-<main class="max-w-[1440px] mx-auto p-6 flex flex-col gap-6">
-<!-- Deadline Row -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-<div class="bento-card rounded-xl p-5 flex items-center gap-4 transition-all duration-300">
-<div class="h-12 w-12 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
-<span class="material-symbols-outlined text-3xl">api</span>
-</div>
-<div class="flex-1">
-<p class="text-xs font-bold text-primary uppercase tracking-widest">Next Milestone</p>
-<h3 class="text-lg font-bold">Auth API Integration</h3>
-</div>
-<div class="text-right">
-<p class="text-2xl font-black text-primary">2d 04h</p>
-<p class="text-xs text-slate-500 dark:text-slate-400">remaining</p>
-</div>
-</div>
-<div class="bento-card rounded-xl p-5 flex items-center gap-4 transition-all duration-300">
-<div class="h-12 w-12 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
-<span class="material-symbols-outlined text-3xl">flag</span>
-</div>
-<div class="flex-1">
-<p class="text-xs font-bold text-primary uppercase tracking-widest">Final Submission</p>
-<h3 class="text-lg font-bold">Project Delivery</h3>
-</div>
-<div class="text-right">
-<p class="text-2xl font-black text-primary">12d 08h</p>
-<p class="text-xs text-slate-500 dark:text-slate-400">remaining</p>
-</div>
-</div>
-</div>
-<!-- Main Dashboard Grid -->
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-<!-- Left Content Area (8 Columns) -->
-<div class="lg:col-span-8 flex flex-col gap-6">
-<!-- Global Project Backlog -->
-<section id="my-delegated-tasks-container">
-<div class="flex items-center justify-between mb-4">
-<h2 class="text-lg font-bold flex items-center gap-2">
-<span class="material-symbols-outlined text-primary">assignment_ind</span>
-                            My Delegated Tasks
-                        </h2>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-<!-- Personal Task Card 1 -->
-<div class="bento-card rounded-xl p-5 border border-primary/20 bg-primary/5 flex flex-col gap-4">
-<div class="flex justify-between items-start">
-<h3 class="font-bold text-base">State Management Redux</h3>
-<span class="px-2 py-1 rounded bg-rose-500/10 text-rose-500 text-[10px] font-black uppercase">High</span>
-</div>
-<div class="bg-primary/10 rounded-lg p-3 border-l-4 border-primary">
-<div class="flex items-center gap-2 mb-1">
-<span class="material-symbols-outlined text-sm text-primary">smart_toy</span>
-<span class="text-[10px] font-bold text-primary uppercase">AI Rationale</span>
-</div>
-<p class="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
-                                    Assigned based on your demonstrated proficiency in complex architecture and previous 100% completion rate on React hooks.
-                                </p>
-</div>
-<div class="flex justify-between items-center mt-2">
-<div class="flex -space-x-2">
-<div class="h-6 w-6 rounded-full border border-background-dark bg-slate-600"></div>
-<div class="h-6 w-6 rounded-full border border-background-dark bg-primary flex items-center justify-center text-[10px] font-bold">+2</div>
-</div>
-<button class="bg-primary text-white text-xs px-3 py-1.5 rounded-lg font-bold flex items-center gap-1">
-                                    View Task <span class="material-symbols-outlined text-sm">arrow_forward</span>
-</button>
-</div>
-</div>
-<!-- Personal Task Card 2 -->
-<div class="bento-card rounded-xl p-5 border border-primary/20 bg-primary/5 flex flex-col gap-4">
-<div class="flex justify-between items-start">
-<h3 class="font-bold text-base">API Documentation</h3>
-<span class="px-2 py-1 rounded bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase">Medium</span>
-</div>
-<div class="bg-primary/10 rounded-lg p-3 border-l-4 border-primary">
-<div class="flex items-center gap-2 mb-1">
-<span class="material-symbols-outlined text-sm text-primary">smart_toy</span>
-<span class="text-[10px] font-bold text-primary uppercase">AI Rationale</span>
-</div>
-<p class="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
-                                    System matched task to your technical writing score. High impact on onboarding speed for remaining team members.
-                                </p>
-</div>
-<div class="flex justify-between items-center mt-2">
-<div class="flex -space-x-2">
-<div class="h-6 w-6 rounded-full border border-background-dark bg-slate-600"></div>
-</div>
-<button class="bg-primary/20 text-primary text-xs px-3 py-1.5 rounded-lg font-bold flex items-center gap-1">
-                                    View Task <span class="material-symbols-outlined text-sm">more_horiz</span>
-</button>
-</div>
-</div>
-</div>
-</section><section class="bg-background-light dark:bg-background-dark border border-primary/10 rounded-xl overflow-hidden shadow-sm">
-<div class="px-6 py-4 border-b border-primary/10 flex items-center justify-between">
-<h2 class="text-lg font-bold flex items-center gap-2">
-<span class="material-symbols-outlined text-primary">list_alt</span>
-                            Global Project Backlog
-                        </h2>
-<button class="text-xs font-bold text-primary hover:underline">View All</button>
-</div>
-<div class="overflow-x-auto">
-<table class="w-full text-left">
-<thead>
-<tr class="bg-primary/5 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-<th class="px-6 py-3">Task Name</th>
-<th class="px-6 py-3">Assigned</th>
-<th class="px-6 py-3">Skills</th>
-<th class="px-6 py-3">Status</th>
-
-</tr>
-</thead>
-<tbody class="divide-y divide-primary/5">
-<tr class="hover:bg-primary/5 transition-colors">
-<td class="px-6 py-4 font-medium">Database Schema</td>
-<td class="px-6 py-4">
-<div class="flex items-center gap-2">
-<div class="h-6 w-6 rounded-full bg-slate-700"></div>
-<span class="text-sm">Alex</span>
-</div>
-</td>
-<td class="px-6 py-4">
-<div class="flex gap-1">
-<span class="px-2 py-0.5 rounded bg-primary/10 text-[10px] text-primary">SQL</span>
-<span class="px-2 py-0.5 rounded bg-primary/10 text-[10px] text-primary">Backend</span>
-</div>
-</td>
-<td class="px-6 py-4">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-500">In Progress</span>
-</td>
-
-</tr>
-<tr class="hover:bg-primary/5 transition-colors">
-<td class="px-6 py-4 font-medium">UI Kit Refactor</td>
-<td class="px-6 py-4">
-<div class="flex items-center gap-2">
-<div class="h-6 w-6 rounded-full bg-slate-700"></div>
-<span class="text-sm">Sarah</span>
-</div>
-</td>
-<td class="px-6 py-4">
-<div class="flex gap-1">
-<span class="px-2 py-0.5 rounded bg-primary/10 text-[10px] text-primary">Design</span>
-<span class="px-2 py-0.5 rounded bg-primary/10 text-[10px] text-primary">Tailwind</span>
-</div>
-</td>
-<td class="px-6 py-4">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-500">Needs Support</span>
-</td>
-
-</tr>
-<tr class="hover:bg-primary/5 transition-colors">
-<td class="px-6 py-4 font-medium">CI/CD Pipeline</td>
-<td class="px-6 py-4">
-<div class="flex items-center gap-2">
-<div class="h-6 w-6 rounded-full bg-slate-700"></div>
-<span class="text-sm">Jordan</span>
-</div>
-</td>
-<td class="px-6 py-4">
-<div class="flex gap-1">
-<span class="px-2 py-0.5 rounded bg-primary/10 text-[10px] text-primary">DevOps</span>
-</div>
-</td>
-<td class="px-6 py-4">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500">Completed</span>
-</td>
-
-</tr>
-</tbody>
-</table>
-</div>
-</section>
-<!-- My Delegated Tasks -->
-</div>
-<!-- Right Sidebar (4 Columns) -->
-<aside class="lg:col-span-4">
-<div class="bg-background-light dark:bg-background-dark border border-primary/10 rounded-xl overflow-hidden shadow-sm h-full sticky top-24">
-<div class="px-6 py-4 border-b border-primary/10">
-<h2 class="text-lg font-bold flex items-center gap-2">
-<span class="material-symbols-outlined text-primary">group</span>
-                            Team Status Overview
-                        </h2>
-</div>
-<div class="p-4 flex flex-col gap-4">
-<!-- Team Member 1 -->
-<div class="p-3 rounded-lg bg-primary/5 border border-primary/5 flex items-center gap-4">
-<div class="relative">
-<div class="h-10 w-10 rounded-full bg-slate-700 overflow-hidden">
-<img alt="Alex" class="h-full w-full object-cover" data-alt="Portrait of Alex, a tech professional" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyWxc689Llynip0vORsXIu8uuyd14V5-8VHnYLdhD383r3JzMyYvfXfpvTJXxhO6HRbu7mbb7NO2yNXF4-JgjEm1VKqqw0ylajeOJRyXGW3oqPqPQf32Js9qs-_potZLk9c4v7iSrgtEhGugWVhuc03Z5JsKMRsnCoGDUIdkySUteRb2GalqiHEuIJhPypgbISuubvcIVMSOUMRj2RZ0y5hP0d3t_siTEHb2Oc5dSPI13CvUbXPrgHPFI3IpevtU-IItyflyGDNAo"/>
-</div>
-<div class="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-amber-500 rounded-full border-2 border-background-dark"></div>
-</div>
-<div class="flex-1 min-w-0">
-<h4 class="font-bold text-sm truncate">Alex Rivera</h4>
-<p class="text-xs text-slate-500 dark:text-slate-400 truncate">Backend Developer</p>
-</div>
-<div class="text-right">
-<span class="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded">Behind</span>
-</div>
-</div>
-<!-- Team Member 2 -->
-<div class="p-3 rounded-lg bg-primary/5 border border-primary/5 flex items-center gap-4">
-<div class="relative">
-<div class="h-10 w-10 rounded-full bg-slate-700 overflow-hidden">
-<img alt="Sarah" class="h-full w-full object-cover" data-alt="Portrait of Sarah, a female UI designer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0DEZJZI9uSLLwtPB8WPBCSm5ZWzbOpCEGJOiRfLBjNLAIQdZ8nINwoMtoHhDduT-5n4lubCd-DJjq4ti2Lf1SJEJuve33FPqOEBjmItE3tKiqqP7vZaDkVHHOZASX-K4TBwOOYpOc7knyrnar73l6FrjOgVvkPRZeUx1RD_cvL-hD7o_0mDM4WuLsDbWhbD-V1Nyp_LQrhhNz3RSJXViUV_WueOJiS6xT_oXaUMxubMDY3sV4qMhxzCUHkbQZA-gV3AvA8MnVHMQ"/>
-</div>
-<div class="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-rose-500 rounded-full border-2 border-background-dark"></div>
-</div>
-<div class="flex-1 min-w-0">
-<h4 class="font-bold text-sm truncate">Sarah Jenkins</h4>
-<p class="text-xs text-slate-500 dark:text-slate-400 truncate">UI/UX Architect</p>
-</div>
-<div class="text-right">
-<span class="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded">Needs Support</span>
-</div>
-</div>
-<!-- Team Member 3 -->
-<div class="p-3 rounded-lg bg-primary/5 border border-primary/5 flex items-center gap-4">
-<div class="relative">
-<div class="h-10 w-10 rounded-full bg-slate-700 overflow-hidden">
-<img alt="Jordan" class="h-full w-full object-cover" data-alt="Portrait of Jordan, a DevOps engineer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3v2kZ54q5c4OuJqS4h8o11tRp5jPBAAiC_ziEHA15EJ2CxbZfWQMXXDZIgF9tUGP2AmTU5KDZAz17rlxnbyqITK-73k8AnrEsyfGv-P9JKovnYGKC3j9f_vWxjTc-LlTgCZtDNiMpfmbTiwF_QzHtogWdGmBdJ-RwRSglP-dVBt_o0vRL_57eP-QZGrMQXqMo2VDCIEdPc2dGgDEtyrngNJ0iXJ-EftDtYgvCcF9K2OysGu_lrl-gXVP1qoYCmtP1NVZB5mIVYMQ"/>
-</div>
-<div class="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-emerald-500 rounded-full border-2 border-background-dark"></div>
-</div>
-<div class="flex-1 min-w-0">
-<h4 class="font-bold text-sm truncate">Jordan Smith</h4>
-<p class="text-xs text-slate-500 dark:text-slate-400 truncate">DevOps Lead</p>
-</div>
-<div class="text-right">
-<span class="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded">Ahead of Schedule</span>
-</div>
-</div>
-<!-- Team Member 4 -->
-<div class="p-3 rounded-lg bg-primary/5 border border-primary/5 flex items-center gap-4">
-<div class="relative">
-<div class="h-10 w-10 rounded-full bg-slate-700 overflow-hidden">
-<img alt="Sam" class="h-full w-full object-cover" data-alt="Portrait of Sam, a junior developer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCa1F6700utN2IVgLDDacUzUnisyxvzU6WibS7ykkkVMzfin18667etn2sFMpGal7tmeQiUFGN0vE13PEGOPrt7tcBtuRgpgOCEUragZqR7uz2zqo_KH8PgGGgPM7RLiHz8EOlIb42Y-gM_myyTnAxt6PckuaAgtx-eRd8floA8P1zdB2Lj9F3dTVcWbbWFe3RPzAuqLXemmqcfRfAyZR3TiOifLcV6zSqgT43hB-6bYDaOdJNEK-7GatCw997GLujIeo6zVbhEhfs"/>
-</div>
-<div class="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-emerald-500 rounded-full border-2 border-background-dark"></div>
-</div>
-<div class="flex-1 min-w-0">
-<h4 class="font-bold text-sm truncate">Sam Wilson</h4>
-<p class="text-xs text-slate-500 dark:text-slate-400 truncate">Fullstack Junior</p>
-</div>
-<div class="text-right">
-<span class="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded">On Track</span>
-</div>
-</div>
-</div>
-</div>
-</aside>
-</div>
-</main>
-<!-- Footer -->
-<footer class="max-w-[1440px] mx-auto px-6 py-8 mt-12 border-t border-primary/10">
-<div class="flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-widest">
-<p>© 2024 Project Alpha Delegator. System Status: Optimal</p>
-<div class="flex gap-6">
-<a class="hover:text-primary transition-colors" href="#">Documentation</a>
-<a class="hover:text-primary transition-colors" href="#">API Keys</a>
-<a class="hover:text-primary transition-colors" href="#">Support</a>
-</div>
-</div>
-</footer>
-</body></html>
+  </head>
+  <body
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen"
+  >
+    <!-- Top Navigation Bar -->
+    <header
+      class="border-b border-primary/20 bg-background-light/50 dark:bg-background-dark/50 backdrop-blur-md sticky top-0 z-50 px-6 py-3"
+    >
+      <div class="max-w-[1440px] mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-primary rounded-lg text-white">
+            <span class="material-symbols-outlined">rocket_launch</span>
+          </div>
+          <h1
+            class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100"
+          >
+            Project <span class="text-primary">Alpha</span>
+          </h1>
+        </div>
+        <div class="flex items-center gap-6">
+          <div class="flex items-center gap-3 pl-6 border-l border-primary/20">
+            <div class="text-right hidden sm:block">
+              <p class="text-sm font-bold leading-none">Marcus Chen</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Lead Architect
+              </p>
+            </div>
+            <div class="relative group">
+              <div
+                class="h-10 w-10 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center overflow-hidden"
+              >
+                <img
+                  alt="User Profile"
+                  class="h-full w-full object-cover"
+                  data-alt="Close up portrait of a professional male developer"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAporljUz1ITTzhgIF1N-Z19pTh6cFEyXodKX7sQCQSyLNJo_Z_hwA7Bv71-fwO2ygjlnldltqc12ZU7pSz0lY7nCWWO3w9yQecjTsskIKXEULDD_WekmnZq8--6hPWMOma5gsY9s4BhAsw89ZtIviemrfcuBcxSFt4cUGCQDGNR261JSXub-O3fSwAJYB7CcmSMf1zd-qKwkcuvaSgWo68aAleMPP7fY96-CEanlsZXt7J04kDxrsBFxlYhevOlMwqgUZ8A6XVvQM"
+                />
+              </div>
+              <div
+                class="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-background-dark"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+    <main class="max-w-[1440px] mx-auto p-6 flex flex-col gap-6">
+      <!-- Deadline Row -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div
+          class="bento-card rounded-xl p-5 flex items-center gap-4 transition-all duration-300"
+        >
+          <div
+            class="h-12 w-12 rounded-lg bg-primary/20 flex items-center justify-center text-primary"
+          >
+            <span class="material-symbols-outlined text-3xl">api</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-xs font-bold text-primary uppercase tracking-widest">
+              Next Milestone
+            </p>
+            <h3 class="text-lg font-bold">Auth API Integration</h3>
+          </div>
+          <div class="text-right">
+            <p class="text-2xl font-black text-primary">2d 04h</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">remaining</p>
+          </div>
+        </div>
+        <div
+          class="bento-card rounded-xl p-5 flex items-center gap-4 transition-all duration-300"
+        >
+          <div
+            class="h-12 w-12 rounded-lg bg-primary/20 flex items-center justify-center text-primary"
+          >
+            <span class="material-symbols-outlined text-3xl">flag</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-xs font-bold text-primary uppercase tracking-widest">
+              Final Submission
+            </p>
+            <h3 class="text-lg font-bold">Project Delivery</h3>
+          </div>
+          <div class="text-right">
+            <p class="text-2xl font-black text-primary">12d 08h</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">remaining</p>
+          </div>
+        </div>
+      </div>
+      <!-- Main Dashboard Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left Content Area (8 Columns) -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+          <!-- Global Project Backlog -->
+          <section id="my-delegated-tasks-container">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary"
+                  >assignment_ind</span
+                >
+                My Delegated Tasks
+              </h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Personal Task Card 1 -->
+              <div
+                class="bento-card rounded-xl p-5 border border-primary/20 bg-primary/5 flex flex-col gap-4"
+              >
+                <div class="flex justify-between items-start">
+                  <h3 class="font-bold text-base">State Management Redux</h3>
+                  <span
+                    class="px-2 py-1 rounded bg-rose-500/10 text-rose-500 text-[10px] font-black uppercase"
+                    >High</span
+                  >
+                </div>
+                <div
+                  class="bg-primary/10 rounded-lg p-3 border-l-4 border-primary"
+                >
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="material-symbols-outlined text-sm text-primary"
+                      >smart_toy</span
+                    >
+                    <span class="text-[10px] font-bold text-primary uppercase"
+                      >AI Rationale</span
+                    >
+                  </div>
+                  <p
+                    class="text-xs leading-relaxed text-slate-600 dark:text-slate-400"
+                  >
+                    Assigned based on your demonstrated proficiency in complex
+                    architecture and previous 100% completion rate on React
+                    hooks.
+                  </p>
+                </div>
+                <div class="flex justify-between items-center mt-2">
+                  <div class="flex -space-x-2">
+                    <div
+                      class="h-6 w-6 rounded-full border border-background-dark bg-slate-600"
+                    ></div>
+                    <div
+                      class="h-6 w-6 rounded-full border border-background-dark bg-primary flex items-center justify-center text-[10px] font-bold"
+                    >
+                      +2
+                    </div>
+                  </div>
+                  <button
+                    class="bg-primary text-white text-xs px-3 py-1.5 rounded-lg font-bold flex items-center gap-1"
+                  >
+                    View Task
+                    <span class="material-symbols-outlined text-sm"
+                      >arrow_forward</span
+                    >
+                  </button>
+                </div>
+              </div>
+              <!-- Personal Task Card 2 -->
+              <div
+                class="bento-card rounded-xl p-5 border border-primary/20 bg-primary/5 flex flex-col gap-4"
+              >
+                <div class="flex justify-between items-start">
+                  <h3 class="font-bold text-base">API Documentation</h3>
+                  <span
+                    class="px-2 py-1 rounded bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase"
+                    >Medium</span
+                  >
+                </div>
+                <div
+                  class="bg-primary/10 rounded-lg p-3 border-l-4 border-primary"
+                >
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="material-symbols-outlined text-sm text-primary"
+                      >smart_toy</span
+                    >
+                    <span class="text-[10px] font-bold text-primary uppercase"
+                      >AI Rationale</span
+                    >
+                  </div>
+                  <p
+                    class="text-xs leading-relaxed text-slate-600 dark:text-slate-400"
+                  >
+                    System matched task to your technical writing score. High
+                    impact on onboarding speed for remaining team members.
+                  </p>
+                </div>
+                <div class="flex justify-between items-center mt-2">
+                  <div class="flex -space-x-2">
+                    <div
+                      class="h-6 w-6 rounded-full border border-background-dark bg-slate-600"
+                    ></div>
+                  </div>
+                  <button
+                    class="bg-primary/20 text-primary text-xs px-3 py-1.5 rounded-lg font-bold flex items-center gap-1"
+                  >
+                    View Task
+                    <span class="material-symbols-outlined text-sm"
+                      >more_horiz</span
+                    >
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section
+            class="bg-background-light dark:bg-background-dark border border-primary/10 rounded-xl overflow-hidden shadow-sm"
+          >
+            <div
+              class="px-6 py-4 border-b border-primary/10 flex items-center justify-between"
+            >
+              <h2 class="text-lg font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary"
+                  >list_alt</span
+                >
+                Global Project Backlog
+              </h2>
+              <button class="text-xs font-bold text-primary hover:underline">
+                View All
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left">
+                <thead>
+                  <tr
+                    class="bg-primary/5 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+                  >
+                    <th class="px-6 py-3">Task Name</th>
+                    <th class="px-6 py-3">Assigned</th>
+                    <th class="px-6 py-3">Skills</th>
+                    <th class="px-6 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-primary/5">
+                  <tr class="hover:bg-primary/5 transition-colors">
+                    <td class="px-6 py-4 font-medium">Database Schema</td>
+                    <td class="px-6 py-4">
+                      <div class="flex items-center gap-2">
+                        <div class="h-6 w-6 rounded-full bg-slate-700"></div>
+                        <span class="text-sm">Alex</span>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <div class="flex gap-1">
+                        <span
+                          class="px-2 py-0.5 rounded bg-primary/10 text-[10px] text-primary"
+                          >SQL</span
+                        >
+                        <span
+                          class="px-2 py-0.5 rounded bg-primary/10 text-[10px] text-primary"
+                          >Backend</span
+                        >
+                      </div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-500"
+                        >In Progress</span
+                      >
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-primary/5 transition-colors">
+                    <td class="px-6 py-4 font-medium">UI Kit Refactor</td>
+                    <td class="px-6 py-4">
+                      <div class="flex items-center gap-2">
+                        <div class="h-6 w-6 rounded-full bg-slate-700"></div>
+                        <span class="text-sm">Sarah</span>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <div class="flex gap-1">
+                        <span
+                          class="px-2 py-0.5 rounded bg-primary/10 text-[10px] text-primary"
+                          >Design</span
+                        >
+                        <span
+                          class="px-2 py-0.5 rounded bg-primary/10 text-[10px] text-primary"
+                          >Tailwind</span
+                        >
+                      </div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-500"
+                        >Needs Support</span
+                      >
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-primary/5 transition-colors">
+                    <td class="px-6 py-4 font-medium">CI/CD Pipeline</td>
+                    <td class="px-6 py-4">
+                      <div class="flex items-center gap-2">
+                        <div class="h-6 w-6 rounded-full bg-slate-700"></div>
+                        <span class="text-sm">Jordan</span>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <div class="flex gap-1">
+                        <span
+                          class="px-2 py-0.5 rounded bg-primary/10 text-[10px] text-primary"
+                          >DevOps</span
+                        >
+                      </div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500"
+                        >Completed</span
+                      >
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <!-- My Delegated Tasks -->
+        </div>
+        <!-- Right Sidebar (4 Columns) -->
+        <aside class="lg:col-span-4">
+          <div
+            class="bg-background-light dark:bg-background-dark border border-primary/10 rounded-xl overflow-hidden shadow-sm h-full sticky top-24"
+          >
+            <div class="px-6 py-4 border-b border-primary/10">
+              <h2 class="text-lg font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary"
+                  >group</span
+                >
+                Team Status Overview
+              </h2>
+            </div>
+            <div class="p-4 flex flex-col gap-4">
+              <!-- Team Member 1 -->
+              <div
+                class="p-3 rounded-lg bg-primary/5 border border-primary/5 flex items-center gap-4"
+              >
+                <div class="relative">
+                  <div
+                    class="h-10 w-10 rounded-full bg-slate-700 overflow-hidden"
+                  >
+                    <img
+                      alt="Alex"
+                      class="h-full w-full object-cover"
+                      data-alt="Portrait of Alex, a tech professional"
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyWxc689Llynip0vORsXIu8uuyd14V5-8VHnYLdhD383r3JzMyYvfXfpvTJXxhO6HRbu7mbb7NO2yNXF4-JgjEm1VKqqw0ylajeOJRyXGW3oqPqPQf32Js9qs-_potZLk9c4v7iSrgtEhGugWVhuc03Z5JsKMRsnCoGDUIdkySUteRb2GalqiHEuIJhPypgbISuubvcIVMSOUMRj2RZ0y5hP0d3t_siTEHb2Oc5dSPI13CvUbXPrgHPFI3IpevtU-IItyflyGDNAo"
+                    />
+                  </div>
+                  <div
+                    class="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-amber-500 rounded-full border-2 border-background-dark"
+                  ></div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-bold text-sm truncate">Alex Rivera</h4>
+                  <p
+                    class="text-xs text-slate-500 dark:text-slate-400 truncate"
+                  >
+                    Backend Developer
+                  </p>
+                </div>
+                <div class="text-right">
+                  <span
+                    class="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded"
+                    >Behind</span
+                  >
+                </div>
+              </div>
+              <!-- Team Member 2 -->
+              <div
+                class="p-3 rounded-lg bg-primary/5 border border-primary/5 flex items-center gap-4"
+              >
+                <div class="relative">
+                  <div
+                    class="h-10 w-10 rounded-full bg-slate-700 overflow-hidden"
+                  >
+                    <img
+                      alt="Sarah"
+                      class="h-full w-full object-cover"
+                      data-alt="Portrait of Sarah, a female UI designer"
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0DEZJZI9uSLLwtPB8WPBCSm5ZWzbOpCEGJOiRfLBjNLAIQdZ8nINwoMtoHhDduT-5n4lubCd-DJjq4ti2Lf1SJEJuve33FPqOEBjmItE3tKiqqP7vZaDkVHHOZASX-K4TBwOOYpOc7knyrnar73l6FrjOgVvkPRZeUx1RD_cvL-hD7o_0mDM4WuLsDbWhbD-V1Nyp_LQrhhNz3RSJXViUV_WueOJiS6xT_oXaUMxubMDY3sV4qMhxzCUHkbQZA-gV3AvA8MnVHMQ"
+                    />
+                  </div>
+                  <div
+                    class="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-rose-500 rounded-full border-2 border-background-dark"
+                  ></div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-bold text-sm truncate">Sarah Jenkins</h4>
+                  <p
+                    class="text-xs text-slate-500 dark:text-slate-400 truncate"
+                  >
+                    UI/UX Architect
+                  </p>
+                </div>
+                <div class="text-right">
+                  <span
+                    class="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded"
+                    >Needs Support</span
+                  >
+                </div>
+              </div>
+              <!-- Team Member 3 -->
+              <div
+                class="p-3 rounded-lg bg-primary/5 border border-primary/5 flex items-center gap-4"
+              >
+                <div class="relative">
+                  <div
+                    class="h-10 w-10 rounded-full bg-slate-700 overflow-hidden"
+                  >
+                    <img
+                      alt="Jordan"
+                      class="h-full w-full object-cover"
+                      data-alt="Portrait of Jordan, a DevOps engineer"
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3v2kZ54q5c4OuJqS4h8o11tRp5jPBAAiC_ziEHA15EJ2CxbZfWQMXXDZIgF9tUGP2AmTU5KDZAz17rlxnbyqITK-73k8AnrEsyfGv-P9JKovnYGKC3j9f_vWxjTc-LlTgCZtDNiMpfmbTiwF_QzHtogWdGmBdJ-RwRSglP-dVBt_o0vRL_57eP-QZGrMQXqMo2VDCIEdPc2dGgDEtyrngNJ0iXJ-EftDtYgvCcF9K2OysGu_lrl-gXVP1qoYCmtP1NVZB5mIVYMQ"
+                    />
+                  </div>
+                  <div
+                    class="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-emerald-500 rounded-full border-2 border-background-dark"
+                  ></div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-bold text-sm truncate">Jordan Smith</h4>
+                  <p
+                    class="text-xs text-slate-500 dark:text-slate-400 truncate"
+                  >
+                    DevOps Lead
+                  </p>
+                </div>
+                <div class="text-right">
+                  <span
+                    class="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded"
+                    >Ahead of Schedule</span
+                  >
+                </div>
+              </div>
+              <!-- Team Member 4 -->
+              <div
+                class="p-3 rounded-lg bg-primary/5 border border-primary/5 flex items-center gap-4"
+              >
+                <div class="relative">
+                  <div
+                    class="h-10 w-10 rounded-full bg-slate-700 overflow-hidden"
+                  >
+                    <img
+                      alt="Sam"
+                      class="h-full w-full object-cover"
+                      data-alt="Portrait of Sam, a junior developer"
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuCa1F6700utN2IVgLDDacUzUnisyxvzU6WibS7ykkkVMzfin18667etn2sFMpGal7tmeQiUFGN0vE13PEGOPrt7tcBtuRgpgOCEUragZqR7uz2zqo_KH8PgGGgPM7RLiHz8EOlIb42Y-gM_myyTnAxt6PckuaAgtx-eRd8floA8P1zdB2Lj9F3dTVcWbbWFe3RPzAuqLXemmqcfRfAyZR3TiOifLcV6zSqgT43hB-6bYDaOdJNEK-7GatCw997GLujIeo6zVbhEhfs"
+                    />
+                  </div>
+                  <div
+                    class="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-emerald-500 rounded-full border-2 border-background-dark"
+                  ></div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-bold text-sm truncate">Sam Wilson</h4>
+                  <p
+                    class="text-xs text-slate-500 dark:text-slate-400 truncate"
+                  >
+                    Fullstack Junior
+                  </p>
+                </div>
+                <div class="text-right">
+                  <span
+                    class="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded"
+                    >On Track</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+    <!-- Footer -->
+    <footer
+      class="max-w-[1440px] mx-auto px-6 py-8 mt-12 border-t border-primary/10"
+    >
+      <div
+        class="flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-widest"
+      >
+        <p>© 2024 Project Alpha Delegator. System Status: Optimal</p>
+        <div class="flex gap-6">
+          <a class="hover:text-primary transition-colors" href="#"
+            >Documentation</a
+          >
+          <a class="hover:text-primary transition-colors" href="#">API Keys</a>
+          <a class="hover:text-primary transition-colors" href="#">Support</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

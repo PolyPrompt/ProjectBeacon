@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type SendResult = {
   projectId: string;
@@ -11,14 +11,24 @@ type SendResult = {
 export function ShareEmailForm({
   projectId,
   joinUrl,
+  suggestedEmails = [],
 }: {
   projectId: string;
   joinUrl: string;
+  suggestedEmails?: string[];
 }) {
   const [emailsInput, setEmailsInput] = useState("");
   const [result, setResult] = useState<SendResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
+
+  useEffect(() => {
+    if (emailsInput.length > 0 || suggestedEmails.length === 0) {
+      return;
+    }
+
+    setEmailsInput(suggestedEmails.join("\n"));
+  }, [emailsInput.length, suggestedEmails]);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -59,10 +69,10 @@ export function ShareEmailForm({
   }
 
   return (
-    <form className="mt-4 space-y-3" onSubmit={onSubmit}>
-      <h3 className="font-medium">Share by Email</h3>
+    <form className="space-y-3" onSubmit={onSubmit}>
+      <h3 className="text-sm font-semibold">Share by Email</h3>
       <textarea
-        className="w-full rounded border border-black/20 px-3 py-2 text-sm"
+        className="w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm"
         rows={3}
         placeholder="teammate1@school.edu, teammate2@school.edu"
         value={emailsInput}
@@ -70,7 +80,7 @@ export function ShareEmailForm({
         required
       />
       <button
-        className="rounded border border-black/20 px-3 py-1.5 text-sm"
+        className="rounded-lg border border-black/20 px-3 py-1.5 text-sm font-medium"
         type="submit"
         disabled={isSending}
       >

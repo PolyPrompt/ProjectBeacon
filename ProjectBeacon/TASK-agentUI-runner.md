@@ -1,16 +1,18 @@
 You are `agent_ui` for this repo. Work autonomously until UI verification is complete or a blocking defect is filed for handoff.
 
 Read and follow in order:
-1) `ProjectBeacon/AGENTS.md`
-2) `ProjectBeacon/TASK-agentUI.md`
-3) `ProjectBeacon/API_CONTRACT.md`
-4) `ProjectBeacon/DATAMODEL.md`
-5) `ProjectBeacon/userstory_issues.md`
-6) `ProjectBeacon/docs/ui` (all scenario folders)
-7) `ProjectBeacon/HANDOFF.md`
-8) `ProjectBeacon/HANDOFF.local.md` (if present)
+
+1. `ProjectBeacon/AGENTS.md`
+2. `ProjectBeacon/TASK-agentUI.md`
+3. `ProjectBeacon/API_CONTRACT.md`
+4. `ProjectBeacon/DATAMODEL.md`
+5. `ProjectBeacon/userstory_issues.md`
+6. `ProjectBeacon/docs/ui` (all scenario folders)
+7. `ProjectBeacon/HANDOFF.md`
+8. `ProjectBeacon/HANDOFF.local.md` (if present)
 
 Execution rules:
+
 - Run from app root:
   - `cd ProjectBeacon/ProjectBeacon`
 - Load environment variables from `.env.local` in the current shell session.
@@ -26,6 +28,7 @@ Execution rules:
   - failing network calls
 
 Mandatory stop-and-file behavior:
+
 - If a blocking defect appears (runtime error, broken flow, or severe visual mismatch), stop and file a GitHub issue for `agent3` immediately.
 - Required labels:
   - `agent3`
@@ -40,9 +43,11 @@ Mandatory stop-and-file behavior:
   - evidence (screenshots + console/network findings)
 
 Issue command template:
+
 - `gh issue create --title "UI BUG: <short defect summary>" --label "agent3" --label "status:ready" --label "bug"`
 
 Output contract:
+
 - Update `ProjectBeacon/HANDOFF.local.md` with:
   - scenarios tested
   - pass/fail matrix

@@ -1,191 +1,391 @@
-<!DOCTYPE html>
+<!doctype html>
 
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Project Timeline | Micro-Goal View</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">tailwind.config = {darkMode: 'class', theme: {extend: {colors: {primary: '#a855f7', 'background-light': '#0f172a', 'background-dark': '#0f172a', 'amber-signal': '#f59e0b'}, fontFamily: {display: 'Manrope'}, borderRadius: {DEFAULT: '0.25rem', lg: '0.5rem', xl: '0.75rem', full: '9999px'}}}};</script>
-<style innerhtml=".glowing-thread { filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.4)); } .amber-thread { stroke-dasharray: 4; filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4)); } .predictive-ghost { opacity: 0.4; filter: grayscale(0.5); border-style: dashed !important; } .time-axis-line { background: linear-gradient(180deg, #a855f7 0%, rgba(168, 85, 247, 0.1) 100%); }">
-        .glowing-thread {
-            filter: drop-shadow(0 0 4px rgba(76, 153, 230, 0.6));
-        }
-        .amber-thread {
-            stroke-dasharray: 4;
-            filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4));
-        }
-        .predictive-ghost {
-            opacity: 0.4;
-            filter: grayscale(0.5);
-            border-style: dashed !important;
-        }
-        .support-pulse {
-            box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
-        }
-        .time-axis-line {
-            background: linear-gradient(180deg, #4c99e6 0%, rgba(76, 153, 230, 0.1) 100%);
-        }
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Project Timeline | Micro-Goal View</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#a855f7",
+              "background-light": "#0f172a",
+              "background-dark": "#0f172a",
+              "amber-signal": "#f59e0b",
+            },
+            fontFamily: { display: "Manrope" },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px",
+            },
+          },
+        },
+      };
+    </script>
+    <style
+      innerhtml=".glowing-thread { filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.4)); } .amber-thread { stroke-dasharray: 4; filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4)); } .predictive-ghost { opacity: 0.4; filter: grayscale(0.5); border-style: dashed !important; } .time-axis-line { background: linear-gradient(180deg, #a855f7 0%, rgba(168, 85, 247, 0.1) 100%); }"
+    >
+      .glowing-thread {
+        filter: drop-shadow(0 0 4px rgba(76, 153, 230, 0.6));
+      }
+      .amber-thread {
+        stroke-dasharray: 4;
+        filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4));
+      }
+      .predictive-ghost {
+        opacity: 0.4;
+        filter: grayscale(0.5);
+        border-style: dashed !important;
+      }
+      .support-pulse {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+      }
+      .time-axis-line {
+        background: linear-gradient(
+          180deg,
+          #4c99e6 0%,
+          rgba(76, 153, 230, 0.1) 100%
+        );
+      }
     </style>
-</head>
-<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
-<!-- Top Navigation -->
-<nav class="sticky top-0 z-50 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-4">
-<div class="max-w-7xl mx-auto flex items-center justify-between">
-<div class="flex items-center gap-4">
-<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white">
-<span class="material-icons">timeline</span>
-</div>
-<div>
-<h1 class="text-xl font-bold tracking-tight">Project Aurora</h1>
-<p class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">3-Week Sprint • Sprint Health: <span class="text-amber-signal">At Risk</span></p>
-</div>
-</div>
-<div class="flex items-center gap-6">
-<div class="hidden md:flex flex-col items-end">
-<span class="text-xs font-semibold text-slate-400 uppercase">Countdown</span>
-<span class="text-sm font-mono font-bold">14d : 22h : 45m</span>
-</div>
-<div class="relative group"><button class="bg-slate-800 text-slate-200 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 border border-slate-700 hover:border-primary/50 transition-colors"><span class="material-icons text-sm">list</span> Select Task <span class="material-icons text-sm">expand_more</span></button><div class="hidden group-hover:block absolute top-full right-0 mt-2 w-64 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-50 overflow-hidden"><a class="block px-4 py-3 text-sm hover:bg-primary/10 transition-colors border-b border-slate-800" href="#">Architecture Schema v1</a><a class="block px-4 py-3 text-sm hover:bg-primary/10 transition-colors border-b border-slate-800" href="#">API Authentication Core</a><a class="block px-4 py-3 text-sm hover:bg-primary/10 transition-colors" href="#">UI Component Library</a></div></div><div class="flex gap-2">
-<button class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-<span class="material-icons text-slate-500">zoom_in</span>
-</button>
-<button class="bg-primary/10 text-primary px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2">
-<span class="material-icons text-sm">gps_fixed</span>
-                        Critical Path
-                    </button>
-<button class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-lg shadow-primary/20">
-                        Add Goal
-                    </button>
-</div>
-</div>
-</div>
-</nav>
-<main class="max-w-7xl mx-auto px-6 py-12 flex relative">
-<!-- Left Vertical Time Axis -->
-<aside class="w-24 shrink-0 flex flex-col items-center relative">
-<div class="absolute top-0 bottom-0 w-1 time-axis-line rounded-full"></div>
-<!-- Day Markers -->
-<div class="space-y-48 relative z-10 w-full">
-<div class="flex flex-col items-center">
-<div class="bg-primary w-4 h-4 rounded-full ring-4 ring-background-light dark:ring-background-dark"></div>
-<span class="mt-2 text-xs font-bold text-primary">DAY 01</span>
-</div>
-<div class="flex flex-col items-center">
-<div class="bg-slate-300 dark:bg-slate-700 w-3 h-3 rounded-full ring-4 ring-background-light dark:ring-background-dark"></div>
-<span class="mt-2 text-xs font-bold text-slate-400">DAY 03</span>
-</div>
-<div class="flex flex-col items-center">
-<div class="bg-slate-300 dark:bg-slate-700 w-3 h-3 rounded-full ring-4 ring-background-light dark:ring-background-dark"></div>
-<span class="mt-2 text-xs font-bold text-slate-400">DAY 05</span>
-</div>
-<div class="flex flex-col items-center opacity-50">
-<div class="bg-slate-300 dark:bg-slate-700 w-3 h-3 rounded-full ring-4 ring-background-light dark:ring-background-dark"></div>
-<span class="mt-2 text-xs font-bold text-slate-400">DAY 07</span>
-</div>
-</div>
-</aside>
-<!-- Timeline Content -->
-<div class="flex-grow space-y-24 relative max-w-3xl mx-auto">
-<!-- SVG Overlay for Threads -->
-<svg class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: 0;">
-<!-- Successful connection -->
-<path class="glowing-thread" d="M 320 100 Q 400 150, 320 280" fill="transparent" stroke="#a855f7" stroke-width="2"></path>
-<!-- Delayed connection -->
-<path class="amber-thread" d="M 320 340 Q 250 450, 320 540" fill="transparent" stroke="#f59e0b" stroke-width="2"></path>
-<!-- Predictive shift line -->
-<path d="M 320 600 Q 400 700, 320 800" fill="transparent" opacity="0.3" stroke="#a855f7" stroke-dasharray="4" stroke-width="1.5"></path>
-</svg>
-<!-- Micro-Goal 1: Completed -->
-<div class="relative z-10 flex flex-col md:flex-row items-center gap-8 group">
-<div class="w-full md:w-[450px] bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
-<div class="flex justify-between items-start mb-4">
-<span class="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">Completed</span>
-<div class="flex -space-x-2">
-<img class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900" data-alt="Team member portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbpMSLDkWqe0NgGU8wc7vPGabr2uJzO_BYnB7iX2Qh2VYkrGWkusbEKB6oLelkMR8hUotz0dVFtxompVJJP0pS5GqPrYIHEnx3eWt2ZFarQJa6hzBlAr4fBUJc4Mt0rwMkPTXlua4f6lknUvMB3tAqiN7mlc4AWRSITJ14MkvexYVi03Sv8WXVvB_BiTs6A1apmMq5lLLzT4EBTSm8CewM-Mx00HNbyWmx7dsbbsURVTNkEi6KUDPVfz74qII_suPVRn4DyP2R6HA"/>
-</div>
-</div>
-<h3 class="text-lg font-bold mb-1">Architecture Schema v1</h3>
-<p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Finalize database relations and core API endpoints structure.</p>
-<div class="flex items-center justify-between text-xs font-semibold text-slate-400">
-<span class="flex items-center gap-1"><span class="material-icons text-sm">schedule</span> 48h Cycle</span>
-<span class="text-primary">100%</span>
-</div>
-<div class="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full mt-2">
-<div class="bg-primary h-full rounded-full w-full"></div>
-</div>
-</div>
-</div>
-<!-- Micro-Goal 2: Support Signal Active -->
-<div class="relative z-10 flex flex-col md:flex-row items-center gap-8 translate-x-12">
-<div class="w-full md:w-[450px] bg-white dark:bg-slate-900 p-6 rounded-xl border-2 border-amber-signal shadow-xl relative">
-<!-- Support Signal Badge -->
-<div class="absolute -right-4 -top-4 bg-amber-signal text-white p-2 rounded-full shadow-lg animate-pulse">
-<span class="material-icons">priority_high</span>
-</div>
-<div class="flex justify-between items-start mb-4">
-<span class="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">Support Signal</span>
-<div class="flex -space-x-2">
-<img class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900" data-alt="Developer profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAP0fs4sj-6vHuiI4aoXfed0KJxNveJcwhVgWRURF4D1CKt7LJz0M6XL4gIxMpvIdcu47uRsq1o8HXKFwpK3A157a_VOkw685_qYYci4a-B-ibAoy_ON2fb9Kmo5F68wcgwoxHykW3PckTCk1c_oC_o9P2yACNub9z2U-9PacH5Epbvf1U2djiq4J-9Oyp6IA93WtODiD4mekkvm8qRYKTMpeDXYFOc3omxIzcp1U9y-ZJEKT_t6b7GITi1hDC1rD7Jn-UJuGVoq70"/>
-</div>
-</div>
-<h3 class="text-lg font-bold mb-1">API Authentication Core</h3>
-<p class="text-sm text-slate-500 dark:text-slate-400 mb-6">OAuth2 integration with third-party providers. <span class="text-amber-signal font-medium">Blocked by token refresh logic.</span></p>
-<div class="flex items-center justify-between text-xs font-semibold text-slate-400"><span class="flex items-center gap-1 text-amber-signal"><span class="material-icons text-sm">warning</span> Needs Help / Backup</span></div>
-<div class="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
-<div class="bg-amber-signal h-full rounded-full w-[65%]"></div>
-</div>
-</div>
-<!-- Predictive Shift Hint -->
-<div class="hidden lg:block">
-<div class="bg-primary/5 border border-dashed border-primary/30 p-4 rounded-lg">
-<p class="text-[10px] font-bold uppercase text-primary/60 tracking-tighter">Impact Prediction</p>
-<p class="text-xs font-medium text-slate-400">+12h Delay Downstream</p>
-</div>
-</div>
-</div>
-<!-- Micro-Goal 3: Ghosted / Shifted -->
-<div class="relative z-10 flex flex-col md:flex-row items-center gap-8 opacity-40 grayscale translate-y-12">
-<div class="w-full md:w-[450px] bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 predictive-ghost">
-<div class="flex justify-between items-start mb-4">
-<span class="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">Predicted</span>
-<div class="flex -space-x-2">
-<img class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900" data-alt="Designer profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDa-VPojO8d150hCOfjeph7N9XpMfGPlsS1J3O32uCBQdx2SzANfF2UA9GgpYa9rsIdOnKhUDfusezr2JRV3b0Z4teRx-1acLwd9YP3-_LOFBRKX1tprqryfx1k21F901FMZFujRaDxLfK0QWUwFQp-rwMGpuwjB2dfR2W-_QoBK4v31kNAWX9-SiM1U3k6jw_4vYLgFwn3XUVrHXQn1fcUmGsasBZh0G-S76EmqKP1bdzWAJFHnNANiq81eGCbgSMnqetb-p0OhoI"/>
-</div>
-</div>
-<h3 class="text-lg font-bold mb-1">UI Component Library</h3>
-<p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Implementation of core design system tokens into code.</p>
-<div class="flex items-center justify-between text-xs font-semibold text-slate-400"><span class="flex items-center gap-1 text-primary"><span class="material-icons text-sm">pending</span> In Progress</span></div>
-</div>
-</div>
-<!-- Micro-Goal 4: Upcoming -->
-<div class="relative z-10 flex flex-col md:flex-row items-center gap-8 opacity-20">
-<div class="w-full md:w-[450px] bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
-<div class="flex justify-between items-start mb-4">
-<span class="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">Upcoming</span>
-</div>
-<h3 class="text-lg font-bold mb-1">State Management</h3>
-<p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Setting up global store and middleware for data fetching.</p>
-</div>
-</div>
-</div>
-<!-- Right Side Task Details Pane (Sticky) -->
-</main>
-<!-- Footer Stats Overlay (Mobile/Tablet Only) -->
-<div class="xl:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4 flex justify-around items-center z-50">
-<div class="text-center">
-<p class="text-[10px] font-bold text-slate-400">HEALTH</p>
-<p class="text-amber-signal font-bold">82%</p>
-</div>
-<div class="text-center">
-<p class="text-[10px] font-bold text-slate-400">GOALS</p>
-<p class="font-bold">12/24</p>
-</div>
-<div class="text-center">
-<p class="text-[10px] font-bold text-slate-400">THREADS</p>
-<p class="text-primary font-bold">Active</p>
-</div>
-</div>
-</body></html>
+  </head>
+  <body
+    class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen"
+  >
+    <!-- Top Navigation -->
+    <nav
+      class="sticky top-0 z-50 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-4"
+    >
+      <div class="max-w-7xl mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div
+            class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white"
+          >
+            <span class="material-icons">timeline</span>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold tracking-tight">Project Aurora</h1>
+            <p
+              class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider"
+            >
+              3-Week Sprint • Sprint Health:
+              <span class="text-amber-signal">At Risk</span>
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-6">
+          <div class="hidden md:flex flex-col items-end">
+            <span class="text-xs font-semibold text-slate-400 uppercase"
+              >Countdown</span
+            >
+            <span class="text-sm font-mono font-bold">14d : 22h : 45m</span>
+          </div>
+          <div class="relative group">
+            <button
+              class="bg-slate-800 text-slate-200 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 border border-slate-700 hover:border-primary/50 transition-colors"
+            >
+              <span class="material-icons text-sm">list</span> Select Task
+              <span class="material-icons text-sm">expand_more</span>
+            </button>
+            <div
+              class="hidden group-hover:block absolute top-full right-0 mt-2 w-64 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-50 overflow-hidden"
+            >
+              <a
+                class="block px-4 py-3 text-sm hover:bg-primary/10 transition-colors border-b border-slate-800"
+                href="#"
+                >Architecture Schema v1</a
+              ><a
+                class="block px-4 py-3 text-sm hover:bg-primary/10 transition-colors border-b border-slate-800"
+                href="#"
+                >API Authentication Core</a
+              ><a
+                class="block px-4 py-3 text-sm hover:bg-primary/10 transition-colors"
+                href="#"
+                >UI Component Library</a
+              >
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button
+              class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <span class="material-icons text-slate-500">zoom_in</span>
+            </button>
+            <button
+              class="bg-primary/10 text-primary px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2"
+            >
+              <span class="material-icons text-sm">gps_fixed</span>
+              Critical Path
+            </button>
+            <button
+              class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-lg shadow-primary/20"
+            >
+              Add Goal
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+    <main class="max-w-7xl mx-auto px-6 py-12 flex relative">
+      <!-- Left Vertical Time Axis -->
+      <aside class="w-24 shrink-0 flex flex-col items-center relative">
+        <div
+          class="absolute top-0 bottom-0 w-1 time-axis-line rounded-full"
+        ></div>
+        <!-- Day Markers -->
+        <div class="space-y-48 relative z-10 w-full">
+          <div class="flex flex-col items-center">
+            <div
+              class="bg-primary w-4 h-4 rounded-full ring-4 ring-background-light dark:ring-background-dark"
+            ></div>
+            <span class="mt-2 text-xs font-bold text-primary">DAY 01</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <div
+              class="bg-slate-300 dark:bg-slate-700 w-3 h-3 rounded-full ring-4 ring-background-light dark:ring-background-dark"
+            ></div>
+            <span class="mt-2 text-xs font-bold text-slate-400">DAY 03</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <div
+              class="bg-slate-300 dark:bg-slate-700 w-3 h-3 rounded-full ring-4 ring-background-light dark:ring-background-dark"
+            ></div>
+            <span class="mt-2 text-xs font-bold text-slate-400">DAY 05</span>
+          </div>
+          <div class="flex flex-col items-center opacity-50">
+            <div
+              class="bg-slate-300 dark:bg-slate-700 w-3 h-3 rounded-full ring-4 ring-background-light dark:ring-background-dark"
+            ></div>
+            <span class="mt-2 text-xs font-bold text-slate-400">DAY 07</span>
+          </div>
+        </div>
+      </aside>
+      <!-- Timeline Content -->
+      <div class="flex-grow space-y-24 relative max-w-3xl mx-auto">
+        <!-- SVG Overlay for Threads -->
+        <svg
+          class="absolute top-0 left-0 w-full h-full pointer-events-none"
+          style="z-index: 0"
+        >
+          <!-- Successful connection -->
+          <path
+            class="glowing-thread"
+            d="M 320 100 Q 400 150, 320 280"
+            fill="transparent"
+            stroke="#a855f7"
+            stroke-width="2"
+          ></path>
+          <!-- Delayed connection -->
+          <path
+            class="amber-thread"
+            d="M 320 340 Q 250 450, 320 540"
+            fill="transparent"
+            stroke="#f59e0b"
+            stroke-width="2"
+          ></path>
+          <!-- Predictive shift line -->
+          <path
+            d="M 320 600 Q 400 700, 320 800"
+            fill="transparent"
+            opacity="0.3"
+            stroke="#a855f7"
+            stroke-dasharray="4"
+            stroke-width="1.5"
+          ></path>
+        </svg>
+        <!-- Micro-Goal 1: Completed -->
+        <div
+          class="relative z-10 flex flex-col md:flex-row items-center gap-8 group"
+        >
+          <div
+            class="w-full md:w-[450px] bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div class="flex justify-between items-start mb-4">
+              <span
+                class="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded"
+                >Completed</span
+              >
+              <div class="flex -space-x-2">
+                <img
+                  class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900"
+                  data-alt="Team member portrait"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbpMSLDkWqe0NgGU8wc7vPGabr2uJzO_BYnB7iX2Qh2VYkrGWkusbEKB6oLelkMR8hUotz0dVFtxompVJJP0pS5GqPrYIHEnx3eWt2ZFarQJa6hzBlAr4fBUJc4Mt0rwMkPTXlua4f6lknUvMB3tAqiN7mlc4AWRSITJ14MkvexYVi03Sv8WXVvB_BiTs6A1apmMq5lLLzT4EBTSm8CewM-Mx00HNbyWmx7dsbbsURVTNkEi6KUDPVfz74qII_suPVRn4DyP2R6HA"
+                />
+              </div>
+            </div>
+            <h3 class="text-lg font-bold mb-1">Architecture Schema v1</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">
+              Finalize database relations and core API endpoints structure.
+            </p>
+            <div
+              class="flex items-center justify-between text-xs font-semibold text-slate-400"
+            >
+              <span class="flex items-center gap-1"
+                ><span class="material-icons text-sm">schedule</span> 48h
+                Cycle</span
+              >
+              <span class="text-primary">100%</span>
+            </div>
+            <div
+              class="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full mt-2"
+            >
+              <div class="bg-primary h-full rounded-full w-full"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Micro-Goal 2: Support Signal Active -->
+        <div
+          class="relative z-10 flex flex-col md:flex-row items-center gap-8 translate-x-12"
+        >
+          <div
+            class="w-full md:w-[450px] bg-white dark:bg-slate-900 p-6 rounded-xl border-2 border-amber-signal shadow-xl relative"
+          >
+            <!-- Support Signal Badge -->
+            <div
+              class="absolute -right-4 -top-4 bg-amber-signal text-white p-2 rounded-full shadow-lg animate-pulse"
+            >
+              <span class="material-icons">priority_high</span>
+            </div>
+            <div class="flex justify-between items-start mb-4">
+              <span
+                class="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded"
+                >Support Signal</span
+              >
+              <div class="flex -space-x-2">
+                <img
+                  class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900"
+                  data-alt="Developer profile"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAP0fs4sj-6vHuiI4aoXfed0KJxNveJcwhVgWRURF4D1CKt7LJz0M6XL4gIxMpvIdcu47uRsq1o8HXKFwpK3A157a_VOkw685_qYYci4a-B-ibAoy_ON2fb9Kmo5F68wcgwoxHykW3PckTCk1c_oC_o9P2yACNub9z2U-9PacH5Epbvf1U2djiq4J-9Oyp6IA93WtODiD4mekkvm8qRYKTMpeDXYFOc3omxIzcp1U9y-ZJEKT_t6b7GITi1hDC1rD7Jn-UJuGVoq70"
+                />
+              </div>
+            </div>
+            <h3 class="text-lg font-bold mb-1">API Authentication Core</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">
+              OAuth2 integration with third-party providers.
+              <span class="text-amber-signal font-medium"
+                >Blocked by token refresh logic.</span
+              >
+            </p>
+            <div
+              class="flex items-center justify-between text-xs font-semibold text-slate-400"
+            >
+              <span class="flex items-center gap-1 text-amber-signal"
+                ><span class="material-icons text-sm">warning</span> Needs Help
+                / Backup</span
+              >
+            </div>
+            <div
+              class="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden"
+            >
+              <div class="bg-amber-signal h-full rounded-full w-[65%]"></div>
+            </div>
+          </div>
+          <!-- Predictive Shift Hint -->
+          <div class="hidden lg:block">
+            <div
+              class="bg-primary/5 border border-dashed border-primary/30 p-4 rounded-lg"
+            >
+              <p
+                class="text-[10px] font-bold uppercase text-primary/60 tracking-tighter"
+              >
+                Impact Prediction
+              </p>
+              <p class="text-xs font-medium text-slate-400">
+                +12h Delay Downstream
+              </p>
+            </div>
+          </div>
+        </div>
+        <!-- Micro-Goal 3: Ghosted / Shifted -->
+        <div
+          class="relative z-10 flex flex-col md:flex-row items-center gap-8 opacity-40 grayscale translate-y-12"
+        >
+          <div
+            class="w-full md:w-[450px] bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 predictive-ghost"
+          >
+            <div class="flex justify-between items-start mb-4">
+              <span
+                class="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded"
+                >Predicted</span
+              >
+              <div class="flex -space-x-2">
+                <img
+                  class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900"
+                  data-alt="Designer profile"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDa-VPojO8d150hCOfjeph7N9XpMfGPlsS1J3O32uCBQdx2SzANfF2UA9GgpYa9rsIdOnKhUDfusezr2JRV3b0Z4teRx-1acLwd9YP3-_LOFBRKX1tprqryfx1k21F901FMZFujRaDxLfK0QWUwFQp-rwMGpuwjB2dfR2W-_QoBK4v31kNAWX9-SiM1U3k6jw_4vYLgFwn3XUVrHXQn1fcUmGsasBZh0G-S76EmqKP1bdzWAJFHnNANiq81eGCbgSMnqetb-p0OhoI"
+                />
+              </div>
+            </div>
+            <h3 class="text-lg font-bold mb-1">UI Component Library</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">
+              Implementation of core design system tokens into code.
+            </p>
+            <div
+              class="flex items-center justify-between text-xs font-semibold text-slate-400"
+            >
+              <span class="flex items-center gap-1 text-primary"
+                ><span class="material-icons text-sm">pending</span> In
+                Progress</span
+              >
+            </div>
+          </div>
+        </div>
+        <!-- Micro-Goal 4: Upcoming -->
+        <div
+          class="relative z-10 flex flex-col md:flex-row items-center gap-8 opacity-20"
+        >
+          <div
+            class="w-full md:w-[450px] bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800"
+          >
+            <div class="flex justify-between items-start mb-4">
+              <span
+                class="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded"
+                >Upcoming</span
+              >
+            </div>
+            <h3 class="text-lg font-bold mb-1">State Management</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">
+              Setting up global store and middleware for data fetching.
+            </p>
+          </div>
+        </div>
+      </div>
+      <!-- Right Side Task Details Pane (Sticky) -->
+    </main>
+    <!-- Footer Stats Overlay (Mobile/Tablet Only) -->
+    <div
+      class="xl:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4 flex justify-around items-center z-50"
+    >
+      <div class="text-center">
+        <p class="text-[10px] font-bold text-slate-400">HEALTH</p>
+        <p class="text-amber-signal font-bold">82%</p>
+      </div>
+      <div class="text-center">
+        <p class="text-[10px] font-bold text-slate-400">GOALS</p>
+        <p class="font-bold">12/24</p>
+      </div>
+      <div class="text-center">
+        <p class="text-[10px] font-bold text-slate-400">THREADS</p>
+        <p class="text-primary font-bold">Active</p>
+      </div>
+    </div>
+  </body>
+</html>
