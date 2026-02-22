@@ -250,24 +250,14 @@ export default function PlanningWorkspace({
     setGenerationMetadata(null);
 
     try {
-      const [
-        projectResponse,
-        documentsResponse,
-        confidenceResponse,
-        boardResponse,
-      ] = await Promise.all([
-        fetch(`/api/projects/${projectId}`, { cache: "no-store" }),
-        fetch(`/api/projects/${projectId}/documents`, { cache: "no-store" }),
-        fetch(`/api/projects/${projectId}/context/confidence`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }),
-        fetch(`/api/projects/${projectId}/workflow/board`, {
-          cache: "no-store",
-        }),
-      ]);
+      const [projectResponse, documentsResponse, boardResponse] =
+        await Promise.all([
+          fetch(`/api/projects/${projectId}`, { cache: "no-store" }),
+          fetch(`/api/projects/${projectId}/documents`, { cache: "no-store" }),
+          fetch(`/api/projects/${projectId}/workflow/board`, {
+            cache: "no-store",
+          }),
+        ]);
 
       const projectPayload = (await projectResponse.json()) as {
         description?: string;
@@ -300,23 +290,6 @@ export default function PlanningWorkspace({
         );
       }
 
-      let clarification = {
-        ...DEFAULT_CLARIFICATION,
-        threshold: 85,
-      };
-      if (confidenceResponse.ok) {
-        const confidencePayload = (await confidenceResponse.json()) as unknown;
-        clarification = normalizeClarification(confidencePayload);
-      } else {
-        const confidencePayload = (await confidenceResponse.json()) as unknown;
-        setLoadError(
-          resolveMessage(
-            confidencePayload,
-            "Could not compute clarification confidence yet.",
-          ),
-        );
-      }
-
       let nextTaskCount = 0;
       if (boardResponse.ok) {
         const boardPayload = (await boardResponse.json()) as {
@@ -340,6 +313,38 @@ export default function PlanningWorkspace({
         contextText: description,
         documents,
       });
+      let clarification = {
+        ...DEFAULT_CLARIFICATION,
+        threshold: 85,
+      };
+
+      if (hasMinimumInput) {
+        const confidenceResponse = await fetch(
+          `/api/projects/${projectId}/context/confidence`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        );
+
+        if (confidenceResponse.ok) {
+          const confidencePayload =
+            (await confidenceResponse.json()) as unknown;
+          clarification = normalizeClarification(confidencePayload);
+        } else {
+          const confidencePayload =
+            (await confidenceResponse.json()) as unknown;
+          setLoadError(
+            resolveMessage(
+              confidencePayload,
+              "Could not compute clarification confidence yet.",
+            ),
+          );
+        }
+      }
+
       const canGenerate = computeCanGenerate({
         hasMinimumInput,
         planningStatus: nextPlanningStatus,
@@ -524,22 +529,25 @@ export default function PlanningWorkspace({
     }
   }
 
-  function handleClarificationState(state: ClarificationState) {
-    setWorkspaceState((previous) => ({
-      ...previous,
-      clarification: {
-        confidence: state.confidence,
-        readyForGeneration: state.readyForGeneration,
-        askedCount: state.askedCount,
-        maxQuestions: state.maxQuestions,
-      },
-      canGenerate: computeCanGenerate({
-        hasMinimumInput: previous.hasMinimumInput,
-        planningStatus,
-        readyForGeneration: state.readyForGeneration,
-      }),
-    }));
-  }
+  const handleClarificationState = useCallback(
+    (state: ClarificationState) => {
+      setWorkspaceState((previous) => ({
+        ...previous,
+        clarification: {
+          confidence: state.confidence,
+          readyForGeneration: state.readyForGeneration,
+          askedCount: state.askedCount,
+          maxQuestions: state.maxQuestions,
+        },
+        canGenerate: computeCanGenerate({
+          hasMinimumInput: previous.hasMinimumInput,
+          planningStatus,
+          readyForGeneration: state.readyForGeneration,
+        }),
+      }));
+    },
+    [planningStatus],
+  );
 
   async function runGenerate(options?: RunGenerateOptions) {
     if (isGenerating) {
@@ -933,7 +941,11 @@ export default function PlanningWorkspace({
           Clarification Checkpoint
         </h3>
         <ClarificationPanel
-          disabled={planningStatus !== "draft" || isGenerating}
+          disabled={
+            planningStatus !== "draft" ||
+            isGenerating ||
+            !workspaceState.hasMinimumInput
+          }
           onProceedToDelegation={handleProceedFromClarification}
           onReturnToRefinement={handleReturnToRefinement}
           onStateChange={handleClarificationState}
