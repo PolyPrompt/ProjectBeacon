@@ -255,3 +255,16 @@
   - `lib/auth/clerk-auth.ts` now returns mapped `localUserId` directly.
   - Project routes under `app/projects/[projectId]/**` no longer depend on local-session cookies for route rendering.
   - Planning workspace and clarification UI no longer require client-provided `x-user-id` headers to run generate/lock/assign/clarification actions.
+
+## 2026-02-22T06:25:23Z
+
+- Decision summary:
+  - Keep clarification/delegation handoff on existing workspace APIs by treating low-confidence completion as a UI terminal state (not a backend state change).
+- Rationale:
+  - `PB-037` requires low-confidence fallback decisions, but contracts already model readiness via `readyForGeneration` at threshold or question-limit. UI-level branching avoids backend drift.
+- Alternatives considered:
+  - Add a new backend status/endpoint for low-confidence override.
+  - Block delegation entirely when confidence target is missed.
+- Impact on files or behavior:
+  - `components/projects/clarification-panel.tsx` now renders multi-step progress, low-confidence terminal actions, and retry controls.
+  - `components/projects/planning-workspace.tsx` now wires proceed/refinement actions to generation/review navigation while preserving project scope.
