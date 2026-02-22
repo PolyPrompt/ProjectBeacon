@@ -539,3 +539,19 @@
   - `npx prettier --check app/page.tsx app/projects/[projectId]/page.tsx components/dashboard/project-summary-card.tsx components/dashboard/project-members-list.tsx components/dashboard/project-task-list.tsx components/dashboard/dependency-preview.tsx` -> pass
   - `npx eslint app/page.tsx app/projects/[projectId]/page.tsx components/dashboard/project-summary-card.tsx components/dashboard/project-members-list.tsx components/dashboard/project-task-list.tsx components/dashboard/dependency-preview.tsx` -> pass
   - `npm run build` -> pass
+
+## 2026-02-22T00:51:06Z - PB-034 Verification Milestone (Agent3)
+
+- Issue: `#84` `[PB-034] Match /projects/new with refined project setup reference`.
+- Completed:
+  - Re-ran frontend verification loop on `/projects/new` against refined setup acceptance behaviors.
+  - Confirmed create workflow preserves entered project context after successful project creation.
+  - Confirmed share-link generation renders join URL + expiry without resetting form state.
+  - Confirmed share-by-email submission returns result summary (`sent`/`failed`) while keeping created project context visible.
+- Files changed:
+  - `HANDOFF.md`
+- Commands and results:
+  - `npm run format:check` -> pass
+  - `npm run lint` -> pass
+  - `npm run build` -> pass
+  - `npm run dev` + Playwright on `http://localhost:3000/projects/new` -> pass (create, share-link, invite result summary flow).
