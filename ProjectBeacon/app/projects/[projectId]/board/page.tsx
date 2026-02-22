@@ -13,5 +13,11 @@ export default async function ProjectBoardRoute({
     projectId,
   });
 
-  return <BoardPage projectId={projectId} role={sessionUser.role} />;
+  return (
+    <BoardPage
+      projectId={projectId}
+      role={sessionUser.role}
+      viewerUserId={sessionUser.userId}
+    />
+  );
 }

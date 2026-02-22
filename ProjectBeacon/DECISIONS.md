@@ -293,3 +293,17 @@
   - Keep current behavior with no explicit workspace handoff affordance.
 - Impact on files or behavior:
   - `components/projects/project-form.tsx` now keeps context visible and provides direct workspace + dashboard transitions after create.
+
+## 2026-02-22T06:50:41Z
+
+- Decision summary:
+  - Implement board parity variants as client-side mode projections over one API-backed board dataset, rather than splitting into separate mode routes or backend view endpoints.
+- Rationale:
+  - `PB-041` needs team/member/categorized/finalized variants while keeping `/projects/:projectId/board` as the single entry route; client-side projection keeps project context stable when switching modes.
+- Alternatives considered:
+  - Add dedicated routes for each board variant (`/board/member`, `/board/finalized`, etc.).
+  - Introduce backend mode-specific board endpoints with separate payloads.
+- Impact on files or behavior:
+  - `components/workflow/board-page.tsx` now supports mode tabs, grouped status rendering, finalized controls, assignee summaries, and improved keyboard/screen-reader semantics.
+  - `app/projects/[projectId]/board/page.tsx` now passes `viewerUserId` for viewer-focused lane behavior.
+  - `types/workflow.ts` now includes board-mode and status-bucket types used by board rendering.
