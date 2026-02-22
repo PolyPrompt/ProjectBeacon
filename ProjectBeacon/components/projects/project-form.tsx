@@ -216,7 +216,6 @@ export function ProjectForm() {
   const [error, setError] = useState<string | null>(null);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
   const [project, setProject] = useState<ProjectResponse | null>(null);
-  const deadlineInputRef = useRef<HTMLInputElement | null>(null);
 
   const rosterEmails = useMemo(
     () =>
@@ -253,20 +252,6 @@ export function ProjectForm() {
     }
 
     resetProjectContextForNewDraft();
-  }
-
-  function openMainDeadlinePicker() {
-    const input = deadlineInputRef.current;
-    if (!input) {
-      return;
-    }
-
-    if ("showPicker" in input && typeof input.showPicker === "function") {
-      input.showPicker();
-      return;
-    }
-
-    input.focus();
   }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
