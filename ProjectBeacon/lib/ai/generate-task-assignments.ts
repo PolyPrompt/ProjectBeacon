@@ -30,6 +30,16 @@ type GenerateTaskAssignmentsInput = {
   taskRequirements: TaskSkillRequirement[];
 };
 
+export type GenerateTaskAssignmentsResult = {
+  assignments: AssignmentResult["assignments"] | null;
+  model: string | null;
+  latencyMs: number | null;
+};
+
+function nowMs(): number {
+  return typeof performance !== "undefined" ? performance.now() : Date.now();
+}
+
 function toSkillEntries(skills: Record<string, number>) {
   return Object.entries(skills).map(([skillId, level]) => ({
     skillId,
@@ -70,15 +80,20 @@ function validateAssignments(
 
 export async function generateTaskAssignments(
   input: GenerateTaskAssignmentsInput,
-): Promise<AssignmentResult["assignments"] | null> {
+): Promise<GenerateTaskAssignmentsResult> {
   try {
     const env = getServerEnv();
     if (!env.OPENAI_API_KEY) {
-      return null;
+      return {
+        assignments: null,
+        model: null,
+        latencyMs: null,
+      };
     }
 
     const model = resolveOpenAIModelForOperation(env, "task_assignment");
     const systemPrompt = getTaskAssignmentSystemPrompt();
+    const requestStartedAt = nowMs();
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -140,7 +155,11 @@ export async function generateTaskAssignments(
     });
 
     if (!response.ok) {
-      return null;
+      return {
+        assignments: null,
+        model,
+        latencyMs: Math.max(1, Math.round(nowMs() - requestStartedAt)),
+      };
     }
 
     const payload = (await response.json()) as {
@@ -148,23 +167,43 @@ export async function generateTaskAssignments(
     };
     const content = payload.choices?.[0]?.message?.content;
     if (!content) {
-      return null;
+      return {
+        assignments: null,
+        model,
+        latencyMs: Math.max(1, Math.round(nowMs() - requestStartedAt)),
+      };
     }
 
     let candidate: unknown;
     try {
       candidate = JSON.parse(content);
     } catch {
-      return null;
+      return {
+        assignments: null,
+        model,
+        latencyMs: Math.max(1, Math.round(nowMs() - requestStartedAt)),
+      };
     }
 
     const parsed = assignmentOutputSchema.safeParse(candidate);
     if (!parsed.success) {
-      return null;
+      return {
+        assignments: null,
+        model,
+        latencyMs: Math.max(1, Math.round(nowMs() - requestStartedAt)),
+      };
     }
 
-    return validateAssignments(parsed.data.assignments, input);
+    return {
+      assignments: validateAssignments(parsed.data.assignments, input),
+      model,
+      latencyMs: Math.max(1, Math.round(nowMs() - requestStartedAt)),
+    };
   } catch {
-    return null;
+    return {
+      assignments: null,
+      model: null,
+      latencyMs: null,
+    };
   }
 }

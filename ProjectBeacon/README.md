@@ -174,6 +174,12 @@ Status transitions are deterministic and enforced server-side:
 
 Dependency edges are cycle-validated on generation and replan.
 
+Low-confidence planning behavior:
+
+- `POST /api/projects/:projectId/ai/generate-tasks` accepts optional `{ "allowLowConfidenceProceed": true }`.
+- When confidence is below threshold and low-confidence proceed is enabled, generation runs in provisional mode.
+- Provisional mode is intended to produce discovery/research + re-planning tasks first, then refine after confidence is recomputed from updated context.
+
 ## Local Auth Convention
 
 Server components and route handlers should read auth from Clerk helpers (`@clerk/nextjs/server`) or shared wrappers in `lib/auth/clerk-auth.ts`. Avoid ad-hoc header-based auth.

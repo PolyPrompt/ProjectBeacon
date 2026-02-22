@@ -45,6 +45,13 @@ export async function POST(
     });
 
     return NextResponse.json({
+      state: {
+        confidence: state.confidence,
+        threshold: state.threshold,
+        askedCount: state.askedCount,
+        maxQuestions: state.maxQuestions,
+        readyForGeneration: state.readyForGeneration,
+      },
       questions,
     });
   } catch (error) {

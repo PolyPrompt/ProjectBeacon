@@ -31,11 +31,17 @@ function getFileExtension(fileName: string): string {
 }
 
 export function isAllowedProjectDocumentExtension(fileName: string): boolean {
-  return ALLOWED_EXTENSION_SET.has(getFileExtension(fileName));
+  const ext = getFileExtension(fileName);
+  return ALLOWED_EXTENSION_SET.has(
+    ext as (typeof PROJECT_DOCUMENT_ALLOWED_EXTENSIONS)[number],
+  );
 }
 
 export function isAllowedProjectDocumentMimeType(mimeType: string): boolean {
-  return ALLOWED_MIME_SET.has(mimeType.trim().toLowerCase());
+  const normalized = mimeType.trim().toLowerCase();
+  return ALLOWED_MIME_SET.has(
+    normalized as (typeof PROJECT_DOCUMENT_ALLOWED_MIME_TYPES)[number],
+  );
 }
 
 export function isPermittedProjectDocumentFile(input: {
@@ -48,7 +54,8 @@ export function isPermittedProjectDocumentFile(input: {
 
   const normalizedMimeType = (input.mimeType ?? "").trim().toLowerCase();
   return (
-    ALLOWED_MIME_SET.has(normalizedMimeType) ||
-    FALLBACK_MIME_SET.has(normalizedMimeType)
+    ALLOWED_MIME_SET.has(
+      normalizedMimeType as (typeof PROJECT_DOCUMENT_ALLOWED_MIME_TYPES)[number],
+    ) || FALLBACK_MIME_SET.has(normalizedMimeType)
   );
 }

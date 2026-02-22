@@ -87,7 +87,7 @@ export async function POST(
       tasks,
     );
 
-    const aiAssignments = await generateTaskAssignments({
+    const aiAssignmentResult = await generateTaskAssignments({
       projectId,
       projectName: access.project.name,
       projectDescription: access.project.description,
@@ -100,6 +100,7 @@ export async function POST(
       members: effectiveSkills,
       taskRequirements: requirements,
     });
+    const aiAssignments = aiAssignmentResult.assignments;
 
     const assignmentResult =
       aiAssignments !== null
@@ -169,6 +170,8 @@ export async function POST(
       planningStatus: updatedProject.planning_status,
       assignedCount: assignmentResult.assignedCount,
       assignmentMode,
+      model: aiAssignmentResult.model,
+      latencyMs: aiAssignmentResult.latencyMs,
     });
   } catch (error) {
     return mapRouteError(error);

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextResponse } from "next/server";
 import { buildPlanningDocumentContextBlocks } from "@/lib/ai/document-context";
 import { generateTaskPlan } from "@/lib/ai/generate-task-plan";
@@ -15,6 +16,7 @@ import { validateDependencyGraph } from "@/lib/tasks/validate-dependency-graph";
 import { jsonError } from "@/lib/server/errors";
 import {
   mapRouteError,
+  parseBody,
   requireProjectAccess,
 } from "@/lib/server/route-helpers";
 import { normalizeProjectRole } from "@/lib/server/project-access";
@@ -36,6 +38,10 @@ type TaskInsertRow = {
   due_at: string | null;
 };
 
+const generateTasksRequestSchema = z.object({
+  allowLowConfidenceProceed: z.boolean().optional(),
+});
+
 export async function POST(
   request: Request,
   context: { params: Promise<{ projectId: string }> },
@@ -55,6 +61,28 @@ export async function POST(
       );
     }
 
+    let rawBody = "";
+    try {
+      rawBody = await request.text();
+    } catch {
+      return jsonError(400, "VALIDATION_ERROR", "Invalid request body.");
+    }
+    let requestBody: unknown = {};
+    if (rawBody.trim().length > 0) {
+      try {
+        requestBody = JSON.parse(rawBody);
+      } catch {
+        return jsonError(400, "VALIDATION_ERROR", "Invalid JSON body.");
+      }
+    }
+
+    const parsedBody = parseBody(generateTasksRequestSchema, requestBody);
+    if (!parsedBody.ok) {
+      return parsedBody.response;
+    }
+    const allowLowConfidenceProceed =
+      parsedBody.data.allowLowConfidenceProceed === true;
+
     const contexts = await fetchActiveProjectContexts(projectId);
     const askedCount = countClarificationEntries(contexts);
     const clarificationState = await buildClarificationState({
@@ -65,7 +93,7 @@ export async function POST(
       askedCount,
     });
 
-    if (!clarificationState.readyForGeneration) {
+    if (!clarificationState.readyForGeneration && !allowLowConfidenceProceed) {
       return jsonError(
         409,
         "CONTEXT_NOT_READY",
@@ -76,6 +104,9 @@ export async function POST(
         },
       );
     }
+    const planningMode = clarificationState.readyForGeneration
+      ? "standard"
+      : "provisional";
 
     const existingSkills = await selectRows<SkillRow>("skills", {
       select: "id,name",
@@ -110,6 +141,14 @@ export async function POST(
         projectDeadline: access.project.deadline,
         contextBlocks,
         availableSkills: existingSkills.map((skill) => skill.name),
+        planningMode,
+        clarification: {
+          confidence: clarificationState.confidence,
+          threshold: clarificationState.threshold,
+          readyForGeneration: clarificationState.readyForGeneration,
+          askedCount: clarificationState.askedCount,
+          maxQuestions: clarificationState.maxQuestions,
+        },
       },
       { strictMode },
     );

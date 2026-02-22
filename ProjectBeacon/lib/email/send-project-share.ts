@@ -26,7 +26,7 @@ function getResendClient() {
 export async function sendProjectShareEmail(input: {
   to: string;
   projectUrl: string;
-  projectId: string;
+  projectName: string;
 }): Promise<{ email: string; status: "sent" }> {
   const resend = getResendClient();
   const fromAddress =
@@ -35,13 +35,13 @@ export async function sendProjectShareEmail(input: {
   const { error } = await resend.emails.send({
     from: fromAddress,
     to: input.to,
-    subject: "You are invited to a Project Beacon workspace",
-    text: `You are invited to project ${input.projectId}.\nOpen project: ${input.projectUrl}`,
+    subject: `You are invited to ${input.projectName}`,
+    text: `You are invited to project ${input.projectName}.\nOpen project: ${input.projectUrl}`,
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111827;">
-        <h2 style="margin: 0 0 12px 0;">You're invited to Project Beacon</h2>
+        <h2 style="margin: 0 0 12px 0;">You're invited to TaskLogger</h2>
         <p style="margin: 0 0 12px 0;">
-          You were added to project <strong>${input.projectId}</strong>.
+          You were added to project <strong>${input.projectName}</strong>.
         </p>
         <p style="margin: 0 0 16px 0;">
           Click below to open the project dashboard:

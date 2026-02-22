@@ -14,6 +14,14 @@ export type GenerateTaskPlanInput = {
   projectDeadline: string;
   contextBlocks: Array<{ contextType: string; textContent: string }>;
   availableSkills: string[];
+  planningMode?: "standard" | "provisional";
+  clarification?: {
+    confidence: number;
+    threshold: number;
+    readyForGeneration: boolean;
+    askedCount: number;
+    maxQuestions: number;
+  };
 };
 
 export type GenerationMode = "openai" | "fallback";
@@ -30,6 +38,9 @@ export type TaskPlanGenerationMetadata = {
   mode: GenerationMode;
   reason: GenerationFallbackReason | null;
   strictMode: boolean;
+  planningMode: "standard" | "provisional";
+  model: string | null;
+  latencyMs: number | null;
   diagnostics?: {
     message: string;
     status?: number;
@@ -140,6 +151,10 @@ function logTaskPlanSchemaOnce(): void {
   );
 }
 
+function nowMs(): number {
+  return typeof performance !== "undefined" ? performance.now() : Date.now();
+}
+
 const DEFAULT_PLAN_TEMPLATES: Array<{
   title: string;
   description: string;
@@ -147,59 +162,113 @@ const DEFAULT_PLAN_TEMPLATES: Array<{
   skillHint: string;
 }> = [
   {
-    title: "Finalize requirements and acceptance criteria",
+    title: "Confirm deliverables, rubric, and success criteria",
     description:
-      "Consolidate scope and define explicit acceptance criteria with team sign-off.",
+      "Review assignment requirements, define scope boundaries, and agree on measurable completion criteria.",
     difficultyPoints: 2,
-    skillHint: "Product Planning",
+    skillHint: "Planning",
   },
   {
-    title: "Set up project architecture and repo workflows",
+    title: "Collect sources, data, and reference materials",
     description:
-      "Establish architecture decisions, coding standards, and CI baseline.",
+      "Gather required literature, datasets, lab resources, or references needed to execute the project.",
     difficultyPoints: 3,
-    skillHint: "Architecture",
+    skillHint: "Research",
   },
   {
-    title: "Implement core feature slice",
+    title: "Build first complete draft or prototype",
     description:
-      "Build the highest-value vertical slice that validates end-to-end behavior.",
+      "Produce the first end-to-end version of the core project artifact, report section, or implementation output.",
     difficultyPoints: 5,
-    skillHint: "Full Stack Development",
+    skillHint: "Execution",
   },
   {
-    title: "Implement secondary feature slice",
+    title: "Analyze outcomes and close quality gaps",
     description:
-      "Build supporting functionality and integrate with existing core slice.",
+      "Evaluate results, test assumptions, and revise weak sections based on findings or feedback.",
     difficultyPoints: 3,
-    skillHint: "Application Development",
+    skillHint: "Analysis",
   },
   {
-    title: "Quality pass and hardening",
+    title: "Finalize written materials and documentation",
     description:
-      "Run tests, fix defects, and improve reliability for demo readiness.",
+      "Complete final writing, citations, method notes, and documentation required for grading or review.",
     difficultyPoints: 2,
-    skillHint: "QA",
+    skillHint: "Writing",
   },
   {
-    title: "Prepare final demo and delivery artifacts",
+    title: "Prepare presentation and submission package",
     description:
-      "Package deployment, demo flow, and final documentation for submission.",
+      "Assemble slides/poster/demo assets and ensure all required submission artifacts are complete.",
     difficultyPoints: 2,
     skillHint: "Communication",
   },
 ];
 
+const PROVISIONAL_PLAN_TEMPLATES: Array<{
+  title: string;
+  description: string;
+  difficultyPoints: 1 | 2 | 3 | 5 | 8;
+  skillHint: string;
+}> = [
+  {
+    title: "Identify ambiguity gaps and open questions",
+    description:
+      "Capture unresolved requirements, assumptions, and missing inputs that block reliable planning.",
+    difficultyPoints: 2,
+    skillHint: "Planning",
+  },
+  {
+    title: "Run discovery and feasibility checks",
+    description:
+      "Evaluate candidate approaches, evidence needs, and practical constraints for unclear project directions.",
+    difficultyPoints: 3,
+    skillHint: "Research",
+  },
+  {
+    title: "Draft provisional plan and milestone baseline",
+    description:
+      "Create an initial sequence of work with explicit assumption markers so the team can revise safely.",
+    difficultyPoints: 3,
+    skillHint: "Planning",
+  },
+  {
+    title: "Execute low-risk foundation tasks",
+    description:
+      "Complete baseline work that is useful even if details change, such as source collection, templates, or environment setup.",
+    difficultyPoints: 3,
+    skillHint: "Execution",
+  },
+  {
+    title: "Validate assumptions with stakeholders",
+    description:
+      "Review findings with stakeholders, confirm priorities, and convert assumptions into explicit requirements.",
+    difficultyPoints: 2,
+    skillHint: "Communication",
+  },
+  {
+    title: "Regenerate plan from validated findings",
+    description:
+      "Recompute confidence and replace provisional work with refined execution tasks using confirmed context.",
+    difficultyPoints: 2,
+    skillHint: "Planning",
+  },
+];
+
 function buildFallbackTaskPlan(input: GenerateTaskPlanInput): AITaskPlanOutput {
+  const templates =
+    input.planningMode === "provisional"
+      ? PROVISIONAL_PLAN_TEMPLATES
+      : DEFAULT_PLAN_TEMPLATES;
   const chosenSkill = (hint: string) =>
     input.availableSkills.find((skill) =>
       skill.toLowerCase().includes(hint.toLowerCase()),
     ) ??
     input.availableSkills[0] ??
-    "General Engineering";
+    "General Collaboration";
 
   return {
-    tasks: DEFAULT_PLAN_TEMPLATES.map((template, index) => {
+    tasks: templates.map((template, index) => {
       const tempId = `T${index + 1}`;
       const dependency = index === 0 ? [] : [`T${index}`];
 
@@ -225,10 +294,14 @@ type OpenAITaskPlanAttempt =
   | {
       ok: true;
       plan: AITaskPlanOutput;
+      model: string;
+      latencyMs: number;
     }
   | {
       ok: false;
       reason: GenerationFallbackReason;
+      model: string | null;
+      latencyMs: number | null;
       diagnostics: {
         message: string;
         status?: number;
@@ -243,6 +316,8 @@ async function callOpenAITaskPlan(
     return {
       ok: false,
       reason: "missing_api_key",
+      model: null,
+      latencyMs: null,
       diagnostics: {
         message: "OPENAI_API_KEY is not configured.",
       },
@@ -254,6 +329,8 @@ async function callOpenAITaskPlan(
     .join("\n\n");
   const model = resolveOpenAIModelForOperation(env, "task_plan");
   const systemPrompt = getTaskPlanSystemPrompt();
+  const planningMode = input.planningMode ?? "standard";
+  const requestStartedAt = nowMs();
 
   logTaskPlanSchemaOnce();
 
@@ -281,6 +358,8 @@ async function callOpenAITaskPlan(
               deadline: input.projectDeadline,
               contextText,
               availableSkills: input.availableSkills,
+              planningMode,
+              clarification: input.clarification,
             }),
           },
         ],
@@ -291,6 +370,8 @@ async function callOpenAITaskPlan(
     return {
       ok: false,
       reason: "request_failed",
+      model,
+      latencyMs: Math.max(1, Math.round(nowMs() - requestStartedAt)),
       diagnostics: {
         message:
           error instanceof Error
@@ -304,6 +385,8 @@ async function callOpenAITaskPlan(
     return {
       ok: false,
       reason: "openai_http_error",
+      model,
+      latencyMs: Math.max(1, Math.round(nowMs() - requestStartedAt)),
       diagnostics: {
         message: `OpenAI returned HTTP ${response.status}.`,
         status: response.status,
@@ -320,6 +403,8 @@ async function callOpenAITaskPlan(
     return {
       ok: false,
       reason: "empty_response",
+      model,
+      latencyMs: Math.max(1, Math.round(nowMs() - requestStartedAt)),
       diagnostics: {
         message: "OpenAI response did not contain a task plan payload.",
       },
@@ -337,6 +422,8 @@ async function callOpenAITaskPlan(
     return {
       ok: false,
       reason: "response_parse_error",
+      model,
+      latencyMs: Math.max(1, Math.round(nowMs() - requestStartedAt)),
       diagnostics: {
         message: "OpenAI task plan payload was not valid JSON.",
       },
@@ -357,6 +444,8 @@ async function callOpenAITaskPlan(
     return {
       ok: false,
       reason: "response_schema_invalid",
+      model,
+      latencyMs: Math.max(1, Math.round(nowMs() - requestStartedAt)),
       diagnostics: {
         message: "OpenAI task plan payload did not match expected schema.",
       },
@@ -366,6 +455,8 @@ async function callOpenAITaskPlan(
   return {
     ok: true,
     plan: parsed.data,
+    model,
+    latencyMs: Math.max(1, Math.round(nowMs() - requestStartedAt)),
   };
 }
 
@@ -373,6 +464,7 @@ export async function generateTaskPlan(
   input: GenerateTaskPlanInput,
   options: { strictMode?: boolean } = {},
 ): Promise<GenerateTaskPlanResult> {
+  const planningMode = input.planningMode ?? "standard";
   const strictMode = options.strictMode ?? false;
   const modelPlan = await callOpenAITaskPlan(input);
   if (modelPlan.ok) {
@@ -382,6 +474,9 @@ export async function generateTaskPlan(
         mode: "openai",
         reason: null,
         strictMode,
+        planningMode,
+        model: modelPlan.model,
+        latencyMs: modelPlan.latencyMs,
       },
     };
   }
@@ -400,6 +495,8 @@ export async function generateTaskPlan(
       {
         mode: "openai",
         reason: modelPlan.reason,
+        model: modelPlan.model,
+        latencyMs: modelPlan.latencyMs,
         diagnostics: modelPlan.diagnostics,
       },
     );
@@ -411,6 +508,9 @@ export async function generateTaskPlan(
       mode: "fallback",
       reason: modelPlan.reason,
       strictMode,
+      planningMode,
+      model: modelPlan.model,
+      latencyMs: modelPlan.latencyMs,
       diagnostics: modelPlan.diagnostics,
     },
   };

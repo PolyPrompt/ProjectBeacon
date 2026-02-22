@@ -10,6 +10,8 @@ import {
   getConfidenceSystemPrompt,
 } from "@/lib/ai/prompt-registry";
 import {
+  CLARIFICATION_QUESTION_MAX_LENGTH,
+  CLARIFICATION_QUESTION_MIN_LENGTH,
   aiClarifyingQuestionsOutputSchema,
   aiConfidenceOutputSchema,
   clarificationStateSchema,
@@ -160,7 +162,11 @@ async function callOpenAIConfidence(
                 confidence: { type: "number", minimum: 0, maximum: 100 },
                 followUpQuestions: {
                   type: "array",
-                  items: { type: "string", minLength: 1, maxLength: 200 },
+                  items: {
+                    type: "string",
+                    minLength: CLARIFICATION_QUESTION_MIN_LENGTH,
+                    maxLength: CLARIFICATION_QUESTION_MAX_LENGTH,
+                  },
                   maxItems: 3,
                 },
                 assumptions: {
@@ -405,7 +411,11 @@ async function callOpenAIClarifyingQuestions(
               properties: {
                 clarification_questions: {
                   type: "array",
-                  items: { type: "string", minLength: 1, maxLength: 200 },
+                  items: {
+                    type: "string",
+                    minLength: CLARIFICATION_QUESTION_MIN_LENGTH,
+                    maxLength: CLARIFICATION_QUESTION_MAX_LENGTH,
+                  },
                   maxItems: 5,
                 },
                 reasoning: { type: "string", minLength: 1, maxLength: 600 },
