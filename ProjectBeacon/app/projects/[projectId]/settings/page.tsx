@@ -11,6 +11,9 @@ export default async function ProjectSettingsRoute({
   const { projectId } = await params;
   const sessionUser = await requireSessionUser(
     `/projects/${projectId}/settings`,
+    {
+      projectId,
+    },
   );
 
   return <ProjectSettingsPage projectId={projectId} role={sessionUser.role} />;

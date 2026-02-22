@@ -723,3 +723,63 @@
   - `repo:PolyPrompt/ProjectBeacon is:issue is:open label:agent2 label:status:ready` => no results
 - Stop reason:
   - No actionable open `agent2` issues remain in `status:ready`.
+
+## 2026-02-22T01:28:34Z - PB-043 Milestone (Agent1)
+
+- Issue: `#94` `[PB-043] Fix Clerk vs local-session split breaking post-create project routes`.
+- Completed:
+  - Replaced project-route session resolution in `lib/auth/session.ts` from `pb_*` cookies to Clerk-backed local-user mapping via `requireUser()`.
+  - Added project-aware role resolution (`admin|user`) in session helpers by reading `project_members`.
+  - Updated all `/projects/[projectId]` route entry pages to use the new project-aware session resolution so child routes no longer depend on local cookies.
+  - Updated `lib/auth/clerk-auth.ts` to return mapped `localUserId` directly and aligned route helper lookup to prefer it.
+  - Removed planning workspace dependency on client `x-user-id` header:
+    - removed local-session-missing action blocks
+    - removed header injection from clarification/generate/lock/assign requests
+  - Updated README auth convention to document Clerk + users-table mapping and deprecate runtime local cookie session use.
+- Files changed:
+  - `lib/auth/session.ts`
+  - `lib/auth/clerk-auth.ts`
+  - `lib/server/route-helpers.ts`
+  - `app/projects/[projectId]/layout.tsx`
+  - `app/projects/[projectId]/page.tsx`
+  - `app/projects/[projectId]/board/page.tsx`
+  - `app/projects/[projectId]/timeline/page.tsx`
+  - `app/projects/[projectId]/documents/page.tsx`
+  - `app/projects/[projectId]/settings/page.tsx`
+  - `components/projects/planning-workspace.tsx`
+  - `components/projects/clarification-panel.tsx`
+  - `README.md`
+  - `DECISIONS.md`
+- Commands and results:
+  - `set -a; source .env.local; set +a; npm run format:check` -> pass.
+  - `set -a; source .env.local; set +a; npm run lint` -> pass.
+  - `set -a; source .env.local; set +a; npm run build` -> pass.
+
+## 2026-02-22T03:22:46Z - PB-043 PR Opened (Agent1)
+
+- Issue: `#94` moved to `status:handoff`.
+- PR opened: `#104` https://github.com/PolyPrompt/ProjectBeacon/pull/104
+- Branch: `agent1/pb-043-clerk-session-unify`
+- Issue comment posted with shipped scope + validation summary:
+  - https://github.com/PolyPrompt/ProjectBeacon/issues/94#issuecomment-3940039966
+
+## 2026-02-22T03:22:46Z - PB-045 Blocked (Agent1)
+
+- Issue: `#96` `[PB-045] Add reproducible Supabase storage bucket provisioning for project documents`.
+- Status updated: `status:ready` -> `status:blocked`.
+- Blocker:
+  - Declared dependency `#71` (`PB-030`) remains open (`status:handoff`), so dependency is not complete yet.
+- Issue comment with unblock steps:
+  - https://github.com/PolyPrompt/ProjectBeacon/issues/96#issuecomment-3940041320
+- Next action:
+  - Merge/close `#71` (PR `#100`), then move `#96` back to `status:ready`.
+
+## 2026-02-22T03:22:46Z - Agent1 Queue Final Summary
+
+- Runner executed: `TASKMVP-agent1-runner.md` loop continuation.
+- Final queue check (`agent1` + `status:ready`): `[]`.
+- Outcome:
+  - `PB-043` (`#94`) implemented, validated, and handed off in PR `#104`.
+  - `PB-045` (`#96`) marked blocked with explicit dependency on `#71`.
+- Stop reason:
+  - No actionable `agent1` issues remain in `status:ready`.

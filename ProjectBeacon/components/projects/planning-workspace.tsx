@@ -38,7 +38,6 @@ export type PlanningWorkspaceState = {
 
 type PlanningWorkspaceProps = {
   projectId: string;
-  userIdHeaderValue: string;
 };
 
 type GenerationMetadata = {
@@ -206,7 +205,6 @@ function makeTempDocument(fileName: string): WorkspaceDocument {
 
 export default function PlanningWorkspace({
   projectId,
-  userIdHeaderValue,
 }: PlanningWorkspaceProps) {
   const [workspaceState, setWorkspaceState] = useState<PlanningWorkspaceState>(
     INITIAL_WORKSPACE_STATE,
@@ -229,7 +227,6 @@ export default function PlanningWorkspace({
   const [generationMetadata, setGenerationMetadata] =
     useState<GenerationMetadata | null>(null);
 
-  const requiresLocalUserHeader = userIdHeaderValue.trim().length === 0;
   const canLock = planningStatus === "draft" && taskCount > 0;
   const canAssign = planningStatus === "locked";
 
@@ -243,13 +240,6 @@ export default function PlanningWorkspace({
     setGenerationMetadata(null);
 
     try {
-      const headers = requiresLocalUserHeader
-        ? undefined
-        : {
-            "Content-Type": "application/json",
-            "x-user-id": userIdHeaderValue,
-          };
-
       const [
         projectResponse,
         documentsResponse,
@@ -258,18 +248,15 @@ export default function PlanningWorkspace({
       ] = await Promise.all([
         fetch(`/api/projects/${projectId}`, { cache: "no-store" }),
         fetch(`/api/projects/${projectId}/documents`, { cache: "no-store" }),
-        headers
-          ? fetch(`/api/projects/${projectId}/context/confidence`, {
-              method: "POST",
-              headers,
-            })
-          : Promise.resolve(null),
-        headers
-          ? fetch(`/api/projects/${projectId}/workflow/board`, {
-              headers,
-              cache: "no-store",
-            })
-          : Promise.resolve(null),
+        fetch(`/api/projects/${projectId}/context/confidence`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }),
+        fetch(`/api/projects/${projectId}/workflow/board`, {
+          cache: "no-store",
+        }),
       ]);
 
       const projectPayload = (await projectResponse.json()) as {
@@ -307,25 +294,21 @@ export default function PlanningWorkspace({
         ...DEFAULT_CLARIFICATION,
         threshold: 85,
       };
-      if (confidenceResponse) {
-        if (confidenceResponse.ok) {
-          const confidencePayload =
-            (await confidenceResponse.json()) as unknown;
-          clarification = normalizeClarification(confidencePayload);
-        } else {
-          const confidencePayload =
-            (await confidenceResponse.json()) as unknown;
-          setLoadError(
-            resolveMessage(
-              confidencePayload,
-              "Could not compute clarification confidence yet.",
-            ),
-          );
-        }
+      if (confidenceResponse.ok) {
+        const confidencePayload = (await confidenceResponse.json()) as unknown;
+        clarification = normalizeClarification(confidencePayload);
+      } else {
+        const confidencePayload = (await confidenceResponse.json()) as unknown;
+        setLoadError(
+          resolveMessage(
+            confidencePayload,
+            "Could not compute clarification confidence yet.",
+          ),
+        );
       }
 
       let nextTaskCount = 0;
-      if (boardResponse?.ok) {
+      if (boardResponse.ok) {
         const boardPayload = (await boardResponse.json()) as {
           columns?: Array<{ tasks?: Array<{ id?: string }> }>;
           unassigned?: Array<{ id?: string }>;
@@ -376,7 +359,7 @@ export default function PlanningWorkspace({
     } finally {
       setIsLoading(false);
     }
-  }, [projectId, requiresLocalUserHeader, userIdHeaderValue]);
+  }, [projectId]);
 
   useEffect(() => {
     void loadWorkspaceState();
@@ -549,10 +532,6 @@ export default function PlanningWorkspace({
   }
 
   async function runGenerate() {
-    if (!workspaceState.hasMinimumInput || requiresLocalUserHeader) {
-      return;
-    }
-
     if (!workspaceState.canGenerate) {
       setActionError(
         "Inputs are ready. Complete clarification until confidence reaches the target, then start AI breakdown.",
@@ -573,7 +552,6 @@ export default function PlanningWorkspace({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-user-id": userIdHeaderValue,
           },
         },
       );
@@ -646,7 +624,7 @@ export default function PlanningWorkspace({
   }
 
   async function runLock() {
-    if (!canLock || requiresLocalUserHeader) {
+    if (!canLock) {
       return;
     }
 
@@ -659,7 +637,6 @@ export default function PlanningWorkspace({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userIdHeaderValue,
         },
       });
 
@@ -692,7 +669,7 @@ export default function PlanningWorkspace({
   }
 
   async function runAssign() {
-    if (!canAssign || requiresLocalUserHeader) {
+    if (!canAssign) {
       return;
     }
 
@@ -707,7 +684,6 @@ export default function PlanningWorkspace({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-user-id": userIdHeaderValue,
           },
         },
       );
@@ -746,16 +722,10 @@ export default function PlanningWorkspace({
 
   const startActionEnabled = useMemo(
     () =>
-      !requiresLocalUserHeader &&
       planningStatus === "draft" &&
       workspaceState.hasMinimumInput &&
       !isUploadingDocument,
-    [
-      isUploadingDocument,
-      planningStatus,
-      requiresLocalUserHeader,
-      workspaceState.hasMinimumInput,
-    ],
+    [isUploadingDocument, planningStatus, workspaceState.hasMinimumInput],
   );
 
   const startActionLabel = startActionEnabled
@@ -763,9 +733,6 @@ export default function PlanningWorkspace({
     : "Start AI Delegation";
 
   const startActionHint = useMemo(() => {
-    if (requiresLocalUserHeader) {
-      return "Local session missing. AI actions are disabled.";
-    }
     if (planningStatus !== "draft") {
       return "AI draft generation is only available in draft planning status.";
     }
@@ -778,7 +745,6 @@ export default function PlanningWorkspace({
     return "Ready to run AI planning from the uploaded inputs.";
   }, [
     planningStatus,
-    requiresLocalUserHeader,
     workspaceState.canGenerate,
     workspaceState.hasMinimumInput,
   ]);
@@ -874,22 +840,13 @@ export default function PlanningWorkspace({
         </section>
       </div>
 
-      {requiresLocalUserHeader ? (
-        <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
-          Local project session is missing. Upload and save still work, but AI
-          generation/lock/assignment controls are disabled.
-        </p>
-      ) : null}
-
       <section className="space-y-3 rounded-2xl border border-slate-800 bg-[#171821] p-4">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
           Clarification Checkpoint
         </h3>
         <ClarificationPanel
-          disabled={requiresLocalUserHeader}
           onStateChange={handleClarificationState}
           projectId={projectId}
-          userIdHeaderValue={userIdHeaderValue}
         />
       </section>
 

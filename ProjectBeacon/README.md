@@ -154,13 +154,9 @@ Dependency edges are cycle-validated on generation and replan.
 
 Server components and route handlers should read auth from Clerk helpers (`@clerk/nextjs/server`) or shared wrappers in `lib/auth/clerk-auth.ts`. Avoid ad-hoc header-based auth.
 
-For post-onboarding UI route protection in the app shell, local session cookies are used:
+Project routes under `/projects/[projectId]` resolve the current actor from Clerk session plus `users` table mapping, then derive role capability (`admin|user`) from `project_members`.
 
-- `pb_user_id`
-- `pb_role` (`admin` or `user`)
-- `pb_last_project_id`
-
-Use `/sign-in` in local development to set these values and enter the protected project routes.
+Legacy helpers in `lib/auth/session.ts` for `pb_*` local cookies remain only as deprecated no-op compatibility exports and are not part of runtime auth.
 
 ## Post-Onboarding App Shell (PB-024)
 

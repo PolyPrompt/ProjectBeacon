@@ -11,6 +11,9 @@ export default async function ProjectDocumentsRoute({
   const { projectId } = await params;
   const sessionUser = await requireSessionUser(
     `/projects/${projectId}/documents`,
+    {
+      projectId,
+    },
   );
 
   return <ProjectDocumentsPage projectId={projectId} role={sessionUser.role} />;
