@@ -197,9 +197,24 @@ export default function ClarificationPanel({
     Boolean(onProceedToDelegation);
   const confidenceActivityMessage = isSubmitting
     ? "Saving answer and recomputing confidence..."
-    : isBootstrapping || isComputingConfidence
-      ? "Computing clarification confidence..."
-      : null;
+    : isBootstrapping
+      ? "Analyzing project context and preparing clarifying prompts..."
+      : isComputingConfidence
+        ? "Computing clarification confidence..."
+        : isRefreshingQuestions
+          ? "Generating follow-up clarification question..."
+          : null;
+
+  const showAnalysisLoader = isBootstrapping || isComputingConfidence;
+  const showQuestionLoader =
+    isRefreshingQuestions && !showQuestionComposer && !showAnalysisLoader;
+
+  const loaderMessage = showAnalysisLoader
+    ? "This can take up to about 30 seconds for large specs."
+    : "Fetching updated clarifying prompts.";
+  const loaderTitle = showAnalysisLoader
+    ? "AI context analysis in progress"
+    : "Loading clarifying questions";
 
   const applyQuestions = useCallback(
     (nextQuestions: string[]) => {
@@ -518,6 +533,18 @@ export default function ClarificationPanel({
           constraints.
         </p>
       </section>
+
+      {showAnalysisLoader || showQuestionLoader ? (
+        <section className="rounded-2xl border border-violet-400/35 bg-violet-950/35 p-4">
+          <div className="flex items-center gap-3">
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-violet-300" />
+            <p className="text-sm font-semibold text-violet-100">
+              {loaderTitle}
+            </p>
+          </div>
+          <p className="mt-2 text-xs text-violet-200/80">{loaderMessage}</p>
+        </section>
+      ) : null}
 
       {isLowConfidenceTerminal && !shouldAutoProceedTerminal ? (
         <section className="space-y-5 rounded-2xl border border-violet-400/30 bg-[#181329] p-5">
