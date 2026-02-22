@@ -7,6 +7,7 @@ import type {
 } from "@/lib/assignment/assign-tasks";
 import { resolveOpenAIModelForOperation } from "@/lib/ai/model-selection";
 import { getOpenAIChatRequestTuning } from "@/lib/ai/openai-chat-options";
+import { requestOpenAIChatCompletions } from "@/lib/ai/openai-chat-request";
 import { getTaskAssignmentSystemPrompt } from "@/lib/ai/prompt-registry";
 import { getServerEnv } from "@/lib/server/env";
 
@@ -95,13 +96,9 @@ export async function generateTaskAssignments(
     const systemPrompt = getTaskAssignmentSystemPrompt();
     const requestStartedAt = nowMs();
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    const { response } = await requestOpenAIChatCompletions({
+      apiKey: env.OPENAI_API_KEY,
+      body: {
         model,
         ...getOpenAIChatRequestTuning(model),
         messages: [
@@ -151,7 +148,7 @@ export async function generateTaskAssignments(
             },
           },
         },
-      }),
+      },
     });
 
     if (!response.ok) {

@@ -5,6 +5,7 @@ import {
 import { getTaskPlanSystemPrompt } from "@/lib/ai/prompt-registry";
 import { resolveOpenAIModelForOperation } from "@/lib/ai/model-selection";
 import { getOpenAIChatRequestTuning } from "@/lib/ai/openai-chat-options";
+import { requestOpenAIChatCompletions } from "@/lib/ai/openai-chat-request";
 import { ApiHttpError } from "@/lib/server/errors";
 import { getServerEnv } from "@/lib/server/env";
 
@@ -336,13 +337,9 @@ async function callOpenAITaskPlan(
 
   let response: Response;
   try {
-    response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    const result = await requestOpenAIChatCompletions({
+      apiKey: env.OPENAI_API_KEY,
+      body: {
         model,
         ...getOpenAIChatRequestTuning(model),
         messages: [
@@ -364,8 +361,9 @@ async function callOpenAITaskPlan(
           },
         ],
         response_format: OPENAI_TASK_PLAN_RESPONSE_FORMAT,
-      }),
+      },
     });
+    response = result.response;
   } catch (error) {
     return {
       ok: false,
