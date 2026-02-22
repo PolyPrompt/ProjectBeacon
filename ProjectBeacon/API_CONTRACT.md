@@ -503,6 +503,13 @@ Response `200`:
 
 ```json
 {
+  "state": {
+    "confidence": 72,
+    "threshold": 85,
+    "askedCount": 2,
+    "maxQuestions": 5,
+    "readyForGeneration": false
+  },
   "questions": [
     "What are the required deliverables?",
     "Which technologies are mandatory?"

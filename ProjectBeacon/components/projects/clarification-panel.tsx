@@ -130,7 +130,6 @@ export default function ClarificationPanel({
   const [selectedQuestion, setSelectedQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [isBootstrapping, setIsBootstrapping] = useState(true);
-  const [isComputingConfidence, setIsComputingConfidence] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshingQuestions, setIsRefreshingQuestions] = useState(false);
   const [isProceeding, setIsProceeding] = useState(false);
@@ -199,13 +198,11 @@ export default function ClarificationPanel({
     ? "Saving answer and recomputing confidence..."
     : isBootstrapping
       ? "Analyzing project context and preparing clarifying prompts..."
-      : isComputingConfidence
-        ? "Computing clarification confidence..."
-        : isRefreshingQuestions
-          ? "Generating follow-up clarification question..."
-          : null;
+      : isRefreshingQuestions
+        ? "Generating follow-up clarification question..."
+        : null;
 
-  const showAnalysisLoader = isBootstrapping || isComputingConfidence;
+  const showAnalysisLoader = isBootstrapping;
   const showQuestionLoader =
     isRefreshingQuestions && !showQuestionComposer && !showAnalysisLoader;
 
@@ -225,38 +222,6 @@ export default function ClarificationPanel({
     [onQuestionsChange],
   );
 
-  const fetchConfidenceState = useCallback(async () => {
-    setIsComputingConfidence(true);
-    try {
-      const response = await fetch(
-        `/api/projects/${projectId}/context/confidence`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      const payload = (await response.json()) as unknown;
-      if (!response.ok) {
-        throw new Error(
-          resolveMessage(
-            payload,
-            "Failed to compute clarification confidence.",
-          ),
-        );
-      }
-
-      const nextState = normalizeState(payload);
-      setState(nextState);
-      onStateChange?.(nextState);
-      return nextState;
-    } finally {
-      setIsComputingConfidence(false);
-    }
-  }, [onStateChange, projectId]);
-
   const fetchQuestions = useCallback(async () => {
     const response = await fetch(`/api/projects/${projectId}/context/clarify`, {
       method: "POST",
@@ -265,34 +230,51 @@ export default function ClarificationPanel({
       },
     });
 
-    const payload = (await response.json()) as {
-      questions?: string[];
-      error?: { message?: string };
-    };
+    const payload = (await response.json()) as unknown;
     if (!response.ok) {
       throw new Error(
         resolveMessage(payload, "Failed to get clarification questions."),
       );
     }
 
-    applyQuestions(Array.isArray(payload.questions) ? payload.questions : []);
-  }, [applyQuestions, projectId]);
+    const responseBody =
+      payload && typeof payload === "object"
+        ? (payload as {
+            state?: unknown;
+            questions?: unknown;
+          })
+        : {};
+
+    const nextState = normalizeState(responseBody.state ?? payload);
+    const nextQuestions = Array.isArray(responseBody.questions)
+      ? responseBody.questions.filter(
+          (question): question is string => typeof question === "string",
+        )
+      : [];
+
+    setState(nextState);
+    onStateChange?.(nextState);
+    applyQuestions(nextQuestions);
+
+    return {
+      nextState,
+      nextQuestions,
+    };
+  }, [applyQuestions, onStateChange, projectId]);
 
   const refreshFlow = useCallback(async () => {
     setIsBootstrapping(true);
     setError(null);
     setStatusMessage(null);
     try {
-      const nextState = await fetchConfidenceState();
+      const { nextState, nextQuestions } = await fetchQuestions();
       if (
-        nextState.readyForGeneration ||
-        nextState.askedCount >= nextState.maxQuestions
+        (nextState.readyForGeneration ||
+          nextState.askedCount >= nextState.maxQuestions) &&
+        nextQuestions.length > 0
       ) {
         applyQuestions([]);
-        return;
       }
-
-      await fetchQuestions();
     } catch (unknownError) {
       setError(
         unknownError instanceof Error
@@ -302,7 +284,7 @@ export default function ClarificationPanel({
     } finally {
       setIsBootstrapping(false);
     }
-  }, [applyQuestions, fetchConfidenceState, fetchQuestions]);
+  }, [applyQuestions, fetchQuestions]);
 
   useEffect(() => {
     if (disabled) {
@@ -714,9 +696,7 @@ export default function ClarificationPanel({
           onClick={refreshFlow}
           disabled={disabled || isBusy}
         >
-          {isBootstrapping || isComputingConfidence
-            ? "Computing..."
-            : "Recompute Confidence"}
+          {isBootstrapping ? "Computing..." : "Recompute Confidence"}
         </button>
         <button
           type="button"
