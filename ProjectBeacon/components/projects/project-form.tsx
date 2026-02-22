@@ -319,52 +319,6 @@ export function ProjectForm() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_8%,rgba(103,47,180,0.24),transparent_38%),radial-gradient(circle_at_85%_20%,rgba(47,25,90,0.22),transparent_48%),linear-gradient(180deg,#120a24_0%,#130b22_55%,#120a1f_100%)]" />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-[1280px] flex-col">
-        <header className="border-b border-violet-900/45 px-6 py-4 lg:px-10">
-          <div className="mx-auto flex w-full items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-600 shadow-[0_0_0_1px_rgba(255,255,255,0.12)]">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  aria-hidden="true"
-                  className="h-5 w-5 text-white"
-                >
-                  <path
-                    d="M4 7h7v4H4V7Zm0 6h4v4H4v-4Zm7 0h9v4h-9v-4Zm4-6h5v4h-5V7Z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </div>
-              <span className="text-3xl font-semibold tracking-tight text-white">
-                Delegator
-              </span>
-            </div>
-
-            <div className="flex items-center gap-4 text-sm">
-              <nav className="hidden items-center gap-6 text-[19px] text-slate-300 md:flex">
-                <Link className="transition-colors hover:text-white" href="/">
-                  Dashboard
-                </Link>
-                <Link
-                  className="transition-colors hover:text-white"
-                  href="/projects/new"
-                >
-                  Projects
-                </Link>
-                <Link
-                  className="transition-colors hover:text-white"
-                  href="/profile"
-                >
-                  Team
-                </Link>
-              </nav>
-              <div className="flex h-11 w-11 items-center justify-center rounded-full border border-violet-300/50 bg-violet-500/20 text-sm font-semibold text-violet-100">
-                KS
-              </div>
-            </div>
-          </div>
-        </header>
-
         <main className="flex-1 px-6 pb-10 pt-10 lg:px-10 lg:pt-14">
           <div className="mb-10 space-y-3">
             <h1 className="text-6xl font-semibold tracking-tight text-white">
